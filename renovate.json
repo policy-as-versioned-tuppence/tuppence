@@ -1,14 +1,20 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": [
+    "config:recommended"
+  ],
   "automerge": false,
   "dependencyDashboard": false,
-  "enabledManagers": ["custom.regex"],
+  "enabledManagers": [
+    "custom.regex"
+  ],
   "customManagers": [
     {
       "customType": "regex",
       "description": "Cross-org bump surface #1 (ticket mo-10, ADR-0001/ADR-0002): the pinned nist regulator catalog. Renovate's native flux manager tracks a GitRepository's tag OR commit exclusively and cannot maintain the {tag, commit} pair ADR-0001 requires (post-merge tamper resistance) -- this customManager (git-refs datasource) does both together.",
-      "managerFilePatterns": ["/^gitops/flux-system/gotk-sync-nist\\.yaml$/"],
+      "managerFilePatterns": [
+        "/^gitops/flux-system/gotk-sync-nist\\.yaml$/"
+      ],
       "matchStrings": [
         "tag: (?<currentValue>v[0-9.]+)\\s*\\n\\s*commit: (?<currentDigest>[a-f0-9]{40})"
       ],
@@ -19,7 +25,9 @@
     {
       "customType": "regex",
       "description": "Cross-org bump surface #2 (ticket mo-10): the pinned platform dependency (config-base pattern). Same {tag, commit}-pair reasoning as the nist manager above.",
-      "managerFilePatterns": ["/^gitops/platform/platform-pin\\.yaml$/"],
+      "managerFilePatterns": [
+        "/^gitops/platform/platform-pin\\.yaml$/"
+      ],
       "matchStrings": [
         "tag: (?<currentValue>v[0-9.]+)\\s*\\n\\s*commit: (?<currentDigest>[a-f0-9]{40})"
       ],
@@ -31,8 +39,11 @@
   "packageRules": [
     {
       "description": "No live semver ranges anywhere (ADR-0002): every match above is pinned exact. Guardrail, not a behaviour change.",
-      "matchDatasources": ["git-refs"],
+      "matchDatasources": [
+        "git-refs"
+      ],
       "rangeStrategy": "pin"
     }
-  ]
+  ],
+  "platformCommit": "enabled"
 }
