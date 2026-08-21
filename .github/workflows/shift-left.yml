@@ -1,0 +1,118 @@
+name: shift-left policy check
+
+# Ticket mo-10: platform/shift-left/ci-check.py (see platform's own README)
+# run for real, cross-org -- tuppence and platform checked out side by side
+# in one run, TWO SEPARATE GitHub orgs, no monorepo assumption. This is the
+# real shape `ci-workflow.example.yml` in the platform repo documents; this
+# file is that shape actually wired into an institution's own CI, as that
+# file says every institution must do for itself. Adapted from driftwood's
+# copy of the same file, the first institution this was wired into.
+#
+# No `paths:` filter: this check must report a status on every PR (including
+# a Renovate bump PR that only touches gitops/platform/platform-pin.yaml, not
+# deploy/pod.yaml) -- a required check gated by `paths:` never runs on a PR
+# that doesn't touch those paths, and GitHub then blocks the merge forever
+# waiting on a status that was never going to arrive (the same gotcha
+# faithful-floor ticket 12 hit and fixed the same way).
+#
+# Ticket mo-10 follow-up (2026-08-21): a green check on this job used to be
+# the whole signal. That is not independently verifiable by a human reviewer
+# -- it says "GitHub ran a job", not "the gate actually ran and passed". The
+# steps after the gate build a small JSON attestation, sign it keyless (same
+# Fulcio-from-Actions-OIDC, logged-to-Rekor pattern cut-release.yml already
+# proves out for release tags) and post the signed result as a PR comment,
+# so the reviewer can verify the check independently of trusting the badge.
+
+on: [pull_request]
+
+# Extra permissions past the read-only default: the attestation step signs
+# keyless via this run's own Actions identity (needs the ambient OIDC
+# credential), and the comment step posts to the pull request. An explicit
+# permissions block zeroes every unlisted permission rather than defaulting
+# it, so both lines below are real grants, not restating what already held.
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+jobs:
+  shift-left:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: tuppence }
+
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-platform/platform
+          path: platform
+
+      - name: install pinned kyverno cli (binary + checksum, no marketplace action)
+        env:
+          KYVERNO_VERSION: 1.18.2
+          KYVERNO_SHA256: cb2feb8356149fd2fe774c894ccf0969f4a60a83867dd913af724f74ffbbc18b
+        run: |
+          set -euo pipefail
+          curl -sSL -o kyverno.tar.gz "https://github.com/kyverno/kyverno/releases/download/v${KYVERNO_VERSION}/kyverno-cli_v${KYVERNO_VERSION}_linux_x86_64.tar.gz"
+          echo "${KYVERNO_SHA256}  kyverno.tar.gz" | sha256sum -c -
+          tar xzf kyverno.tar.gz kyverno && chmod +x kyverno && sudo mv kyverno /usr/local/bin/kyverno
+          pip install --quiet pyyaml
+
+      - name: version cross-check gate
+        run: python3 platform/shift-left/ci-check.py --resource tuppence/deploy/pod.yaml
+
+      - name: install pinned cosign (binary + checksum, no marketplace action)
+        env:
+          COSIGN_VERSION: 3.1.3
+          COSIGN_SHA256: 4629c757b7618056f8ddd7e2625ae9fdd94c0372a65049520bc7d9df9efc7f71
+        run: |
+          set -euo pipefail
+          curl -sSL -o cosign "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-amd64"
+          echo "${COSIGN_SHA256}  cosign" | sha256sum -c -
+          chmod +x cosign && sudo mv cosign /usr/local/bin/cosign
+
+      - name: build the shift-left attestation
+        # Only reached if the gate step above exited 0 -- the attestation
+        # claims "pass" because a non-zero ci-check.py already stopped the
+        # job before this step runs.
+        run: |
+          set -euo pipefail
+          printf '{\n' > attestation.json
+          printf '  "pr_number": %s,\n' "${{ github.event.pull_request.number }}" >> attestation.json
+          printf '  "head_sha": "%s",\n' "${{ github.event.pull_request.head.sha }}" >> attestation.json
+          printf '  "gate": "shift-left",\n' >> attestation.json
+          printf '  "result": "pass",\n' >> attestation.json
+          printf '  "run_id": "%s",\n' "${{ github.run_id }}" >> attestation.json
+          printf '  "run_url": "%s"\n' "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> attestation.json
+          printf '}\n' >> attestation.json
+          cat attestation.json
+
+      - name: sign the attestation keyless (Fulcio cert from this run's own OIDC identity, logged to Rekor)
+        run: cosign sign-blob --yes --bundle attestation.cosign.bundle attestation.json
+
+      - name: post the signed attestation as a PR comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### shift-left gate: signed attestation"
+            echo
+            echo "\`platform/shift-left/ci-check.py\` passed for this PR. The JSON below is"
+            echo "signed keyless -- a Fulcio certificate bound to this run's own GitHub"
+            echo "Actions OIDC identity, logged to the public Rekor transparency log -- so"
+            echo "this is an independently verifiable 'this was checked' signal, not just a"
+            echo "green status badge."
+            echo
+            echo '```json'
+            cat attestation.json
+            echo '```'
+            echo
+            echo "Signature bundle (certificate + signature + Rekor log entry -- verify with"
+            echo "\`cosign verify-blob --bundle attestation.cosign.bundle ...\`):"
+            echo
+            echo '```json'
+            cat attestation.cosign.bundle
+            echo '```'
+          } > pr-comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --body-file pr-comment.md
