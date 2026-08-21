@@ -1,0 +1,44 @@
+name: renovate-run
+
+# Ticket mo-10: self-hosted Renovate, run against this repo only, using
+# THIS RUN's own default Actions credential -- not a personal access token.
+# That is deliberate: it is the only way to empirically find out whether the
+# org-level "Actions can create PRs" setting is on for
+# policy-as-versioned-tuppence, which needs admin:org to read and this
+# project's gh token does not have. A personal-token Renovate run would
+# sidestep the very thing this ticket needs answered.
+#
+# workflow_dispatch only: this proves the mechanism once, on request. A
+# recurring schedule is a standing automation decision the estate has
+# explicitly declined to make unilaterally (see faithful-floor ticket 11) --
+# not repeated here just because it is now technically easy across orgs.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # renovate@44 requires Node ^24.11 (uses RegExp.escape, ES2025); the
+      # runner's default `node` on the PATH is older and npx fails with
+      # "RegExp.escape is not a function" -- pin the runtime renovate itself
+      # needs, same actions/* trust tier as actions/checkout above.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: run self-hosted renovate against this repo
+        env:
+          RENOVATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RENOVATE_PLATFORM: github
+          RENOVATE_REPOSITORIES: policy-as-versioned-tuppence/tuppence
+          LOG_LEVEL: debug
+        run: npx --yes renovate@44.37.1
