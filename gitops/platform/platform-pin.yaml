@@ -23,8 +23,12 @@ spec:
   url: https://github.com/policy-as-versioned-platform/platform
   ref:
     tag: v0.1.0
-    # commit pinned at release by the wave-push (belt-and-braces immutability):
-    # commit: <40-char-sha>
+    # commit pinned at release (belt-and-braces immutability, ADR-0001) --
+    # the resolved SHA platform v0.1.0 tag points to, real as of ticket
+    # mo-10. Bumped by a Renovate customManager (git-refs datasource, both
+    # fields together) whenever platform ships a newer tag -- never by hand,
+    # never a moving branch.
+    commit: 336aef2147344ae3dbcfe8450865a8806ecbe2af
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

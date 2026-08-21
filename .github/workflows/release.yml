@@ -1,0 +1,94 @@
+name: release
+
+# Runs on every semver tag push. Verifies the tag's gitsign signature
+# identity-pinned against an offline Rekor bundle, checks the tag still
+# resolves to the commit this run was triggered from, validates the gitops
+# tree builds cleanly (no cluster) as a release gate, and publishes a GitHub
+# Release. See cut-release.yml for how the tag gets here.
+#
+# ponytail: this gate is `kustomize build`, not a live Flux reconcile --
+# mo-09 already proved live reconcile from a real signed tag on a KiND
+# cluster; re-running that on every tag push here would be slow and
+# duplicate proof, not new proof. Upgrade if a bad-YAML release ever ships
+# despite a clean kustomize build.
+#
+# EXPECTED_IDENTITY is cut-release.yml's own Actions identity (ambient
+# credential, no human login) -- see that workflow's header comment for why.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+env:
+  GITSIGN_VERSION: 0.17.1
+  GITSIGN_SHA256: 69213a8a0813a151e5a47d0060862952ff833a845d57309dff76f7ba6600abae
+  KUSTOMIZE_VERSION: 5.8.1
+  KUSTOMIZE_SHA256: 029a7f0f4e1932c52a0476cf02a0fd855c0bb85694b82c338fc648dcb53a819d
+  EXPECTED_IDENTITY: https://github.com/policy-as-versioned-tuppence/tuppence/.github/workflows/cut-release.yml@refs/heads/main
+  EXPECTED_ISSUER: https://token.actions.githubusercontent.com
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: install pinned gitsign + kustomize (binary + checksum, no marketplace actions)
+        run: |
+          set -euo pipefail
+          curl -sSL -o gitsign "https://github.com/sigstore/gitsign/releases/download/v${GITSIGN_VERSION}/gitsign_${GITSIGN_VERSION}_linux_amd64"
+          echo "${GITSIGN_SHA256}  gitsign" | sha256sum -c -
+          chmod +x gitsign && sudo mv gitsign /usr/local/bin/gitsign
+
+          curl -sSL -o kustomize.tar.gz "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+          echo "${KUSTOMIZE_SHA256}  kustomize.tar.gz" | sha256sum -c -
+          tar xzf kustomize.tar.gz kustomize && chmod +x kustomize && sudo mv kustomize /usr/local/bin/kustomize
+
+      - name: gitops tree builds cleanly (release gate)
+        run: |
+          set -euo pipefail
+          kustomize build gitops/apps > /dev/null
+          kustomize build gitops/platform > /dev/null
+
+      - name: gitsign verify-tag, identity-pinned, offline Rekor bundle
+        env:
+          GITSIGN_REKOR_MODE: offline
+        run: |
+          set -euo pipefail
+          # actions/checkout's second fetch flattens the annotated tag object
+          # gitsign needs -- re-fetch the real tag ref before verifying it.
+          git fetch origin "+refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}" --force
+          gitsign verify-tag "${GITHUB_REF_NAME}" \
+            --certificate-identity="${EXPECTED_IDENTITY}" \
+            --certificate-oidc-issuer="${EXPECTED_ISSUER}"
+
+      - name: tag still resolves to the commit this run was triggered from
+        run: |
+          set -euo pipefail
+          resolved=$(git rev-parse "${GITHUB_REF_NAME}^{commit}")
+          if [ "${resolved}" != "${GITHUB_SHA}" ]; then
+            echo "FAIL: tag ${GITHUB_REF_NAME} resolves to ${resolved}, run was triggered from ${GITHUB_SHA}"
+            exit 1
+          fi
+          echo "OK: ${GITHUB_REF_NAME} -> ${resolved}"
+
+      - name: publish GitHub Release recording the resolved SHA
+        run: |
+          set -euo pipefail
+          {
+            git tag -l --format='%(contents)' "${GITHUB_REF_NAME}" | sed '/^-----BEGIN SIGNED MESSAGE-----$/,$d'
+            echo "---"
+            echo "Verified gitsign signature (identity: ${EXPECTED_IDENTITY}, issuer: ${EXPECTED_ISSUER}). Resolved commit: ${GITHUB_SHA}."
+          } > release-notes.md
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file release-notes.md
+        env:
+          GH_TOKEN: ${{ github.token }}
