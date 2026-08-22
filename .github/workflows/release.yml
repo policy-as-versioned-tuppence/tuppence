@@ -12,8 +12,13 @@ name: release
 # duplicate proof, not new proof. Upgrade if a bad-YAML release ever ships
 # despite a clean kustomize build.
 #
-# EXPECTED_IDENTITY is cut-release.yml's own Actions identity (ambient
-# credential, no human login) -- see that workflow's header comment for why.
+# EXPECTED_IDENTITY_REGEXP anchors cut-release.yml's own Actions identity
+# (ambient credential, no human login -- see that workflow's header comment
+# for why) but allows either main or a release/<major>.<minor>.x maintenance
+# branch, since a backport is dispatched from a maintenance branch, not main.
+# Both ends are anchored (^...$) and every literal `.` is escaped, so a
+# foreign org/repo/path cannot hide inside a wider match. See
+# scripts/verify-identity-regexp.sh.
 #
 # Also accepts workflow_dispatch: a workflow run started BY the default
 # Actions credential (cut-release.yml's own `git push`) does not, by GitHub
@@ -40,7 +45,7 @@ env:
   GITSIGN_SHA256: 69213a8a0813a151e5a47d0060862952ff833a845d57309dff76f7ba6600abae
   KUSTOMIZE_VERSION: 5.8.1
   KUSTOMIZE_SHA256: 029a7f0f4e1932c52a0476cf02a0fd855c0bb85694b82c338fc648dcb53a819d
-  EXPECTED_IDENTITY: https://github.com/policy-as-versioned-tuppence/tuppence/.github/workflows/cut-release.yml@refs/heads/main
+  EXPECTED_IDENTITY_REGEXP: ^https://github\.com/policy-as-versioned-tuppence/tuppence/\.github/workflows/cut-release\.yml@refs/heads/(main|release/[0-9]+\.[0-9]+\.x)$
   EXPECTED_ISSUER: https://token.actions.githubusercontent.com
 
 jobs:
@@ -78,7 +83,7 @@ jobs:
           # gitsign needs -- re-fetch the real tag ref before verifying it.
           git fetch origin "+refs/tags/${TAG}:refs/tags/${TAG}" --force
           gitsign verify-tag "${TAG}" \
-            --certificate-identity="${EXPECTED_IDENTITY}" \
+            --certificate-identity-regexp="${EXPECTED_IDENTITY_REGEXP}" \
             --certificate-oidc-issuer="${EXPECTED_ISSUER}"
 
       - name: tag still resolves to the commit this run was triggered from
@@ -100,7 +105,7 @@ jobs:
           {
             git tag -l --format='%(contents)' "${TAG}" | sed '/^-----BEGIN SIGNED MESSAGE-----$/,$d'
             echo "---"
-            echo "Verified gitsign signature (identity: ${EXPECTED_IDENTITY}, issuer: ${EXPECTED_ISSUER}). Resolved commit: ${resolved}."
+            echo "Verified gitsign signature (identity regexp: ${EXPECTED_IDENTITY_REGEXP}, issuer: ${EXPECTED_ISSUER}). Resolved commit: ${resolved}."
           } > release-notes.md
           gh release create "${TAG}" \
             --title "${TAG}" \
