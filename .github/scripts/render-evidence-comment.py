@@ -1,27 +1,23 @@
 #!/usr/bin/env python3
 """render-evidence-comment.py -- ticket cs-29: render the verified evidence
-document into the Renovate bump pull request, for a human reviewer.
+document into the Renovate bump pull request BODY, for a human reviewer.
 
-Mechanism decision (spec.md, the reviewer user stories; "render... into the
-pull request body," and this repo's own shift-left.yml):
+Mechanism (spec.md, the reviewer user stories; "render... into the pull
+request body"):
 
-    Renders as a PR COMMENT (gh pr comment), matching the pattern
-    shift-left.yml's existing attestation step already uses -- NOT a
-    `gh pr edit --body` rewrite of the pull request body itself. Renovate
-    (platformCommit: enabled, renovate.json) authors and OVERWRITES this
-    PR's body on every re-run of the SAME PR (a new commit pushed to the
-    branch, a rebase, or Renovate's own periodic re-evaluation) -- a body
-    edit from this job would either get silently clobbered on Renovate's
-    next pass, or clobber content Renovate itself manages (checkbox
-    controls, its own dependency dashboard links) on THIS pass. A comment
-    is append-only from Renovate's perspective and is exactly the
-    established, already-working pattern this very workflow already uses
-    for its shift-left attestation -- reusing it here is the smaller,
-    safer diff, not a new mechanism invented for this one ticket. The
-    ticket's literal wording ("into the... pull request body") is read as
-    "into the reviewer's view of the pull request," which a comment
-    satisfies; a body edit does not survive the Renovate lifecycle this
-    repo already relies on.
+    Renders straight into the pull request BODY -- the literal thing the
+    ticket's title and first acceptance-criterion line name -- not a
+    comment. An earlier draft posted this as a PR comment instead, reasoning
+    Renovate authors and can overwrite the PR body on every re-run of the
+    same PR; a reviewer correctly flagged that as not satisfying the
+    ticket's own words. That race doesn't actually apply: shift-left.yml is
+    triggered BY the `pull_request` event Renovate's own push raises, so
+    the workflow step always reads and splices onto Renovate's own body
+    content AFTER Renovate has already settled it for that push, never
+    before. wrap_section()/splice_body() below wrap the rendered evidence
+    between HTML-comment markers and splice it into the PR's current body:
+    appended after Renovate's own content on a first run, replacing only
+    this gate's own prior span (never Renovate's content) on a re-run.
 
 Reads adopter-gate.py's own --out summary (composed bump, retirements, and
 every verified element's full evidence document -- never recomputed, never
@@ -30,13 +26,41 @@ anywhere in this file, matching spec.md's own rule for the source document.
 
 Usage:
     render-evidence-comment.py <adopter-summary.json>   # prints markdown to stdout
+    render-evidence-comment.py wrap <in-file> <out-file>
+    render-evidence-comment.py splice <current-body-file> <section-file> <out-body-file>
     render-evidence-comment.py --selfcheck               # runnable asserts
 """
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
+
+# Ticket cs-29: HTML-comment markers shift-left.yml greps out of the pull
+# request's own CURRENT body to find (and replace) the span this gate owns,
+# or append it if this is the first run on this PR. Kept identical (same
+# literal marker strings) to ludlow's and driftwood's own copies, so the
+# splice mechanism is genuinely "the identical change" across all three
+# institutions, not just three independently-shaped body edits.
+SECTION_START = "<!-- cs-29:adopter-gate:start -->"
+SECTION_END = "<!-- cs-29:adopter-gate:end -->"
+SECTION_PATTERN = re.compile(re.escape(SECTION_START) + r".*?" + re.escape(SECTION_END), re.DOTALL)
+
+
+def wrap_section(markdown: str) -> str:
+    return f"{SECTION_START}\n{markdown.rstrip()}\n{SECTION_END}\n"
+
+
+def splice_body(current_body: str, section: str) -> str:
+    """`section` is already wrap_section()'d output. Replaces a prior span
+    between the markers in place (a re-run on the same pull request), or
+    appends the whole marked section after whatever's there (the first run
+    -- typically Renovate's own body)."""
+    if SECTION_PATTERN.search(current_body):
+        return SECTION_PATTERN.sub(section.rstrip(), current_body)
+    sep = "\n\n" if current_body.strip() else ""
+    return current_body.rstrip() + sep + section
 
 
 def render(summary: dict) -> str:
@@ -123,6 +147,21 @@ def render(summary: dict) -> str:
 def main(argv: list[str]) -> int:
     if argv[1:2] == ["--selfcheck"]:
         return selfcheck()
+    if argv[1:2] == ["wrap"]:
+        if len(argv) != 4:
+            print("usage: render-evidence-comment.py wrap <in-file> <out-file>", file=sys.stderr)
+            return 2
+        Path(argv[3]).write_text(wrap_section(Path(argv[2]).read_text()))
+        return 0
+    if argv[1:2] == ["splice"]:
+        if len(argv) != 5:
+            print("usage: render-evidence-comment.py splice <current-body-file> <section-file> <out-body-file>",
+                  file=sys.stderr)
+            return 2
+        current = Path(argv[2]).read_text()
+        section = Path(argv[3]).read_text()
+        Path(argv[4]).write_text(splice_body(current, section))
+        return 0
     if len(argv) != 2:
         print("usage: render-evidence-comment.py <adopter-summary.json>", file=sys.stderr)
         return 2
@@ -168,9 +207,25 @@ def selfcheck() -> None:
     assert "`9.0.0`" in out2
     assert "%" not in out2
 
+    # ---- wrap_section / splice_body (ticket cs-29's body-edit mechanism) ----
+    renovate_body = "Bumps platform-pin.yaml from v1.0.0 to v1.1.0.\n\n---\n\n - [ ] <!-- rebase-check -->"
+    section1 = wrap_section(out)
+    spliced1 = splice_body(renovate_body, section1)
+    assert renovate_body in spliced1, spliced1  # Renovate's own content survives
+    assert spliced1.count(SECTION_START) == 1, spliced1
+    section2 = wrap_section(out2)
+    spliced2 = splice_body(spliced1, section2)
+    assert renovate_body in spliced2, spliced2  # still untouched
+    assert "cage-tier.yaml" not in spliced2, spliced2  # run 1's own span is GONE, not appended alongside
+    assert "Retired, reaching this institution as major" in spliced2, spliced2
+    assert spliced2.count(SECTION_START) == 1, spliced2  # replaced in place, never duplicated
+    empty_first = splice_body("", section1)
+    assert empty_first.startswith(SECTION_START), empty_first  # no spurious leading separator
+
     print("OK: render-evidence-comment.py selfcheck (declared/composed, movement, holes, limits, "
           "matrix, checksum+generator all present; no coverage percentage anywhere; retirement path "
-          "renders too)")
+          "renders too; wrap_section/splice_body append on a first run and replace in place on a "
+          "re-run without touching Renovate's own body content)")
 
 
 if __name__ == "__main__":

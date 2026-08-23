@@ -48,8 +48,9 @@ name: shift-left policy check
 #      for any version retired between the old pin and this one. It never
 #      recomputes the publisher's answer.
 # A composed major is a real, non-zero-exit failure of this required check.
-# Ticket cs-29 then renders that verified evidence as a pull request
-# comment (see the render step below for why a comment, not a body edit).
+# Ticket cs-29 then renders that verified evidence into the pull request
+# BODY ITSELF -- the literal thing the ticket's title and first acceptance-
+# criterion line name (see the render step below for the splice mechanism).
 #
 # Cross-party composition is out of scope for this whole effort (spec.md,
 # "Out of Scope"). tuppence's gitops/ pins exactly one POLICY-BEARING party
@@ -158,9 +159,23 @@ jobs:
             --issuer "${EXPECTED_ISSUER}" \
             --out adopter-summary.json
 
-      - name: render the verified evidence into a pull request comment (cs-29)
+      - name: render the verified evidence into the pull request BODY (cs-29 -- the body itself, not a comment)
         # `if: always()` -- a REFUSAL is the most valuable output this gate
         # produces (spec.md), so the reviewer sees WHY, not just a red X.
+        #
+        # An earlier draft posted this as a PR COMMENT, reasoning Renovate
+        # authors and can overwrite the PR body on its own re-runs -- a
+        # reviewer correctly flagged that as not satisfying the ticket's own
+        # title and first acceptance-criterion line ("the pull request body
+        # carries the evidence document"). This now edits the body for real:
+        # it fetches the PR's CURRENT body (`gh pr view --json body`, so it
+        # always reads whatever Renovate most recently wrote -- this job is
+        # triggered BY the pull_request event Renovate's own push raises, so
+        # it never races Renovate's write), then splices the rendered
+        # evidence between render-evidence-comment.py's own SECTION_START/
+        # SECTION_END markers -- replacing a prior run's span in place, or
+        # appending if this is the first run on this PR -- and writes the
+        # result back with `gh pr edit --body-file`.
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -170,8 +185,13 @@ jobs:
             echo "no adopter-summary.json -- the gate refused before producing one, nothing to render"
             exit 0
           fi
-          python3 tuppence/.github/scripts/render-evidence-comment.py adopter-summary.json > evidence-comment.md
-          gh pr comment "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --body-file evidence-comment.md
+          python3 tuppence/.github/scripts/render-evidence-comment.py adopter-summary.json > evidence-raw.md
+          python3 tuppence/.github/scripts/render-evidence-comment.py wrap evidence-raw.md evidence-section.md
+          gh pr view "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" \
+            --json body -q .body > current-body.md
+          python3 tuppence/.github/scripts/render-evidence-comment.py splice \
+            current-body.md evidence-section.md new-body.md
+          gh pr edit "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --body-file new-body.md
 
       - name: version cross-check gate
         run: python3 platform/shift-left/ci-check.py --resource tuppence/deploy/pod.yaml
