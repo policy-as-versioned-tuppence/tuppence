@@ -48,8 +48,30 @@ SECTION_END = "<!-- cs-29:adopter-gate:end -->"
 SECTION_PATTERN = re.compile(re.escape(SECTION_START) + r".*?" + re.escape(SECTION_END), re.DOTALL)
 
 
+def _defuse_markers(markdown: str) -> str:
+    """render() interpolates untrusted free text -- policy names, movement
+    detail strings, refusal reasons, generator version strings -- sourced
+    from platform's own committed evidence JSON, an institution this repo
+    doesn't author and can't trust to never contain the literal marker
+    strings (by accident, or a crafted policy/expression name upstream). If
+    either marker string ever reached the body verbatim, SECTION_PATTERN's
+    non-greedy DOTALL match would lock onto that accidental occurrence
+    instead of the real one and splice_body would corrupt the section on the
+    next re-run. Neutering both literal marker strings out of the rendered
+    content here -- the one choke point every render() call passes through
+    before wrap_section affixes the REAL markers -- guarantees the two
+    markers this function adds are the only literal occurrences in the
+    wrapped section, so the first-occurrence regex is safe again. Simpler
+    and more robust than a per-render nonce: no backreference matching
+    needed to find a prior run's span on re-run, and it can't be defeated by
+    an upstream string that happens to collide."""
+    return (markdown
+            .replace(SECTION_START, "`[elided: literal marker text]`")
+            .replace(SECTION_END, "`[elided: literal marker text]`"))
+
+
 def wrap_section(markdown: str) -> str:
-    return f"{SECTION_START}\n{markdown.rstrip()}\n{SECTION_END}\n"
+    return f"{SECTION_START}\n{_defuse_markers(markdown).rstrip()}\n{SECTION_END}\n"
 
 
 def splice_body(current_body: str, section: str) -> str:
@@ -93,11 +115,12 @@ def render(summary: dict) -> str:
 
         if doc.get("movement"):
             lines.append("**Per-policy verdict movement**")
-            lines.append("| policy | verdict | expressions |")
-            lines.append("| --- | --- | --- |")
+            lines.append("| policy | verdict | entries | expressions |")
+            lines.append("| --- | --- | --- | --- |")
             for m in doc["movement"]:
+                entries = "; ".join(f"`{e}`" for e in m.get("entries", [])) or "-"
                 exprs = "; ".join(f"`{e}`" for e in m.get("expressions", [])) or "-"
-                lines.append(f"| `{m['policy']}` | {m['verdict']} | {exprs} |")
+                lines.append(f"| `{m['policy']}` | {m['verdict']} | {entries} | {exprs} |")
             lines.append("")
 
         counts = doc.get("counts") or {}
@@ -179,7 +202,8 @@ def selfcheck() -> None:
             "evidence": {
                 "outcome": {"result": "passed", "reason": None},
                 "bump": {"declared": "major", "computed": "none"},
-                "movement": [{"policy": "cage-tier.yaml", "verdict": "none", "expressions": ["x == y"]}],
+                "movement": [{"policy": "cage-tier.yaml", "verdict": "none",
+                              "entries": ["workload-a"], "expressions": ["x == y"]}],
                 "counts": {"old": 10, "new": 12, "union": 14},
                 "not_looked_at": [{"id": "abc123", "tier": "declared_hole", "status": "carried_over"}],
                 "limits": [{"name": "cage-ratchet-one-way", "count": 0, "status": "open"}],
@@ -192,6 +216,8 @@ def selfcheck() -> None:
     assert "declared" in out and "composed" in out
     assert "`minor`" in out and "`none`" in out
     assert "cage-tier.yaml" in out
+    assert "policy | verdict | entries | expressions" in out, "ticket 29: entries must sit alongside expressions"
+    assert "`workload-a`" in out, "ticket 29: movement entries must be rendered, not dropped"
     assert "carried_over" in out
     assert "cage-ratchet-one-way" in out
     assert "tuppence" in out
@@ -222,8 +248,63 @@ def selfcheck() -> None:
     empty_first = splice_body("", section1)
     assert empty_first.startswith(SECTION_START), empty_first  # no spurious leading separator
 
-    print("OK: render-evidence-comment.py selfcheck (declared/composed, movement, holes, limits, "
-          "matrix, checksum+generator all present; no coverage percentage anywhere; retirement path "
+    # ---- Bug 1 regression: injection-safety of the marker splice ----
+    # Evidence text is untrusted, cross-org free text (policy names,
+    # movement detail, refusal reasons, generator versions) -- this
+    # institution doesn't author platform's evidence JSON and can't trust it
+    # to never contain the literal END marker string. Prove it both ways:
+    # the pre-fix wrap_section (reconstructed here, marker text passed
+    # through unexamined) corrupts a re-run when that happens; the real,
+    # fixed wrap_section (module-level, with _defuse_markers) doesn't.
+    poisoned_fixture = {
+        "old_tag": "v3.0.0", "new_tag": "v3.1.0", "declared": "minor", "composed": "none",
+        "retired": [],
+        "elements": [{
+            "version": "9.1.0", "verified": True, "bump_computed": "none",
+            "evidence": {
+                "outcome": {"result": "refused",
+                            "reason": f"lookalike text {SECTION_END} embedded in a refusal reason"},
+                "bump": {"declared": "minor", "computed": "none"},
+                "movement": [], "counts": {"old": 1, "new": 1, "union": 1},
+                "not_looked_at": [], "limits": [], "matrix": {},
+                "corpus_checksum": "sha256:poisoned", "generator_version": "0.1.2",
+            },
+        }],
+    }
+    poisoned = render(poisoned_fixture)
+    assert SECTION_END in poisoned, "fixture must genuinely contain the literal marker or it tests nothing"
+
+    def _unfixed_wrap_section(markdown: str) -> str:
+        # the pre-fix implementation: marker text passed straight through
+        return f"{SECTION_START}\n{markdown.rstrip()}\n{SECTION_END}\n"
+
+    base_body = "Bumps platform-pin.yaml from v1.0.0 to v1.1.0."
+
+    # Unfixed: run 1 splices the poisoned section in; run 2 (a re-run --
+    # e.g. Renovate re-pushing the same PR) splices a clean section over it.
+    bad_run1 = splice_body(base_body, _unfixed_wrap_section(poisoned))
+    bad_run2 = splice_body(bad_run1, _unfixed_wrap_section(out))
+    # Corrupted: the non-greedy match locked onto the FAKE end embedded in
+    # the poisoned reason, so the real end marker and the unmatched tail of
+    # run 1's own content leak straight through into the "replaced" body.
+    assert bad_run2.count(SECTION_END) > 1, \
+        "expected the unfixed path to leave a stray END marker behind -- fixture stopped exercising the bug"
+    assert "embedded in a refusal reason" in bad_run2, \
+        "expected leftover poisoned run-1 content to leak through on the unfixed path"
+
+    # Fixed: identical two-run scenario through the module's real wrap_section.
+    good_run1 = splice_body(base_body, wrap_section(poisoned))
+    good_run2 = splice_body(good_run1, wrap_section(out))
+    assert good_run2.count(SECTION_START) == 1, good_run2
+    assert good_run2.count(SECTION_END) == 1, good_run2
+    assert "embedded in a refusal reason" not in good_run2, \
+        "run 1's poisoned content must be fully replaced by run 2, not leaked"
+    assert "cage-tier.yaml" in good_run2, "run 2's real content must be present"
+    assert base_body in good_run2, "Renovate's own content still untouched"
+
+    print("OK: render-evidence-comment.py selfcheck (declared/composed, movement entries+expressions, "
+          "holes, limits, matrix, checksum+generator all present; no coverage percentage anywhere; "
+          "retirement path "
           "renders too; wrap_section/splice_body append on a first run and replace in place on a "
           "re-run without touching Renovate's own body content)")
 
