@@ -80,7 +80,27 @@ def splice_body(current_body: str, section: str) -> str:
     appends the whole marked section after whatever's there (the first run
     -- typically Renovate's own body)."""
     if SECTION_PATTERN.search(current_body):
-        return SECTION_PATTERN.sub(section.rstrip(), current_body)
+        # A callable replacement, never a raw string: re.sub() treats a
+        # string replacement's backslashes as backreferences/escapes (\1,
+        # \g<name>, ...), and evidence content routinely carries a
+        # Kyverno/CEL match expression or a refusal reason with a
+        # backslash-digit sequence. A lambda sidesteps that interpretation
+        # entirely; the replacement text lands verbatim, whatever it
+        # contains.
+        return SECTION_PATTERN.sub(lambda _m: section.rstrip(), current_body)
+    # No COMPLETE start...end pair. GitHub caps pull request body length; a
+    # long enough evidence render can get the body truncated by GitHub
+    # mid-section -- SECTION_START saved, SECTION_END never reaches the
+    # saved body. Treat an unpaired SECTION_START (found, with no END
+    # anywhere after it) the same as a complete pair: replace from that
+    # orphaned START to the end of the body, rather than appending past it
+    # and accumulating a duplicate/orphaned span on every future run
+    # forever -- ticket 29's own "stays diffable between releases" criterion.
+    start_idx = current_body.find(SECTION_START)
+    if start_idx != -1:
+        prefix = current_body[:start_idx].rstrip()
+        sep = "\n\n" if prefix else ""
+        return prefix + sep + section
     sep = "\n\n" if current_body.strip() else ""
     return current_body.rstrip() + sep + section
 
@@ -302,11 +322,72 @@ def selfcheck() -> None:
     assert "cage-tier.yaml" in good_run2, "run 2's real content must be present"
     assert base_body in good_run2, "Renovate's own content still untouched"
 
+    # ---- Bug 2 regression: splice_body's re.sub() replacement was a raw
+    # string, not a callable -- re.sub() specially interprets \1, \g<name>,
+    # etc. IN a string replacement. The bug bites on a RE-RUN: the paired
+    # regex has a prior span to replace, so splice_body calls
+    # SECTION_PATTERN.sub(section, current_body), and if the NEW section
+    # (a refusal reason or a Kyverno/CEL match expression containing a
+    # backslash-digit sequence, e.g. `matches(image, 'C:\1\2\3')`) is the
+    # replacement argument, that crashes with re.PatternError: invalid
+    # group reference. (The first, appending run never calls re.sub() at
+    # all, so it's never where this bug bites -- the crash needs an
+    # existing span to replace, on the SECOND run's content.) Proved
+    # against the real, module-level splice_body -- not a reconstruction.
+    backslashy = r"policy `p.yaml` -- major -- via `matches(image, 'C:\1\2\3')`"
+    assert re.search(r"\\\d", backslashy), "setup: fixture must actually contain a backslash-digit sequence"
+    backslash_run1 = splice_body(base_body, wrap_section("first run, no backslashes"))
+    assert backslash_run1.count(SECTION_START) == 1, backslash_run1
+    backslash_run2 = splice_body(backslash_run1, wrap_section(backslashy))
+    assert backslashy in backslash_run2, backslash_run2
+    assert "first run, no backslashes" not in backslash_run2, backslash_run2
+    assert backslash_run2.count(SECTION_START) == 1, backslash_run2
+    assert base_body in backslash_run2, "Renovate's own content still untouched"
+    # A THIRD run, replacing the backslash-bearing span with clean content,
+    # must also survive -- the crash-on-re-run risk doesn't end after one
+    # successful splice.
+    backslash_run3 = splice_body(backslash_run2, wrap_section("run 3, still no crash"))
+    assert backslashy not in backslash_run3, backslash_run3
+    assert "run 3, still no crash" in backslash_run3, backslash_run3
+    assert backslash_run3.count(SECTION_START) == 1, backslash_run3
+
+    # ---- Bug 3 regression: an ORPHANED SECTION_START with no matching END
+    # -- the shape GitHub's pull request body length cap leaves behind when
+    # a long enough evidence render gets truncated mid-section on a prior
+    # run. The paired-only regex found nothing on the next run, so
+    # splice_body used to APPEND a fresh section past the orphaned one
+    # instead of replacing it -- duplicate/orphaned blocks would accumulate
+    # forever, never diffable again (ticket 29's own criterion). Confirm
+    # first the paired regex genuinely can't see it, then confirm the real
+    # splice_body repairs it in place, across two consecutive
+    # truncate/repair cycles.
+    truncated_evidence = "evidence that never reached its own closing marker"
+    truncated_body = base_body + "\n\n" + SECTION_START + "\n" + truncated_evidence
+    assert SECTION_PATTERN.search(truncated_body) is None, \
+        "setup: the paired start...end regex must NOT find a complete span in a truncated body"
+    repaired = splice_body(truncated_body, wrap_section("recovered evidence, run 2"))
+    assert repaired.count(SECTION_START) == 1, repaired  # not duplicated/stacked
+    assert truncated_evidence not in repaired, repaired  # orphaned span replaced, not appended-past
+    assert "recovered evidence, run 2" in repaired, repaired
+    assert base_body in repaired, repaired  # Renovate's own content still untouched
+    assert repaired.rstrip().endswith(SECTION_END), repaired  # well-formed again after repair
+
+    # A second truncation-then-repair cycle must not re-accumulate either.
+    re_truncated = repaired.split(SECTION_END)[0] + "\nsomehow truncated again"
+    assert SECTION_PATTERN.search(re_truncated) is None, "setup: second truncation must also break the pair"
+    re_repaired = splice_body(re_truncated, wrap_section("recovered evidence, run 3"))
+    assert re_repaired.count(SECTION_START) == 1, re_repaired
+    assert "recovered evidence, run 3" in re_repaired, re_repaired
+    assert base_body in re_repaired, re_repaired
+
     print("OK: render-evidence-comment.py selfcheck (declared/composed, movement entries+expressions, "
           "holes, limits, matrix, checksum+generator all present; no coverage percentage anywhere; "
           "retirement path "
           "renders too; wrap_section/splice_body append on a first run and replace in place on a "
-          "re-run without touching Renovate's own body content)")
+          "re-run without touching Renovate's own body content; survives backslash-bearing evidence "
+          "across two consecutive re-runs without re.sub() misreading it as a backreference; repairs "
+          "an ORPHANED SECTION_START -- a GitHub PR-body-truncation shape -- in place across repeated "
+          "truncate/repair cycles instead of accumulating duplicate spans)")
 
 
 if __name__ == "__main__":
