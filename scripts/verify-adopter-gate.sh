@@ -134,6 +134,75 @@ grep -q "cosign verify-blob failed for policy version 2.0.0" "$scratch/d2.out" \
   || fail "D2: expected the real cosign failure reason, got: $(cat "$scratch/d2.out")"
 echo "ok  D2: real cosign verify-blob genuinely rejects a present-but-malformed bundle (not just a missing-file check)"
 
+say "Scenario E: parse_pin() against the REAL, committed platform-pin.yaml shape -- a genuine two-document YAML stream (GitRepository + Kustomization), not a hand-written single-document fixture"
+# Every earlier scenario's pin fixtures are single-document YAML
+# (`spec: {ref: {...}}`) -- convenient, but they never exercise the shape
+# gitops/platform/platform-pin.yaml (and shift-left.yml's real
+# --new-pin-yaml / --old-pin-yaml args) actually have: a GitRepository
+# document, a `---` separator, then a Kustomization document with no `ref`
+# at all. yaml.safe_load() (single-document) raises ComposerError on this
+# shape; this scenario proves parse_pin() reads it correctly by literally
+# using the real, unmodified, currently-committed file as the pin input.
+e_platform="$scratch/platform-e"
+git clone --local --quiet "$platform_repo" "$e_platform"
+git -C "$e_platform" checkout --quiet v1.0.0
+e_commit=$(git -C "$e_platform" rev-parse HEAD)
+python3 - "$here/gitops/platform/platform-pin.yaml" "$scratch/new-pin-e.yaml" v1.0.0 "$e_commit" <<'PY'
+import sys
+src, dst, tag, commit = sys.argv[1:]
+text = open(src).read()
+# Same real two-document shape, just re-pointed at this scenario's own real
+# tag/commit so checkout_tag()/resolved_commit() have something real to
+# check out against, without touching the real file on disk.
+text = text.replace("v0.1.0", tag).replace(
+    "336aef2147344ae3dbcfe8450865a8806ecbe2af", commit
+)
+open(dst, "w").write(text)
+PY
+grep -q '^---$' "$scratch/new-pin-e.yaml" || fail "E: test setup bug -- expected the real file's own '---' document separator to survive"
+grep -q '^kind: Kustomization$' "$scratch/new-pin-e.yaml" || fail "E: test setup bug -- expected the real file's own second (Kustomization) document to survive"
+set +e
+gate --platform-dir "$e_platform" --new-pin-yaml "$scratch/new-pin-e.yaml" \
+     --identity-regexp '.*' --issuer '.*' > "$scratch/e.out" 2>&1
+e_code=$?
+set -e
+cat "$scratch/e.out"
+grep -q "^Traceback" "$scratch/e.out" && fail "E: parse_pin() crashed on the real multi-document pin shape (ComposerError) -- see output above"
+grep -q "^ok  platform checked out at v1.0.0, resolved commit matches the pinned commit field" "$scratch/e.out" \
+  || fail "E: expected parse_pin() to read tag/commit past the real file's Kustomization document and reach a real checkout+commit-match, got: $(cat "$scratch/e.out")"
+echo "ok  E: parse_pin() reads the real two-document platform-pin.yaml shape correctly (no ComposerError), reaches real checkout + commit verification"
+
+say "Scenario F: old_tag == new_tag -- the ordinary PR that never touches gitops/platform/platform-pin.yaml at all"
+# shift-left.yml carries no \`paths:\` filter specifically so this required
+# check reports on every PR (its own header comment). The large majority of
+# PRs never touch the platform pin, so the PR-base and PR-head copies of
+# platform-pin.yaml are byte-identical -- old_tag and new_tag parse to the
+# SAME value. That MUST classify as a real no-op ("none"), never the
+# "does not move forward" refusal a same-tag comparison used to raise.
+set +e
+gate --platform-dir "$d_platform" --new-pin-yaml "$scratch/new-pin-d.yaml" --old-pin-yaml "$scratch/new-pin-d.yaml" \
+     --identity-regexp '.*' --issuer '.*' > "$scratch/f.out" 2>&1
+f_code=$?
+set -e
+cat "$scratch/f.out"
+grep -q "does not move forward" "$scratch/f.out" \
+  && fail "F: an ordinary PR that doesn't touch the pin (old_tag == new_tag) must never refuse as 'does not move forward'"
+python3 -c "
+import importlib.util
+spec = importlib.util.spec_from_file_location('ag', '${here}/.github/scripts/adopter-gate.py')
+ag = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(ag)
+got = ag.classify_tag_bump('v1.0.0', 'v1.0.0')
+assert got == 'none', f'expected classify_tag_bump on an unchanged tag to return none, got {got!r}'
+"
+# This platform tag (v1.0.0) genuinely predates cs-27 (same honest history
+# Scenario D already establishes) so composition still refuses -- for the
+# REAL reason (no evidence committed yet), never for the same-tag bug.
+[ "$f_code" -ne 0 ] || fail "F: expected this real v1.0.0 tag to still refuse on missing evidence, same as Scenario D"
+grep -q "no signed evidence committed for policy version 2.0.0" "$scratch/f.out" \
+  || fail "F: expected the same real missing-evidence refusal Scenario D shows, got: $(cat "$scratch/f.out")"
+echo "ok  F: an unchanged pin (old_tag == new_tag) classifies as a real no-op ('none'), never refuses as 'does not move forward'; the real refusal that does fire is the genuine missing-evidence one, unrelated to the same-tag bug"
+
 say "Scenario A/B setup: one real gated release, plus two real array-level releases (unchanged, then retired)"
 clone="$scratch/clone"
 git clone --local --quiet "$platform_repo" "$clone"

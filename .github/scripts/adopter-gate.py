@@ -94,11 +94,24 @@ def resolved_commit(platform_dir: Path) -> str:
 
 
 def parse_pin(pin_yaml_text: str) -> tuple[str, str]:
-    """gitops/platform/platform-pin.yaml -> (tag, commit). Same file shape in
-    every institution (see the module note in that file itself)."""
-    doc = yaml.safe_load(pin_yaml_text)
-    ref = doc["spec"]["ref"]
-    return ref["tag"], ref["commit"]
+    """gitops/platform/platform-pin.yaml -> (tag, commit).
+
+    The real committed file is a TWO-document YAML stream (GitRepository,
+    then a Kustomization, separated by `---`) -- confirmed directly against
+    gitops/platform/platform-pin.yaml itself, which is what shift-left.yml
+    actually hands this function on every single PR (both as --new-pin-yaml
+    and, via `git show`, as --old-pin-yaml). `yaml.safe_load()` is a
+    single-document loader and raises ComposerError on that file; platform's
+    own shift-left/ci-check.py:target_version() already established the
+    fix for this exact multi-document shape (`yaml.safe_load_all`, skipping
+    blank documents) -- reused here rather than re-solving it. The tag/commit
+    live on the GitRepository document (the one with `.spec.ref`); the
+    Kustomization document has no `ref` and is skipped."""
+    for doc in yaml.safe_load_all(pin_yaml_text):
+        if doc and "ref" in doc.get("spec", {}):
+            ref = doc["spec"]["ref"]
+            return ref["tag"], ref["commit"]
+    raise SystemExit("REFUSED: no document with spec.ref (tag/commit) found in pin YAML")
 
 
 def _import_by_path(name: str, path: Path):
@@ -146,14 +159,23 @@ def classify_tag_bump(old_tag: str | None, new_tag: str) -> str:
     """The DECLARED bump -- pure semver delta of platform's own pinned tag,
     old -> new. Visible straight from the PR diff; no evidence needed to
     read it. "no predecessor" when there is no old tag at all (the
-    institution's first-ever pin)."""
+    institution's first-ever pin). "none" when old and new are the SAME tag
+    -- shift-left.yml runs with no `paths:` filter on purpose (its own
+    header comment: "this check must report a status on every PR"), so this
+    is the ordinary case for the large majority of PRs, which never touch
+    gitops/platform/platform-pin.yaml at all: the PR base and PR head copies
+    of the pin are byte-identical, old_tag == new_tag, and that must be a
+    real no-op classification, not a refusal -- only an actual BACKWARDS
+    move is a refusal."""
     if old_tag is None:
         return "no predecessor"
     om, on = TAG_VERSION_RE.match(old_tag), TAG_VERSION_RE.match(new_tag)
     if not om or not on:
         raise SystemExit(f"REFUSED: platform tag not a plain vMAJOR.MINOR.PATCH: {old_tag!r} -> {new_tag!r}")
     old_v, new_v = tuple(int(x) for x in om.groups()), tuple(int(x) for x in on.groups())
-    if new_v <= old_v:
+    if new_v == old_v:
+        return "none"
+    if new_v < old_v:
         raise SystemExit(f"REFUSED: proposed platform tag {new_tag!r} does not move forward from {old_tag!r}")
     leftmost = next(i for i in range(3) if new_v[i] != old_v[i])
     return ("major", "minor", "patch")[leftmost]
@@ -320,6 +342,14 @@ def selfcheck() -> None:
     assert classify_tag_bump("v1.0.0", "v2.0.0") == "major"
     assert classify_tag_bump("v1.0.0", "v1.1.0") == "minor"
     assert classify_tag_bump("v1.0.0", "v1.0.1") == "patch"
+    # Regression: the ordinary PR that never touches
+    # gitops/platform/platform-pin.yaml at all -- old_tag == new_tag because
+    # the PR base and PR head copies are byte-identical. shift-left.yml has
+    # no `paths:` filter specifically so this required check reports on
+    # every PR, so this MUST classify as a real no-op ("none"), never a
+    # refusal -- a refusal here would fail the required check on the large
+    # majority of ordinary PRs.
+    assert classify_tag_bump("v1.0.0", "v1.0.0") == "none"
     try:
         classify_tag_bump("v2.0.0", "v1.0.0")
         raise AssertionError("expected a backwards tag move to refuse")
@@ -327,6 +357,16 @@ def selfcheck() -> None:
         pass
 
     assert RANK["major"] > RANK["minor"] > RANK["patch"] > RANK["none"] == RANK["no predecessor"]
+
+    # Regression: parse_pin() against the REAL, committed
+    # gitops/platform/platform-pin.yaml -- a genuine two-document YAML
+    # stream (GitRepository, then a Kustomization, separated by `---`).
+    # yaml.safe_load() (single-document) raises ComposerError on this file;
+    # this is the exact, unmodified file shift-left.yml hands parse_pin() as
+    # --new-pin-yaml on literally every PR.
+    real_pin = Path(__file__).resolve().parent.parent.parent / "gitops" / "platform" / "platform-pin.yaml"
+    tag, commit = parse_pin(real_pin.read_text())
+    assert tag.startswith("v") and len(commit) == 40, (tag, commit)
 
     old = {"2.0.0": {}, "3.0.0": {}}
     new = {"3.0.0": {}}  # 2.0.0 retired, nothing new added
