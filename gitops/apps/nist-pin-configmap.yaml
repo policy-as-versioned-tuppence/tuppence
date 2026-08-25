@@ -17,8 +17,8 @@ metadata:
 # key only restates it for humans and the OSCAL plumbing --
 # platform/party/party_artefact.py refuses if the two ever disagree.
 data:
-  catalogVersion: "1.0.0"
-  catalogTag: "v1.0.0"
+  catalogVersion: "1.1.0"
+  catalogTag: "v1.1.0"
   nistRevision: "5.2.0"
   oscalVersion: "1.2.2"
   baselineName: "MODERATE"

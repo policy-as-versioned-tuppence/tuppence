@@ -25,7 +25,7 @@ spec:
   interval: 5m
   url: https://github.com/policy-as-versioned-nist/nist
   ref:
-    tag: v1.0.0
-    commit: e5953e1a96018e9a29677c66cd61939ad796d25e
+    tag: v1.1.0
+    commit: 33a05df1f5241bca6ffbc1c69a70075cdb7a5819
     # commit pinned at release (belt-and-braces immutability, ADR-0001) --
     # the resolved SHA nist's v1.0.0 tag points to, real as of ticket mo-10.
