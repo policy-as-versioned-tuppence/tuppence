@@ -8,7 +8,7 @@ metadata:
     policy-as-versioned.dev/policy-version: 2.0.0
     policy-as-versioned.dev/composed-for: tuppence
   annotations:
-    policy-as-versioned.dev/inherited-from: platform@1.1.0
+    policy-as-versioned.dev/inherited-from: platform@1.1.1
     policy-as-versioned.dev/source-path: distribution/policies/v2.0.0/cage-tier.yaml
 spec:
   matchConstraints:

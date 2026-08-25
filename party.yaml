@@ -10,7 +10,7 @@ roles: [risk-bearer, adopter]
 # in gitops/apps/nist-pin-configmap.yaml's data.baselineName.
 baseline: MODERATE
 inherits:
-  - { party: platform, kind: implementations, version: "1.1.0" }
+  - { party: platform, kind: implementations, version: "1.1.1" }
   - { party: nist,     kind: controls,        version: "1.1.0" }
   - { party: ico,      kind: pricing,         version: "v1" }
   - { party: platform, kind: threat,          version: "v1" }

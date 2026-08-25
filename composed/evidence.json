@@ -5,8 +5,8 @@
     {
       "party": "platform",
       "kind": "implementations",
-      "version": "1.1.0",
-      "sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b"
+      "version": "1.1.1",
+      "sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60"
     },
     {
       "party": "nist",
@@ -34,7 +34,7 @@
       "kind": "GeneratingPolicy",
       "version": "2.0.0",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": null
     },
     {
@@ -43,7 +43,7 @@
       "kind": "MutatingPolicy",
       "version": "2.0.0",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": null
     },
     {
@@ -52,7 +52,7 @@
       "kind": "ValidatingPolicy",
       "version": "2.0.0",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": "Deny"
     },
     {
@@ -61,7 +61,7 @@
       "kind": "MutatingPolicy",
       "version": "2.0.0",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": null
     },
     {
@@ -70,7 +70,7 @@
       "kind": "ValidatingPolicy",
       "version": "2.0.0",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": "Audit"
     },
     {
@@ -79,7 +79,7 @@
       "kind": "GeneratingPolicy",
       "version": "2.0.1",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": null
     },
     {
@@ -88,7 +88,7 @@
       "kind": "MutatingPolicy",
       "version": "2.0.1",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": null
     },
     {
@@ -97,7 +97,7 @@
       "kind": "ValidatingPolicy",
       "version": "2.0.1",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": "Deny"
     },
     {
@@ -106,7 +106,7 @@
       "kind": "MutatingPolicy",
       "version": "2.0.1",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": null
     },
     {
@@ -115,7 +115,7 @@
       "kind": "ValidatingPolicy",
       "version": "2.0.1",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": "Audit"
     },
     {
@@ -124,7 +124,7 @@
       "kind": "GeneratingPolicy",
       "version": "3.0.0",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": null
     },
     {
@@ -133,7 +133,7 @@
       "kind": "MutatingPolicy",
       "version": "3.0.0",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": null
     },
     {
@@ -142,7 +142,7 @@
       "kind": "ValidatingPolicy",
       "version": "3.0.0",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": "Deny"
     },
     {
@@ -151,7 +151,7 @@
       "kind": "MutatingPolicy",
       "version": "3.0.0",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": null
     },
     {
@@ -160,7 +160,7 @@
       "kind": "ValidatingPolicy",
       "version": "3.0.0",
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": "Audit"
     },
     {
@@ -169,7 +169,7 @@
       "kind": "ValidatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": null
     },
     {
@@ -178,7 +178,7 @@
       "kind": "ValidatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": null
     }
   ],

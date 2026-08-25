@@ -6,8 +6,8 @@ policy-as-versioned.dev/composed: true
 parents:
 - party: platform
   kind: implementations
-  version: 1.1.0
-  sha: fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b
+  version: 1.1.1
+  sha: 58ef9c57e53543997e5ddbe829a7b7c9a2282c60
 - party: nist
   kind: controls
   version: 1.1.0

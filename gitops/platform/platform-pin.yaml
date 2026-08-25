@@ -22,8 +22,8 @@ spec:
   interval: 1m
   url: https://github.com/policy-as-versioned-platform/platform
   ref:
-    tag: v1.1.0
-    commit: fcb428f0c7b92f3a99002c3c56bf8ab3ba0f1c0b
+    tag: v1.1.1
+    commit: 58ef9c57e53543997e5ddbe829a7b7c9a2282c60
     # commit pinned at release (belt-and-braces immutability, ADR-0001) --
     # the resolved SHA platform v1.1.0 tag points to, real as of policy-
     # mo-10. Bumped by a Renovate customManager (git-refs datasource, both
