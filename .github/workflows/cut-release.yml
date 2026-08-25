@@ -51,6 +51,47 @@ jobs:
           echo "${GITSIGN_SHA256}  gitsign" | sha256sum -c -
           chmod +x gitsign && sudo mv gitsign /usr/local/bin/gitsign
 
+      - name: read tuppence's own pinned platform and nist tags
+        id: pins
+        run: |
+          set -euo pipefail
+          pip install --quiet pyyaml
+          python3 .github/scripts/read-two-pins.py \
+            gitops/platform/platform-pin.yaml platform \
+            gitops/flux-system/gotk-sync-nist.yaml nist \
+            >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-platform/platform
+          path: platform
+          ref: ${{ steps.pins.outputs.platform_tag }}
+          fetch-depth: 0
+
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-nist/nist
+          path: nist
+          ref: ${{ steps.pins.outputs.nist_tag }}
+          fetch-depth: 0
+
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-ico/ico
+          path: ico
+          fetch-depth: 0
+          ref: main
+
+      - name: ticket 18 -- re-render the composed artefact from the recorded parent SHAs, byte-for-byte, before any tag is cut
+        # Ticket 12's verify(): a release gate after the tag can only burn
+        # the version number (ADR-0011's own reasoning for the publisher
+        # gate, reused here). tuppence itself is checked out at "." (the
+        # workflow's own default checkout above), so this reaches
+        # platform/nist/ico as siblings via --estate-clone . directly.
+        run: |
+          set -euo pipefail
+          python3 platform/compose/composition.py verify . --estate-clone .
+
       - name: reject a tag that already exists (no force-move, ever)
         run: |
           set -euo pipefail
