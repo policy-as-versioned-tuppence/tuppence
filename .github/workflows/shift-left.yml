@@ -255,3 +255,81 @@ jobs:
             echo '```'
           } > pr-comment.md
           gh pr comment "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --body-file pr-comment.md
+
+  compose-check:
+    # Ticket 18 (policy-composition): each adopter's shift-left check
+    # recomposes on every pull request -- not just a Renovate bump PR, any
+    # PR, so this job also has no `paths:` filter, exactly the shift-left
+    # job's own reasoning above. It regenerates the composed artefact and
+    # the evidence document (ticket 12), fails on any diff against the
+    # committed copies, fails on refusal, and prints the document as the
+    # job summary (spec.md: "a refusal is the most valuable output the gate
+    # produces").
+    #
+    # Three parents checked out at tuppence's own pinned tags: platform
+    # (implementations + threat, same pin shift-left's own job reads), nist
+    # (controls, gitops/flux-system/gotk-sync-nist.yaml), and ico (pricing --
+    # no Flux/Renovate pin exists for this kind anywhere in this estate
+    # today, party_artefact.py's own NOTE says so plainly, so it checks out
+    # at its default branch, matching composition.py's own unpinned-parent
+    # handling).
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: tuppence }
+
+      - name: read tuppence's own pinned platform and nist tags
+        id: pins
+        run: |
+          set -euo pipefail
+          pip install --quiet pyyaml
+          python3 tuppence/.github/scripts/adopter-gate.py read-pin \
+            tuppence/gitops/platform/platform-pin.yaml | sed 's/^/platform_/' >> "$GITHUB_OUTPUT"
+          python3 tuppence/.github/scripts/adopter-gate.py read-pin \
+            tuppence/gitops/flux-system/gotk-sync-nist.yaml | sed 's/^/nist_/' >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-platform/platform
+          path: platform
+          ref: ${{ steps.pins.outputs.platform_tag }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-nist/nist
+          path: nist
+          ref: ${{ steps.pins.outputs.nist_tag }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-ico/ico
+          path: ico
+
+      - name: recompose tuppence's party artefact; fail on refusal or drift; print the document as the job summary
+        run: |
+          set -uo pipefail
+          pip install --quiet pyyaml
+          python3 platform/compose/composition.py compose tuppence --estate-clone . --out tuppence \
+            2>&1 | tee compose-output.json
+          status=${PIPESTATUS[0]}
+          {
+            echo "## composition check"
+            echo
+            echo '```json'
+            cat compose-output.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$status" -ne 0 ]; then
+            echo "::error::composition refused -- see the job summary for the full document"
+            exit 1
+          fi
+          drift="$(git -C tuppence status --porcelain -- composed/)"
+          if [ -n "$drift" ]; then
+            echo "::error::the regenerated composed artefact differs from the committed copy under tuppence/composed/"
+            echo "$drift"
+            git -C tuppence --no-pager diff -- composed/ | head -400
+            exit 1
+          fi
+          echo "composed artefact matches the committed copy -- no drift"

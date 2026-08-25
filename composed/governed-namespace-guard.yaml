@@ -1,0 +1,29 @@
+apiVersion: policies.kyverno.io/v1alpha1
+kind: ValidatingPolicy
+metadata:
+  name: governed-namespace-requires-claim
+  labels:
+    policy-as-versioned.dev/policy: platform-machinery
+    policy-as-versioned.dev/composed-for: tuppence
+  annotations:
+    policy-as-versioned.dev/inherited-from: platform@1.1.0
+    policy-as-versioned.dev/source-path: distribution/versions.yaml (static, ADR-0014)
+spec:
+  validationActions:
+  - Audit
+  matchConstraints:
+    resourceRules:
+    - apiGroups:
+      - ''
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      resources:
+      - pods
+    namespaceSelector:
+      matchLabels:
+        policy-as-versioned.dev/governed: 'true'
+  validations:
+  - expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('') != ''
+    message: 'this namespace is governed (policy-as-versioned.dev/governed: "true"); a pod created here must carry a policy-as-versioned.dev/policy-version claim. Silence is not an exemption (ADR-0014).'

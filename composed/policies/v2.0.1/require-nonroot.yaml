@@ -1,0 +1,39 @@
+apiVersion: policies.kyverno.io/v1alpha1
+kind: ValidatingPolicy
+metadata:
+  name: require-nonroot-2-0-1
+  labels:
+    app.kubernetes.io/part-of: platform
+    policy-as-versioned.dev/policy: require-nonroot
+    policy-as-versioned.dev/policy-version: 2.0.1
+    policy-as-versioned.dev/composed-for: tuppence
+  annotations:
+    policy-as-versioned.dev/inherited-from: platform@1.1.0
+    policy-as-versioned.dev/source-path: distribution/policies/v2.0.1/require-nonroot.yaml
+spec:
+  validationActions:
+  - Audit
+  matchConstraints:
+    resourceRules:
+    - apiGroups:
+      - ''
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - pods
+  matchConditions:
+  - name: only-this-policy-version
+    expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('') == '2.0.1'
+  variables:
+  - name: nonroot
+    expression: object.spec.?securityContext.?runAsNonRoot.orValue(false) == true
+  - name: attested
+    expression: object.metadata.?labels['policy-as-versioned.dev/root-attestation'].orValue('') != ''
+  - name: hardened
+    expression: "object.spec.containers.all(c,\n  c.?securityContext.?readOnlyRootFilesystem.orValue(false) == true &&\n  c.?securityContext.?capabilities.?drop.orValue([]).exists(d, d == 'ALL'))"
+  validations:
+  - expression: variables.nonroot || (variables.attested && variables.hardened)
+    message: pods on policy-version 2.0.1 must run as non-root, OR (if they must run as root) carry a policy-as-versioned.dev/root-attestation AND drop ALL capabilities + mount a read-only root filesystem on every container

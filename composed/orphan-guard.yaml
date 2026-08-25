@@ -1,0 +1,35 @@
+apiVersion: policies.kyverno.io/v1alpha1
+kind: ValidatingPolicy
+metadata:
+  name: policy-version-orphan-guard
+  labels:
+    policy-as-versioned.dev/policy: platform-machinery
+    policy-as-versioned.dev/composed-for: tuppence
+  annotations:
+    policy-as-versioned.dev/inherited-from: platform@1.1.0
+    policy-as-versioned.dev/source-path: distribution/versions.yaml (rendered from the array)
+spec:
+  validationActions:
+  - Deny
+  matchConstraints:
+    resourceRules:
+    - apiGroups:
+      - ''
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - pods
+  matchConditions:
+  - name: has-policy-version-label
+    expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('') != ''
+  variables:
+  - name: allowed
+    expression: '[''2.0.0'', ''2.0.1'', ''3.0.0'']'
+  - name: claimed
+    expression: object.metadata.labels['policy-as-versioned.dev/policy-version']
+  validations:
+  - expression: variables.allowed.exists(v, v == variables.claimed)
+    message: 'policy-version not in the platform-declared version array (orphan): no ResourceSet element declares it, so it cannot run.'
