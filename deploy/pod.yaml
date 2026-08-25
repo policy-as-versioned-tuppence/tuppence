@@ -1,0 +1,12 @@
+# A real tuppence workload manifest, pinned to policy-version 2.0.0 --
+# platform/shift-left/ci-check.py's target resource (see
+# .github/workflows/shift-left.yml). Compliant with both 1.0.0 and 2.0.0, so
+# it passes the whole target ±1 supported window. Ticket 18: this file never
+# existed, so every real pull request's version cross-check gate refused
+# with a plain FileNotFoundError before the adopter gate ever ran.
+apiVersion: v1
+kind: Pod
+metadata: { name: payments-svc, labels: { "policy-as-versioned.dev/policy-version": "2.0.0" } }
+spec:
+  securityContext: { runAsNonRoot: true }
+  containers: [{ name: c, image: nginx, securityContext: { readOnlyRootFilesystem: true } }]
