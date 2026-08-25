@@ -152,6 +152,28 @@ def array_at_ref(platform_dir: Path, ref: str) -> dict[str, dict]:
     return {e["version"]: e for e in versions}
 
 
+def versions_from_composed_evidence(adopter_dir: Path, ref: str) -> dict[str, dict]:
+    """ADR-0011 (policy-composition ticket 18): 'the adopter gate reads the
+    composed artefact as its subject.' The set of live policy versions
+    THIS institution's own signed composed/evidence.json records as
+    members, at `ref` (a commit-ish in tuppence's own repo -- ticket 18's
+    compose-check job keeps that file fresh and byte-verified on every pull
+    request). Returned dict-shaped (version -> {}) to match
+    array_at_worktree/array_at_ref's own return shape -- compose() below
+    only ever reads the KEYS of either. A platform-machinery member (the
+    orphan guard, the governed-namespace guard) carries no `version` --
+    excluded, same as distribution/versions.yaml's own array never lists it
+    either."""
+    show = _git(adopter_dir, "show", f"{ref}:composed/evidence.json")
+    if show.returncode != 0:
+        raise SystemExit(
+            f"REFUSED: could not read composed/evidence.json at {ref!r} in tuppence's own repo: "
+            f"{show.stderr.strip()}"
+        )
+    doc = json.loads(show.stdout)
+    return {m["version"]: {} for m in doc["members"] if m.get("version") is not None}
+
+
 TAG_VERSION_RE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
 
 
@@ -273,6 +295,13 @@ def main(argv: list[str]) -> int:
     p.add_argument("--skip-cosign-verify", action="store_true",
                     help="TEST-ONLY: skip the cosign subprocess call (file-existence checks still "
                          "run). Never set by shift-left.yml -- see verify_evidence()'s docstring.")
+    p.add_argument("--adopter-dir", type=Path, default=None,
+                    help="ADR-0011: read added/retired from THIS repo's own composed/evidence.json "
+                         "member set (versions_from_composed_evidence), not platform's raw array")
+    p.add_argument("--base-ref", default=None, help="commit-ish for composed/evidence.json 'before' "
+                                                      "(with --adopter-dir)")
+    p.add_argument("--head-ref", default=None, help="commit-ish for composed/evidence.json 'after' "
+                                                      "(with --adopter-dir)")
     p.add_argument("--selfcheck", action="store_true")
     args = p.parse_args(argv[1:])
 
@@ -301,7 +330,11 @@ def main(argv: list[str]) -> int:
         old_array = array_at_ref(args.platform_dir, old_tag)
 
     declared = classify_tag_bump(old_tag, new_tag)
-    new_array = array_at_worktree(args.platform_dir)
+    if args.adopter_dir is not None and args.base_ref is not None and args.head_ref is not None:
+        new_array = versions_from_composed_evidence(args.adopter_dir, args.head_ref)
+        old_array = versions_from_composed_evidence(args.adopter_dir, args.base_ref)
+    else:
+        new_array = array_at_worktree(args.platform_dir)
 
     result = compose(args.platform_dir, new_array, old_array, args.identity_regexp, args.issuer,
                       skip_cosign_verify=args.skip_cosign_verify)
@@ -372,6 +405,56 @@ def selfcheck() -> None:
     new = {"3.0.0": {}}  # 2.0.0 retired, nothing new added
     retired = sorted(set(old) - set(new))
     assert retired == ["2.0.0"], retired
+
+    # Regression (ADR-0011, policy-composition ticket 18): the SAME
+    # retirement, but discovered through versions_from_composed_evidence
+    # against a REAL two-commit adopter repo -- no policy diff anywhere in
+    # tuppence's own repo, only the composed evidence document's own member
+    # set changes, exactly the shape a retired platform version produces.
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        adopter = Path(td)
+        _git(adopter, "init", "-q")
+
+        def _write_evidence(members_versions):
+            doc = {"members": [{"name": f"member-{v}", "version": v} for v in members_versions]
+                              + [{"name": "policy-version-orphan-guard", "version": None}]}
+            (adopter / "composed").mkdir(exist_ok=True)
+            (adopter / "composed" / "evidence.json").write_text(json.dumps(doc))
+
+        _write_evidence(["2.0.0", "3.0.0"])
+        subprocess.run(["git", "-C", str(adopter), "add", "-A"], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(adopter), "-c", "user.name=t", "-c", "user.email=t@t",
+                         "commit", "-q", "-m", "base"], check=True, capture_output=True)
+        base_sha = subprocess.run(["git", "-C", str(adopter), "rev-parse", "HEAD"],
+                                   check=True, capture_output=True, text=True).stdout.strip()
+
+        _write_evidence(["3.0.0"])  # 2.0.0 retired, nothing added
+        subprocess.run(["git", "-C", str(adopter), "add", "-A"], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(adopter), "-c", "user.name=t", "-c", "user.email=t@t",
+                         "commit", "-q", "-m", "head"], check=True, capture_output=True)
+        head_sha = subprocess.run(["git", "-C", str(adopter), "rev-parse", "HEAD"],
+                                   check=True, capture_output=True, text=True).stdout.strip()
+
+        new_from_evidence = versions_from_composed_evidence(adopter, head_sha)
+        old_from_evidence = versions_from_composed_evidence(adopter, base_sha)
+        assert set(old_from_evidence) == {"2.0.0", "3.0.0"}, old_from_evidence
+        assert set(new_from_evidence) == {"3.0.0"}, new_from_evidence
+
+        # compose() still verifies every SURVIVING version's evidence (not
+        # just what was added) -- a minimal fixture evidence file for the
+        # one version that survives (3.0.0), skip_cosign_verify=True so the
+        # cosign subprocess itself is never reached (same TEST-ONLY flag
+        # verify_evidence's own docstring names).
+        (adopter / "computed-semver" / "evidence").mkdir(parents=True)
+        (adopter / "computed-semver" / "evidence" / "3.0.0.json").write_text(
+            json.dumps({"bump": {"computed": "none"}}))
+        (adopter / "computed-semver" / "evidence" / "3.0.0.json.bundle").write_text("{}")
+
+        result = compose(adopter, new_from_evidence, old_from_evidence, "unused", "unused",
+                          skip_cosign_verify=True)
+        assert result["retired"] == ["2.0.0"], result
+        assert result["composed"] == "major", result
 
     # Regression: a SINGLE element whose real bump is "no predecessor" (rank
     # 0, same as "none") must surface as "no predecessor" in `composed`, not

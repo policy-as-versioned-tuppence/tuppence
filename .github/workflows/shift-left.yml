@@ -165,12 +165,25 @@ jobs:
             : > "$old_pin"
             echo "no old pin found at the PR base -- treated as no predecessor"
           fi
+          # ticket 18 / ADR-0011: --adopter-dir/--base-ref/--head-ref make
+          # tuppence's own composed/evidence.json member set the subject,
+          # not platform's raw distribution/versions.yaml array. --head-ref
+          # is literally HEAD, not github.event.pull_request.head.sha:
+          # actions/checkout on a pull_request event checks out GitHub's own
+          # synthetic merge commit (refs/pull/N/merge) -- head.sha itself is
+          # never fetched as a separately addressable commit, even with
+          # fetch-depth: 0 (depth controls history length, not which commit
+          # is checked out), so `git show <head.sha>:...` fails even though
+          # the identical content sits in the working tree right now.
           python3 tuppence/.github/scripts/adopter-gate.py \
             --platform-dir platform \
             --new-pin-yaml tuppence/gitops/platform/platform-pin.yaml \
             --old-pin-yaml "$old_pin" \
             --identity-regexp "${EVIDENCE_EXPECTED_IDENTITY_REGEXP}" \
             --issuer "${EXPECTED_ISSUER}" \
+            --adopter-dir tuppence \
+            --base-ref "${{ github.event.pull_request.base.sha }}" \
+            --head-ref HEAD \
             --out adopter-summary.json
 
       - name: render the verified evidence into the pull request BODY (cs-29 -- the body itself, not a comment)
