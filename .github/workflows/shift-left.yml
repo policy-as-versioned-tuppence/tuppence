@@ -281,14 +281,19 @@ jobs:
         with: { path: tuppence }
 
       - name: read tuppence's own pinned platform and nist tags
+        # Self-contained -- each adopter's own adopter-gate.py CLI has
+        # evolved independently (ticket cs-28's own module docstring: built
+        # per adopter) and their read-pin-shaped subcommands are not
+        # uniform, so this reads the two GitRepository pin files directly
+        # rather than depending on any adopter's own script shape.
         id: pins
         run: |
           set -euo pipefail
           pip install --quiet pyyaml
-          python3 tuppence/.github/scripts/adopter-gate.py read-pin \
-            tuppence/gitops/platform/platform-pin.yaml | sed 's/^/platform_/' >> "$GITHUB_OUTPUT"
-          python3 tuppence/.github/scripts/adopter-gate.py read-pin \
-            tuppence/gitops/flux-system/gotk-sync-nist.yaml | sed 's/^/nist_/' >> "$GITHUB_OUTPUT"
+          python3 tuppence/.github/scripts/read-two-pins.py \
+            tuppence/gitops/platform/platform-pin.yaml platform \
+            tuppence/gitops/flux-system/gotk-sync-nist.yaml nist \
+            >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         with:
