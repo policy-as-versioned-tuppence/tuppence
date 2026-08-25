@@ -11,8 +11,14 @@ metadata:
 # institution's controls are proportioned against right now. Read by the
 # future OSCAL/c2p plumbing (platform); for this ticket it proves the pin is
 # live, reconciled, and bumpable like any other dependency.
+#
+# baselineName (ticket 11, ADR-0013): an advisory mirror of party.yaml's own
+# `baseline` field. party.yaml is the signed, risk-bearing declaration; this
+# key only restates it for humans and the OSCAL plumbing --
+# platform/party/party_artefact.py refuses if the two ever disagree.
 data:
   catalogVersion: "1.0.0"
   catalogTag: "v1.0.0"
   nistRevision: "5.2.0"
   oscalVersion: "1.2.2"
+  baselineName: "MODERATE"
