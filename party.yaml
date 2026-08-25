@@ -1,0 +1,19 @@
+# The party artefact (policy-composition ticket 11; ADR-0012/ADR-0013).
+# Same shape driftwood's copy documents in full -- see that repo's
+# party.yaml for the long form. Signed under the same gitsign tag as every
+# other artefact this repo publishes -- no second mechanism.
+party: tuppence
+roles: [risk-bearer, adopter]
+# MODERATE: 287 controls, holds ac-6, cm-6 and ac-6.10. LOW excludes ac-6,
+# one of the two controls this estate implements (ADR-0013). May add
+# controls to this selection; may never remove one. Mirrored, advisory only,
+# in gitops/apps/nist-pin-configmap.yaml's data.baselineName.
+baseline: MODERATE
+inherits:
+  - { party: platform, kind: implementations, version: "0.1.0" }
+  - { party: nist,     kind: controls,        version: "1.0.0" }
+  - { party: ico,      kind: pricing,         version: "v1" }
+  - { party: platform, kind: threat,          version: "v1" }
+overlay:
+  add: []
+  restate: []

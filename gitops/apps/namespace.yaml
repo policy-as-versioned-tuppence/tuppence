@@ -6,3 +6,9 @@ metadata:
     app.kubernetes.io/part-of: tuppence
     # tuppence is the fintech / FCA+PCI+GDPR institution (toward-strict risk skin).
     policy-as-versioned.dev/institution: tuppence
+    # The governed declaration (ticket 11, ADR-0014/ADR-0018): this manifest,
+    # signed under the same tag as party.yaml, IS the declaration. A workload
+    # inside this namespace must claim a policy-version, or a CREATE-only
+    # ValidatingPolicy denies it. The composed artefact carries no namespace
+    # list of its own -- it only records this set as advisory metadata.
+    policy-as-versioned.dev/governed: "true"

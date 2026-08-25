@@ -1,0 +1,110 @@
+name: propose-tier
+
+# Ticket 17 (policy-composition); ADR-0015. The proposer's LAST step, unlike
+# every propose-never-dispose demonstrator elsewhere in this estate: it
+# actually commits, pushes and opens -- a pull request editing
+# `posture.acme.io/tier` on deploy/pod.yaml, or (for a proposed `deny`) an
+# issue instead. It never merges either: the war-gamer/proposer_bounds/
+# tier_pr chain still exposes no merge()/approve()/dispose() by
+# construction (see each module's own selfcheck), and the opened PR still
+# rides ordinary human review.
+#
+# Reads composed/evidence.json -- tuppence's own committed evidence
+# document (ticket 18 wires composition into this repo's CI and commits it
+# on success; until that PR has landed once, this job finds nothing and
+# exits quietly, same as propose-policy-pr.sh's own "no drift" no-op).
+#
+# Trigger, exactly ADR-0015 point 5: a MERGED pin bump, or a human
+# workflow_dispatch. Nothing timed, ever -- no `schedule:` anywhere.
+on:
+  pull_request:
+    types: [closed]
+    paths:
+      - party.yaml
+      - gitops/platform/platform-pin.yaml
+      - gitops/flux-system/gotk-sync-nist.yaml
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  propose-tier:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: tuppence, fetch-depth: 0 }
+
+      - name: install pyyaml (adopter-gate.py needs it to read the platform pin)
+        run: pip install --quiet pyyaml
+
+      # tuppence/.github/scripts/adopter-gate.py is a FLAG-BASED CLI with no
+      # subparsers at all (unlike driftwood's) -- its own module docstring's
+      # Usage section shows only `--platform-dir`/`--new-pin-yaml`/etc, and
+      # its single mainline run also verifies platform's signed evidence via
+      # cosign, which this job has no business doing (that already happened
+      # in tuppence's own shift-left.yml, before this pin bump PR merged).
+      # So this step calls tuppence's actual `parse_pin()` function directly
+      # -- the same two-document-YAML parser --new-pin-yaml's own run and
+      # its selfcheck already exercise against this exact file -- instead of
+      # a second, hand-rolled parser or a subcommand this script never had.
+      - name: read the platform pin -- the tier proposer runs THROUGH the pinned platform dependency
+        id: pin
+        run: |
+          set -euo pipefail
+          python3 -c "
+          import importlib.util
+          spec = importlib.util.spec_from_file_location('adopter_gate', 'tuppence/.github/scripts/adopter-gate.py')
+          m = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(m)
+          tag, commit = m.parse_pin(open('tuppence/gitops/platform/platform-pin.yaml').read())
+          print(f'tag={tag}')
+          print(f'commit={commit}')
+          " >> "$GITHUB_OUTPUT"
+
+      - name: checkout platform AT THE PINNED TAG (same shape shift-left.yml already uses)
+        uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-platform/platform
+          path: platform
+          ref: ${{ steps.pin.outputs.tag }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      # Same reasoning as the read-pin step above: reuse `resolved_commit()`,
+      # the exact function tuppence's own full gate run calls for this same
+      # check, rather than a subcommand this script never exposed.
+      - name: verify platform's checked-out commit against the pin
+        env:
+          PINNED_COMMIT: ${{ steps.pin.outputs.commit }}
+        run: |
+          set -euo pipefail
+          python3 -c "
+          import importlib.util, os, sys
+          from pathlib import Path
+          spec = importlib.util.spec_from_file_location('adopter_gate', 'tuppence/.github/scripts/adopter-gate.py')
+          m = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(m)
+          resolved = m.resolved_commit(Path('platform'))
+          pinned = os.environ['PINNED_COMMIT']
+          if resolved != pinned:
+              sys.exit(f'REFUSED: platform-pin.yaml names commit {pinned}, checked-out tag resolves to {resolved}')
+          print(f'ok  platform checked out commit matches the pin ({resolved})')
+          "
+
+      - name: run the proposer -- reads tuppence's own composed/evidence.json, lands PR or issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: policy-as-versioned-tuppence/tuppence
+        run: |
+          set -euo pipefail
+          git -C tuppence config user.email "wargamer-proposer@policy-as-versioned-tuppence.invalid"
+          git -C tuppence config user.name "wargamer proposer"
+          python3 platform/wargamer/tier_pr.py run \
+            --adopter-dir tuppence \
+            --evidence tuppence/composed/evidence.json \
+            --workload tuppence/deploy/pod.yaml \
+            --org tuppence

@@ -111,6 +111,20 @@ jobs:
           # exact tag gitops/platform/platform-pin.yaml's PR-head content
           # names, before verifying anything against it.
 
+      - name: party artefact check (ticket 11) -- schema, pinned tags, baseline mirror
+        # platform/party/party_artefact.py, called through the pinned platform
+        # dependency this job already checked out above -- the same "library,
+        # not a service" shape ci-check.py uses. Refuses if party.yaml is
+        # structurally invalid, if a declared implementations/controls version
+        # disagrees with what gitops/platform/platform-pin.yaml or
+        # gitops/flux-system/gotk-sync-nist.yaml actually pin, or if
+        # gitops/apps/nist-pin-configmap.yaml's baselineName disagrees with
+        # party.yaml's own baseline.
+        run: |
+          set -euo pipefail
+          pip install --quiet pyyaml
+          python3 platform/party/party_artefact.py check tuppence/party.yaml --adopter-dir tuppence
+
       - name: install pinned kyverno cli (binary + checksum, no marketplace action)
         env:
           KYVERNO_VERSION: 1.18.2
