@@ -293,18 +293,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: policy-as-versioned-platform/platform
+          fetch-depth: 0
           path: platform
           ref: ${{ steps.pins.outputs.platform_tag }}
 
       - uses: actions/checkout@v4
         with:
           repository: policy-as-versioned-nist/nist
+          fetch-depth: 0
           path: nist
           ref: ${{ steps.pins.outputs.nist_tag }}
 
       - uses: actions/checkout@v4
         with:
           repository: policy-as-versioned-ico/ico
+          fetch-depth: 0
           path: ico
 
       - name: recompose tuppence's party artefact; fail on refusal or drift; print the document as the job summary
