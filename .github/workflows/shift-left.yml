@@ -309,6 +309,7 @@ jobs:
           repository: policy-as-versioned-ico/ico
           fetch-depth: 0
           path: ico
+          ref: main
 
       - name: recompose tuppence's party artefact; fail on refusal or drift; print the document as the job summary
         run: |
