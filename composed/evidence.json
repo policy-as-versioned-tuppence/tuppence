@@ -18,15 +18,15 @@
       "party": "ico",
       "kind": "feed",
       "name": "penalty-schema",
-      "version": "v1",
-      "sha": "b6f082aa3d820ff912034e043ab3330184da325b9256de48d0284d411b8748da"
+      "version": "v3",
+      "sha": "e1fb8eb5663e50088b13d872a4e44112476f516e"
     },
     {
       "party": "feeds",
       "kind": "feed",
       "name": "threat-register",
       "version": "v1",
-      "sha": "08b93420d29b94484f3aabbae58e4ae6ec41866ae312891c811872ec7c3b9a77"
+      "sha": "ddace466f0cc410f228aeff3b4c5704eeea15a30"
     }
   ],
   "members": [
@@ -1339,28 +1339,65 @@
     {
       "source": "ico",
       "kind": "feed",
+      "perspective": "tuppence",
+      "currency": "GBP",
+      "amount": 9039791.01976426,
+      "per_customer": null,
       "name": "penalty-schema",
-      "old_version": "v1",
-      "new_version": "v1",
-      "old_price": 16901471.55226278,
-      "new_price": 16901471.55226278,
-      "old_tier": "deny",
-      "proposed_tier": "deny",
+      "old_version": "v3",
+      "new_version": "v3",
+      "old_price": 9039791.01976426,
+      "new_price": 9039791.01976426,
+      "old_tier": "isolated",
+      "proposed_tier": "isolated",
       "changed": false,
-      "proposed_as": "issue"
+      "proposed_as": "label",
+      "holes": [
+        {
+          "source": "nist",
+          "id": "pl-2",
+          "weight": 0.3,
+          "amount": 2711937.3059292776
+        },
+        {
+          "source": "nist",
+          "id": "ra-3",
+          "weight": 0.3,
+          "amount": 2711937.3059292776
+        },
+        {
+          "source": "nist",
+          "id": "ca-2",
+          "weight": 0.2,
+          "amount": 1807958.203952852
+        },
+        {
+          "source": "nist",
+          "id": "ir-8",
+          "weight": 0.2,
+          "amount": 1807958.203952852
+        }
+      ],
+      "total": 9039791.01976426
     },
     {
       "source": "feeds",
       "kind": "feed",
+      "perspective": "tuppence",
+      "currency": "GBP",
+      "amount": 222574.31190283748,
+      "per_customer": null,
       "name": "threat-register",
       "old_version": "v1",
       "new_version": "v1",
       "old_price": 222574.31190283748,
       "new_price": 222574.31190283748,
-      "old_tier": "deny",
-      "proposed_tier": "deny",
+      "old_tier": "isolated",
+      "proposed_tier": "isolated",
       "changed": false,
-      "proposed_as": "issue"
+      "proposed_as": "label",
+      "holes": [],
+      "total": null
     }
   ],
   "limits": [

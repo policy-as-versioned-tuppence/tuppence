@@ -21,7 +21,7 @@ baseline: MODERATE
 inherits:
   - { party: platform, kind: implementations, version: "1.1.1", since: '2026-08-28' }
   - { party: nist,     kind: controls,        version: "1.1.0", since: '2026-08-28' }
-  - { party: ico,      kind: feed, name: penalty-schema,    version: "v1", since: '2026-08-28' }
+  - { party: ico,      kind: feed, name: penalty-schema,    version: "v3", since: '2026-08-28' }
   - { party: feeds,    kind: feed, name: threat-register,   version: "v1", since: '2026-08-28' }
 overlay:
   add: []

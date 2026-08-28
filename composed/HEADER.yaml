@@ -15,13 +15,13 @@ parents:
 - party: ico
   kind: feed
   name: penalty-schema
-  version: v1
-  sha: b6f082aa3d820ff912034e043ab3330184da325b9256de48d0284d411b8748da
+  version: v3
+  sha: e1fb8eb5663e50088b13d872a4e44112476f516e
 - party: feeds
   kind: feed
   name: threat-register
   version: v1
-  sha: 08b93420d29b94484f3aabbae58e4ae6ec41866ae312891c811872ec7c3b9a77
+  sha: ddace466f0cc410f228aeff3b4c5704eeea15a30
 baseline: MODERATE
 governed-namespaces:
 - tuppence
