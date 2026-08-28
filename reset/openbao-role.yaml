@@ -42,15 +42,18 @@ spec:
               echo 'path "secret/data/customer-accounts-reset" { capabilities = ["read"] }' \
                 | bao policy write customer-accounts-reset -
 
-              # the posture-bound role: sub must glob the CURRENT posture prefix
-              bao write auth/jwt/role/posture \
-                role_type="jwt" \
-                user_claim="sub" \
-                bound_audiences="openbao" \
-                bound_claims_type="glob" \
-                bound_claims='{"sub":"spiffe://acme.internal/posture/2.0.0/*"}' \
-                token_policies="customer-accounts-reset" \
-                token_ttl="5m" \
-                token_max_ttl="5m"
+              # the posture-bound role: sub must glob the CURRENT posture prefix.
+              # The whole payload goes in as JSON on stdin, NOT as key=value
+              # arguments: `bound_claims` is a map field, and the OpenBao CLI
+              # hands a `bound_claims='{...}'` argument through as a STRING, so
+              # the server answered
+              #   error converting input for field "bound_claims": '' expected
+              #   type 'map[string]interface {}', got unconvertible type 'string'
+              # and this Job had been Failed ever since, leaving the role the
+              # jwt auth method names as its default_role absent (found live,
+              # 2026-08-28: `bao write auth/jwt/login role=posture` answered
+              # `role "posture" could not be found`).
+              printf '%s' '{"role_type":"jwt","user_claim":"sub","bound_audiences":"openbao","bound_claims_type":"glob","bound_claims":{"sub":"spiffe://acme.internal/posture/2.0.0/*"},"token_policies":"customer-accounts-reset","token_ttl":"5m","token_max_ttl":"5m"}' \
+                | bao write auth/jwt/role/posture -
 
               echo "posture-gated OpenBao role 'posture' bound to spiffe://acme.internal/posture/2.0.0/*"
