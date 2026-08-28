@@ -8,18 +8,32 @@ name: renovate-run
 # project's gh token does not have. A personal-token Renovate run would
 # sidestep the very thing this ticket needs answered.
 #
-# workflow_dispatch only: this proves the mechanism once, on request. A
-# recurring schedule is a standing automation decision the estate has
-# explicitly declined to make unilaterally (see faithful-floor ticket 11) --
-# not repeated here just because it is now technically easy across orgs.
+# The standing automation decision this comment used to say the estate had
+# declined is now MADE: ticket 28, ADR-0024. Renovate belongs on the daily
+# floor because its pull request is the only thing that starts a re-price from
+# a parent's side -- tuppence runs it at 08:13 UTC, its own choice, with no
+# cross-org ordering promised. workflow_dispatch stays for a run on request.
+#
+# Renovate opens pull requests and merges nothing. It is a PROPOSER, so it sits
+# outside the observation cage by construction: it never pushes tuppence's
+# default branch, and the cage step at the end of the job asserts exactly that
+# (ADR-0024, D1 -- a clock appends observations, never a declaration).
 
 on:
+  schedule:
+    - cron: "13 8 * * *"
   workflow_dispatch: {}
 
 permissions:
   contents: write
   pull-requests: write
   issues: write
+
+# The observation lane, declared once as data so the cage step and
+# verify/schedules/verify-schedules.sh read the SAME list (ADR-0024, D1). These
+# are the only paths any scheduled job in this repository may ever commit.
+env:
+  OBSERVATION_LANE: "talk/truth.log drift/samples.jsonl talk/captures observations"
 
 jobs:
   renovate:
@@ -42,3 +56,46 @@ jobs:
           RENOVATE_REPOSITORIES: policy-as-versioned-tuppence/tuppence
           LOG_LEVEL: debug
         run: npx --yes renovate@44.37.1
+
+      # --- the cage (ADR-0024, D1) -------------------------------------------
+      # OBSERVATION_LANE is this repository's declared allow-list, read here and
+      # by verify/schedules/verify-schedules.sh from the same YAML. Renovate
+      # writes only to its own branches; if a run ever leaves a change in the
+      # checkout, that change is a declaration and this step fails the run.
+      - name: the observation cage -- a clock appends observations, never a declaration
+        if: always()
+        run: |
+          set -euo pipefail
+          # `git reset` FIRST: the cage builds the index and nothing else. The old
+          # guard filtered `git status --porcelain` with `grep -v '^[AMD] '`, which
+          # strips exactly the staged-and-clean entries -- so a declaration any
+          # earlier step had left in the index was committed and pushed while this
+          # step printed "this clock declared nothing" (review, 2026-08-28).
+          git reset -q
+          for path in ${OBSERVATION_LANE}; do
+            # -f: talk/captures/ is gitignored for local runs; the clock is the one
+            # caller allowed to commit it.
+            if [ -e "${path}" ]; then git add -Af -- "${path}"; fi
+          done
+          # The STAGED set, judged against the same OBSERVATION_LANE list, never a
+          # second regex that could drift from it.
+          bad=""
+          for f in $(git diff --cached --name-only); do
+            ok=0
+            for path in ${OBSERVATION_LANE}; do
+              case "${f}" in "${path}"|"${path}"/*) ok=1 ;; esac
+            done
+            [ "${ok}" = 1 ] || bad="${bad} ${f}"
+          done
+          if [ -n "${bad}" ]; then
+            echo "::error::this clock staged a declaration outside the observation lane"
+            echo "${bad}"
+            exit 1
+          fi
+          outside="$(git status --porcelain --untracked-files=all | grep -v '^[AMD] ' || true)"
+          if [ -n "${outside}" ]; then
+            echo "::error::the scheduled renovate run left a change outside the observation lane"
+            echo "${outside}"
+            exit 1
+          fi
+          echo "ok  working tree clean outside the observation lane -- this clock declared nothing"
