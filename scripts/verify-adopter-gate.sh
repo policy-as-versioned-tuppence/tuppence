@@ -303,8 +303,20 @@ if entries:
     new_block = f"    - versions:\n{lines}\n"
 else:
     new_block = "    - versions: []\n"
-text = re.sub(r"    - versions:(?: \[\]| *\n(?:        - \{[^\n]*\}\n)*)", new_block, text, count=1)
+# The `#` alternative in the element run is load-bearing, not decoration.
+# Ticket 26 added platform's 4.0.0 element behind an eight-line comment
+# block; an elements-only run stopped at that comment and left 4.0.0 in the
+# array after every set_array call, so Scenarios A and B were composing
+# against a version whose evidence this throwaway line never produced. The
+# claim is unchanged and now actually held: the assertion below re-reads the
+# file and demands the array really is what was asked for.
+text = re.sub(
+    r"    - versions:(?: \[\]| *\n(?:        (?:- \{|#)[^\n]*\n)*)", new_block, text, count=1)
 path.write_text(text)
+import yaml
+got = [e["version"] for e in (yaml.safe_load(text)["spec"]["inputs"][0]["versions"] or [])]
+want = [e["version"] for e in entries]
+assert got == want, f"set_array wrote {got}, asked for {want}"
 PY
 }
 
