@@ -13,13 +13,16 @@
 #      it is refused (RBAC: access denied / 403).
 #   4. secret: a current JWT-SVID logs into OpenBao role 'posture' and reads the
 #      secret; a stale JWT-SVID's login is refused.
-set -euo pipefail
+#
+# Outcomes: PASS (exit 0), FAIL (exit 1), SKIP (exit 3: no docker, no kind
+# cluster, Flux not Ready -- nothing could be observed, so nothing is claimed).
+WANT_CTX="${CTX:-kind-driftwood}"
+source "$(dirname "${BASH_SOURCE[0]}")/../scripts/lib.sh"   # set -euo pipefail, say, have, need_substrate
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CTX="${CTX:-kind-driftwood}"
+CTX="$WANT_CTX"
 NS="tuppence-reset"
-say()  { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
 fail() { echo "FAIL: $*" >&2; exit 1; }
-have() { command -v "$1" >/dev/null 2>&1; }
+need_substrate "${CTX#kind-}"
 
 have python3 || fail "python3 required for the offline gate proof"
 
