@@ -2,18 +2,27 @@
 # Same shape driftwood's copy documents in full -- see that repo's
 # party.yaml for the long form. Signed under the same gitsign tag as every
 # other artefact this repo publishes -- no second mechanism.
+#
+# 2026-08-28 (ADR-0019): the `pricing` and `threat` parent kinds became one
+# `feed` kind carrying a `name` -- ico's schema is feed/penalty-schema, and
+# the threat register's publisher moved from platform to the new `feeds`
+# repo as feed/threat-register.
 party: tuppence
 roles: [risk-bearer, adopter]
+reporting_currency: GBP
+# Copied from platform/risk/appetite.json orgs.tuppence.tolerance.
+appetite:
+  tolerance: { amount: 15000, currency: GBP }
 # MODERATE: 287 controls, holds ac-6, cm-6 and ac-6.10. LOW excludes ac-6,
 # one of the two controls this estate implements (ADR-0013). May add
 # controls to this selection; may never remove one. Mirrored, advisory only,
 # in gitops/apps/nist-pin-configmap.yaml's data.baselineName.
 baseline: MODERATE
 inherits:
-  - { party: platform, kind: implementations, version: "1.1.1" }
-  - { party: nist,     kind: controls,        version: "1.1.0" }
-  - { party: ico,      kind: pricing,         version: "v1" }
-  - { party: platform, kind: threat,          version: "v1" }
+  - { party: platform, kind: implementations, version: "1.1.1", since: '2026-08-28' }
+  - { party: nist,     kind: controls,        version: "1.1.0", since: '2026-08-28' }
+  - { party: ico,      kind: feed, name: penalty-schema,    version: "v1", since: '2026-08-28' }
+  - { party: feeds,    kind: feed, name: threat-register,   version: "v1", since: '2026-08-28' }
 overlay:
   add: []
   restate: []

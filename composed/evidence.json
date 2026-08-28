@@ -16,15 +16,17 @@
     },
     {
       "party": "ico",
-      "kind": "pricing",
+      "kind": "feed",
+      "name": "penalty-schema",
       "version": "v1",
-      "sha": "5d1e76fa6cffe9bc42ffcae6ee2e06c29e841809"
+      "sha": "b6f082aa3d820ff912034e043ab3330184da325b9256de48d0284d411b8748da"
     },
     {
-      "party": "platform",
-      "kind": "threat",
+      "party": "feeds",
+      "kind": "feed",
+      "name": "threat-register",
       "version": "v1",
-      "sha": "7a36bf73c89fca4b168629b1a54635265158fa2a"
+      "sha": "08b93420d29b94484f3aabbae58e4ae6ec41866ae312891c811872ec7c3b9a77"
     }
   ],
   "members": [
@@ -1336,7 +1338,8 @@
   "prices": [
     {
       "source": "ico",
-      "kind": "pricing",
+      "kind": "feed",
+      "name": "penalty-schema",
       "old_version": "v1",
       "new_version": "v1",
       "old_price": 16901471.55226278,
@@ -1347,8 +1350,9 @@
       "proposed_as": "issue"
     },
     {
-      "source": "platform",
-      "kind": "threat",
+      "source": "feeds",
+      "kind": "feed",
+      "name": "threat-register",
       "old_version": "v1",
       "new_version": "v1",
       "old_price": 222574.31190283748,
