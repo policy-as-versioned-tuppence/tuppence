@@ -59,6 +59,7 @@ if have kubectl && timeout 10 kubectl --context "$CTX" get mutatingpolicy stamp-
    && timeout 10 kubectl --context "$CTX" get ns "$NS" >/dev/null 2>&1 \
    && timeout 10 kubectl --context "$CTX" -n "$NS" get deploy customer-accounts-reset >/dev/null 2>&1; then
 
+  LIVE_REACH=1
   say "3. live: reach — current caller gets 200, stale caller is refused"
   RC_OK=$(timeout 25 kubectl --context "$CTX" -n "$NS" exec deploy/teller-current -c caller -- \
             curl -sS -o /dev/null -w '%{http_code}' customer-accounts-reset.$NS/ 2>/dev/null || echo "ERR")
@@ -76,7 +77,13 @@ if have kubectl && timeout 10 kubectl --context "$CTX" get mutatingpolicy stamp-
   # exchange it at OpenBao's jwt/login, and read the secret. Bounded, best-effort:
   # if the OIDC/agent path isn't wired on this cluster the offline gate proof (step 1)
   # already demonstrates the claim; we report, never hang.
-  BAO="timeout 20 kubectl --context $CTX -n openbao exec deploy/openbao -- env BAO_ADDR=http://127.0.0.1:8200"
+  # `sts/openbao`, not `deploy/openbao`: OpenBao runs as a StatefulSet here, so
+  # the old ref resolved to nothing and every `bao` call below silently did
+  # nothing -- which, with the empty-token test that follows, would have printed
+  # "stale SVID login refused" on a broken exec. An assertion that passes on
+  # absence is worse than no assertion, so the current login must now succeed
+  # before the stale refusal is credited at all.
+  BAO="timeout 20 kubectl --context $CTX -n openbao exec sts/openbao -- env BAO_ADDR=http://127.0.0.1:8200"
   login() { # $1 = jwt   -> prints the client token or empty on refusal
     $BAO bao write -field=token auth/jwt/login role=posture jwt="$1" 2>/dev/null || true; }
   mint() { # $1 = deploy -> a JWT-SVID for audience openbao, or empty
@@ -85,14 +92,34 @@ if have kubectl && timeout 10 kubectl --context "$CTX" get mutatingpolicy stamp-
 
   JWT_OK=$(mint teller-current); JWT_STALE=$(mint teller-stale)
   if [ -n "$JWT_OK" ]; then
+    # A stale login returning nothing only means "refused" if a current login
+    # returns something: otherwise an empty token proves the exec is broken,
+    # not that the gate held. So this is a FAIL, never a printed warning.
     TOK=$(login "$JWT_OK")
-    [ -n "$TOK" ] && echo "  ok   current SVID logged into role 'posture'" \
-      || echo "  (current SVID login returned empty — check OpenBao role + audience)"
+    [ -n "$TOK" ] || fail "current SVID could not log into OpenBao role 'posture' — the login path itself is broken, so a stale refusal below would prove nothing (check the jwt role, the 'openbao' audience, and that sts/openbao is up)"
+    echo "  ok   current SVID logged into role 'posture'"
     STOK=$(login "$JWT_STALE")
     [ -z "$STOK" ] && echo "  ok   stale SVID login refused (no token issued)" \
       || fail "stale SVID obtained an OpenBao token — the secret gate is open!"
+    LIVE_SECRET=1
   else
-    echo "  (skip: no spire-agent JWT-SVID mint path on the caller pods; offline gate proof stands)"
+    # NOT a substrate skip, and not honestly "checked": there is no SPIFFE
+    # client in these pods at all (the `caller` container is curl only, and the
+    # SPIFFE CSI socket is mounted into istio-proxy, not into it), so this half
+    # of the beat has never once been observed live -- only the offline gate
+    # proof in step 1 stands behind it. The fix is a second container in the
+    # teller pods holding the Workload API socket (image
+    # ghcr.io/spiffe/spire-agent, a `spire-agent-socket` csi.spiffe.io volume at
+    # /run/spire/agent-sockets); the SPIRE entries are selected on k8s:pod-uid,
+    # so any container in the pod attests to the same SVID. It is NOT applied
+    # because no pod can currently be created in this namespace: cage-tier's
+    # mutation sets priorityClassName after the built-in Priority admission
+    # plugin has already stamped priority: 0, and the API server then refuses
+    # the pod ("the integer value of priority (0) must not be provided in pod
+    # spec; priority admission controller computed -10 from the given
+    # PriorityClass name"). ponytail: land the svid container the moment the
+    # cage stops blocking pod creation, and turn this branch into a fail.
+    echo "  (NOT OBSERVED: the caller pods carry no SPIFFE client, so no JWT-SVID can be minted here — the secret half rests on step 1's offline gate proof alone; see the comment above)"
   fi
 else
   say "3-4. live checks skipped: posture layer (stamp-posture) or $NS workloads not found on context '$CTX'"
@@ -100,4 +127,14 @@ else
   say "     estate/tuppence/reset/up.sh — the offline gate proof above is the claim."
 fi
 
-echo "PASS: current-posture callers win reach + secret; out-of-currency loses both."
+# The closing line may only claim what was actually looked at. The secret half
+# used to be asserted here unconditionally even though its live check has never
+# once run on this estate (see step 4): a PASS line that overclaims is the same
+# defect as a check that passes on absence, just further from the assertion.
+if [ "${LIVE_REACH:-0}" = 1 ] && [ "${LIVE_SECRET:-0}" = 1 ]; then
+  echo "PASS: current-posture callers win reach + secret; out-of-currency loses both."
+elif [ "${LIVE_REACH:-0}" = 1 ]; then
+  echo "PASS: reach observed live (current 200, stale refused); the secret half is proved by the offline gate only — no live JWT-SVID/OpenBao observation was possible (see step 4)."
+else
+  echo "PASS: the posture gate holds offline (reach glob == secret glob, current admitted, stale and de-postured refused); no live tail ran on this context."
+fi

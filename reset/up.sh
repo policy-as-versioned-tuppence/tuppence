@@ -27,6 +27,16 @@ kubectl --context "$CTX" apply -f "$HERE/destinationrule.yaml" \
   || echo "  (Istio CRDs not ready — re-run up.sh once istiod is up)"
 
 say "secret gate: OpenBao jwt role bound to the current-posture prefix"
+# Delete first, then apply. A Job's pod template is immutable, so `apply` on an
+# already-created Job is a silent no-op -- it does NOT re-run it. That matters
+# because this OpenBao runs `bao server -dev`, i.e. in-memory: every restart of
+# the openbao pod wipes the role, the policy and the secret this Job writes, and
+# nothing put them back. Observed live on driftwood: this Job last ran (and
+# failed) 27 days ago, openbao has restarted 6 times since, and neither the jwt
+# auth method, the `posture` role nor secret/customer-accounts-reset existed.
+# ponytail: the real upgrade is a persistent OpenBao (or a reconciled config
+# controller) instead of dev mode -- then this delete can go.
+kubectl --context "$CTX" -n openbao delete job openbao-reset-role --ignore-not-found >/dev/null 2>&1 || true
 kubectl --context "$CTX" apply -f "$HERE/openbao-role.yaml" \
   || echo "  (openbao namespace not ready — re-run up.sh)"
 

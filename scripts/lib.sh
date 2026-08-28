@@ -10,6 +10,7 @@ GITSERVER_DIR="${HERE}/git-server"
 WORK="${HERE}/.work"
 IMAGE=tuppence-git:local
 GIT_URL_IN_CLUSTER="http://git-server.flux-system.svc.cluster.local/cgi-bin/git/tuppence.git"
+NIST_URL_IN_CLUSTER="http://git-server.flux-system.svc.cluster.local/cgi-bin/git/nist.git"
 
 say() { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
