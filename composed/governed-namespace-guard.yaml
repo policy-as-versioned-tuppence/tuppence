@@ -10,7 +10,7 @@ metadata:
     policy-as-versioned.dev/source-path: distribution/versions.yaml (static, ADR-0014)
 spec:
   validationActions:
-  - Audit
+  - Deny
   matchConstraints:
     resourceRules:
     - apiGroups:

@@ -12,3 +12,17 @@ metadata:
     # ValidatingPolicy denies it. The composed artefact carries no namespace
     # list of its own -- it only records this set as advisory metadata.
     policy-as-versioned.dev/governed: "true"
+    # The cage tier (ticket 26, ADR-0022) is declared HERE, next to the
+    # governed label, on the same signed object -- never on a pod. The
+    # `cage-tier` MutatingPolicy reads it through `namespaceObject` and
+    # stamps it onto every pod in this namespace; the pod's own
+    # `posture.acme.io/tier` label is that render's OUTPUT ONLY, never a
+    # second place a workload can declare or forge its own cage.
+    #
+    # "isolated" is the strictest `proposed_tier` across today's
+    # composed/evidence.json prices[] for this party: both the ico
+    # penalty-schema line and the feeds/threat-register line land
+    # isolated on tuppence's real (strict-appetite) band. One Namespace
+    # carries one tier for every pod in it, so the declaration cannot be
+    # looser than its worst-priced regime (tighten-only, ADR-0022).
+    posture.acme.io/tier: "isolated"
