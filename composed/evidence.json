@@ -34,141 +34,6 @@
       "family": "graded-enforcement",
       "name": "cage-netpol",
       "kind": "GeneratingPolicy",
-      "version": "2.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-tier",
-      "kind": "MutatingPolicy",
-      "version": "2.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "posture",
-      "name": "posture-trust-boundary",
-      "kind": "ValidatingPolicy",
-      "version": "2.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": "Deny"
-    },
-    {
-      "family": "posture",
-      "name": "stamp-posture",
-      "kind": "MutatingPolicy",
-      "version": "2.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "require-nonroot",
-      "name": "require-nonroot",
-      "kind": "ValidatingPolicy",
-      "version": "2.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": "Audit"
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-netpol",
-      "kind": "GeneratingPolicy",
-      "version": "2.0.1",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-tier",
-      "kind": "MutatingPolicy",
-      "version": "2.0.1",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "posture",
-      "name": "posture-trust-boundary",
-      "kind": "ValidatingPolicy",
-      "version": "2.0.1",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": "Deny"
-    },
-    {
-      "family": "posture",
-      "name": "stamp-posture",
-      "kind": "MutatingPolicy",
-      "version": "2.0.1",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "require-nonroot",
-      "name": "require-nonroot",
-      "kind": "ValidatingPolicy",
-      "version": "2.0.1",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": "Audit"
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-netpol",
-      "kind": "GeneratingPolicy",
-      "version": "3.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-tier",
-      "kind": "MutatingPolicy",
-      "version": "3.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "posture",
-      "name": "posture-trust-boundary",
-      "kind": "ValidatingPolicy",
-      "version": "3.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": "Deny"
-    },
-    {
-      "family": "posture",
-      "name": "stamp-posture",
-      "kind": "MutatingPolicy",
-      "version": "3.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "require-nonroot",
-      "name": "require-nonroot",
-      "kind": "ValidatingPolicy",
-      "version": "3.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": "Audit"
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-netpol",
-      "kind": "GeneratingPolicy",
       "version": "4.0.0",
       "source_party": "platform",
       "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
@@ -1462,6 +1327,13 @@
       "name": "two-publisher-conflict",
       "detail": "the cross-party rule-conflict path above is only exercised in the real estate once a second implementations publisher is pinned",
       "count": 1,
+      "status": "open"
+    },
+    {
+      "name": "pinned-parent-lacks-rendered-versions",
+      "detail": "the composed set renders policy versions the pinned parent commit does not contain; the header names a parent release that holds none of these trees. platform@1.1.1 (58ef9c57) does not contain distribution/policies/v4.0.0",
+      "count": 1,
+      "checked": 1,
       "status": "open"
     }
   ]

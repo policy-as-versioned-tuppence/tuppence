@@ -119,7 +119,7 @@ def selfcheck() -> None:
     check(not admits(secret, base), "de-postured (base) SVID is refused the secret")
 
     # a forged version-lookalike must not sneak past the prefix boundary:
-    # posture segment is a distinct path element, so /posture/2.0.0-evil/… must not match /posture/2.0.0/*
+    # posture segment is a distinct path element, so /posture/4.0.0-evil/… must not match /posture/4.0.0/*
     evil = f"spiffe://{TRUST_DOMAIN}/posture/{ver}-evil/ns/x/sa/y"
     check(not admits(reach_spiffe, evil), "a version-lookalike (vN-evil) does not satisfy the prefix")
 

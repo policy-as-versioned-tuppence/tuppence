@@ -27,7 +27,7 @@ spec:
     expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('') != ''
   variables:
   - name: allowed
-    expression: '[''2.0.0'', ''2.0.1'', ''3.0.0'', ''4.0.0'']'
+    expression: '[''4.0.0'']'
   - name: claimed
     expression: object.metadata.labels['policy-as-versioned.dev/policy-version']
   validations:
