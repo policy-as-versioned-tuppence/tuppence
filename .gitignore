@@ -1,2 +1,6 @@
 __pycache__/
 .work/
+
+# the read-only platform checkout drift-sample.yml takes to install ticket 41s verifier;
+# never committed, and the observation cage would fail the run if it were left visible.
+.platform-src/

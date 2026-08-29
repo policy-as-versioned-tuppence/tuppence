@@ -105,4 +105,57 @@ want "$tol" "$(at_pin risk-appetite-configmap.yaml | field toleranceGBP)" "risk-
 # party artefact always exists here, so this check can never silently skip.
 want_tol=$(python3 -c "import yaml; print(yaml.safe_load(open('$HERE/party.yaml'))['appetite']['tolerance']['amount'])")
 want "$tol" "$want_tol" "risk-appetite configmap drifted from tuppence's own signed party.yaml appetite"
-echo "PASS: tuppence reconciles from a pinned GitRepository ($SELF_TAG), healthy, content live, nist dependency pinned ($NIST_TAG), risk skin (toward-strict) live."
+echo "   reconcile assertions 1-6 all observed true: tuppence reconciles from a pinned GitRepository ($SELF_TAG), healthy, content live, nist dependency pinned ($NIST_TAG), risk skin (toward-strict) live."
+
+say "6b. the composed cage is actually enforced on $CTX (a governed Namespace that declares a tier)"
+# 2026-08-29 review: this file asserted a healthy reconcile on a cluster with no
+# Kyverno at all. tuppence's Namespace carries policy-as-versioned.dev/governed=true
+# and posture.acme.io/tier, and a pod with no claim, hostNetwork and privileged
+# was admitted untouched -- the manifest was inert and nothing here said so.
+# Silence about a cage that is not there is the shape the brief forbids.
+if ! timeout 10 kubectl --context "$CTX" get crd mutatingpolicies.policies.kyverno.io >/dev/null 2>&1; then
+  skip "Kyverno MutatingPolicy CRD not installed on $CTX, so the composed cage is not enforced there at all: the governed Namespace declares a tier that nothing reads, and no pod in it is caged. Run platform/engine/up.sh then platform/graded/up.sh against this cluster (as driftwood has)"
+fi
+for pol in $(python3 -c "
+import pathlib, sys
+d = pathlib.Path('$HERE/composed/policies')
+print(' '.join(sorted(p.name[1:].replace('.', '-') for p in d.iterdir() if p.is_dir())) if d.is_dir() else '')
+"); do
+  timeout 10 kubectl --context "$CTX" get mutatingpolicy "cage-tier-$pol" >/dev/null 2>&1 \
+    || skip "composed/policies/v${pol//-/.} is rendered here but its cage-tier MutatingPolicy is not installed on $CTX; the tier this Namespace declares is enforced by nothing"
+done
+echo "   the cage this repo composes is installed on $CTX"
+
+# --- 7. the five-fact sample (ecosystem ticket 42, widening ticket 40) --------
+# Everything above proves the RECONCILE is healthy against whichever world the live url picks.
+# It does not prove the thing ticket 16 Q1 asks for: that tuppence's COMPOSED POLICY SET is in
+# force, from sources whose signed tags were verified at the source boundary, on a cluster that
+# reconciles from the publishers' REAL remotes. That is five facts per source, and one sample of
+# a cluster cannot be taken by this script and then graded by it -- a presenter-run number is a
+# rehearsal (ADR-0023, D4). The number comes from .github/workflows/drift-sample.yml, which
+# brings up an ephemeral KinD in Actions, reconciles from the real remotes and APPENDS one record
+# per source to drift/samples.jsonl. That append is an observation, which a clock may make (D1).
+#
+# So this section GRADES THE LATEST SAMPLE and nothing else:
+#   no fresh sample            -> exit 3, could not look. Never a pass.
+#   a fact observed false      -> exit 1.
+#   all five true, every source, no falsifier fired -> exit 0.
+# `five-facts.py grade` also refuses to grade anything PASS unless drift/window.yaml still
+# declares all three falsifiers (ticket 40's rule that a sample passing with a falsifier
+# undeclared is a fail), AND unless the newest sample is attributable to the observation lane --
+# an Actions run id and a signed lane commit, so three lines typed into samples.jsonl by hand
+# cannot grade PASS.
+say "7. the five-fact sample: the composed set in force, from signed sources"
+python3 -c 'import yaml' 2>/dev/null \
+  || skip "python3 here has no pyyaml, so drift/five-facts.py cannot read the pins or the pre-registration"
+# `set -e` is on (scripts/lib.sh). Without this the non-zero grade would kill the script here and
+# the reason -- the whole point of an exit-3 contract -- would never be printed.
+set +e
+out="$(python3 "$HERE/drift/five-facts.py" grade --max-age-hours "${FIVE_FACT_MAX_AGE_HOURS:-48}" 2>&1)"; rc=$?
+set -e
+printf '%s\n' "$out" | sed 's/^/   /'
+case "$rc" in
+  0) echo "PASS: the reconcile is healthy AND the latest five-fact sample observes the composed set in force from signed sources.";;
+  3) skip "$(printf '%s\n' "$out" | sed -n 's/^SKIP: //p' | tail -1)";;
+  *) echo "FAIL: $(printf '%s\n' "$out" | tail -1)" >&2; exit 1;;
+esac

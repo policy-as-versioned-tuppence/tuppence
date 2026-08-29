@@ -177,8 +177,22 @@ say "Scenario E: the REAL, unmodified, currently-committed platform-pin.yaml -- 
 e_platform="$scratch/platform-e"
 git clone --local --quiet "$platform_repo" "$e_platform"
 e_pin="${here}/gitops/platform/platform-pin.yaml"
-grep -q '^---$' "$e_pin" || fail "E: expected the real pin file's own '---' document separator"
-grep -q '^kind: Kustomization$' "$e_pin" || fail "E: expected the real pin file's own second (Kustomization) document"
+e_dist="${here}/gitops/platform/platform-distribution.yaml"
+# Until 2026-08-29 this file WAS the two-document stream (GitRepository +
+# Kustomization) and E asserted that shape directly. Ticket 42 split the
+# Kustomization out into platform-distribution.yaml, because applying the pin
+# alone must not also install the cluster-scoped policy fan-out (two
+# ResourceSets rendering one orphan guard fight over it -- observed live). The
+# regression E exists for -- parse_pin() must walk PAST a non-GitRepository
+# document instead of raising ComposerError -- is still proved for real below,
+# on the two REAL committed files concatenated into the same stream
+# `kubectl apply -k gitops/platform/` feeds the API server. Nothing here is a
+# fixture: both halves are the repo's own content.
+grep -q '^kind: GitRepository$' "$e_pin" || fail "E: expected the real pin file's own GitRepository document"
+grep -q '^kind: Kustomization$' "$e_dist" || fail "E: expected the real platform-distribution.yaml Kustomization document"
+e_multi="$scratch/platform-pin-multidoc.yaml"
+{ cat "$e_pin"; echo '---'; cat "$e_dist"; } > "$e_multi"
+grep -q '^---$' "$e_multi" || fail "E: the reassembled real stream carries no '---' separator"
 e_tag=$(awk '/^    tag: / {print $2; exit}' "$e_pin")
 e_regexp=$(awk -F': ' '/^  EVIDENCE_EXPECTED_IDENTITY_REGEXP:/ {print $2; exit}' "${here}/.github/workflows/shift-left.yml")
 e_issuer=$(awk -F': ' '/^  EXPECTED_ISSUER:/ {print $2; exit}' "${here}/.github/workflows/shift-left.yml")
@@ -204,7 +218,23 @@ unverified = [e['version'] for e in d['elements'] if e['verified'] is not True]
 assert not unverified, f'cosign did not verify: {unverified}'
 print('ok  E: real cosign verify-blob ACCEPTED platform\\'s real committed evidence for ' + ', '.join(e['version'] for e in d['elements']))
 "
-echo "ok  E: parse_pin() reads the real two-document platform-pin.yaml shape (no ComposerError), reaches a real checkout at ${e_tag} + commit verification, and the whole gate PASSES with the real identity constants and real cosign signature verification"
+echo "ok  E: the gate PASSES against the real, currently-committed platform-pin.yaml -- real checkout at ${e_tag}, commit verification, real identity constants, real cosign signature verification"
+
+# E-multi: the same gate, over the REAL two-document stream the two committed
+# files form together. This is the parse_pin() ComposerError regression, kept
+# alive after the ticket-42 split: a second, non-GitRepository document in the
+# stream must be walked past, not choked on.
+set +e
+gate --platform-dir "$e_platform" --new-pin-yaml "$e_multi" \
+     --identity-regexp "$e_regexp" --issuer "$e_issuer" \
+     --out "$scratch/e-multi-summary.json" > "$scratch/e-multi.out" 2>&1
+e_multi_code=$?
+set -e
+grep -q "^Traceback" "$scratch/e-multi.out" && fail "E-multi: parse_pin() crashed on the real multi-document pin shape (ComposerError) -- $(cat "$scratch/e-multi.out")"
+[ "$e_multi_code" -eq 0 ] || fail "E-multi: expected a real PASS over the reassembled two-document stream, got exit $e_multi_code: $(cat "$scratch/e-multi.out")"
+cmp -s "$scratch/e-summary.json" "$scratch/e-multi-summary.json" \
+  || fail "E-multi: the gate reached a different verdict on the two-document stream than on the pin file alone"
+echo "ok  E-multi: parse_pin() reads tag/commit past a second (Kustomization) document with no ComposerError, and the gate reaches the identical verdict"
 
 say "Scenario E2: the SAME real bundles, refused by REAL cosign when the identity constant names a foreign publisher -- the identity pin is load-bearing against a real Fulcio certificate, not only against a string"
 # verify-identity-regexp.sh proves the CONSTANT's anchoring and escaping
@@ -443,7 +473,7 @@ echo "resolved-commit disagreement with the pinned commit field, and refuses -- 
 echo "binary, real subprocess, real exit code -- when signed evidence is entirely missing (the real,"
 echo "currently-tagged v1.0.0, which honestly predates cs-27), when a present bundle is malformed,"
 echo "and when a real bundle's real certificate identity is not the publisher this institution pins."
-echo "Against the REAL committed platform-pin.yaml it reads the real two-document shape, and real"
+echo "Against the REAL committed platform-pin.yaml, and against the two-document stream it forms with"
 echo "cosign really ACCEPTS platform's real committed evidence: the gate passes unskipped. On real"
 echo "committed evidence it composes across real multi-version content with no"
 echo "retirement to a real PASS (printing, never downgrading, when composed is weaker than the"

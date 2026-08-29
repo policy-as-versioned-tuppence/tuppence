@@ -1,0 +1,159 @@
+# The composed set, installed from tuppence's OWN signed tag (ticket 16 answer item Q5).
+#
+# Until this file existed, nothing under gitops/ referenced composed/ at all: the adopter's
+# Kustomization reconciled ./apps -- a namespace and two ConfigMaps -- and every policy object on
+# kind-tuppence had been put there by `kubectl apply`. That is why the five-fact sample checks
+# the Flux INVENTORY (fact 5) as well as the object's bytes (fact 4): a hand-applied object with
+# the right name satisfies the weaker check and proves nothing about reconciliation.
+#
+# The shape is platform's own `distribution/versions.yaml`, one level down: ONE version array is
+# the whole contract, a ResourceSet ranges it into a Kustomization per version, and the
+# orphan-guard's CEL allow-list is ranged from the SAME array so the set of runnable versions
+# cannot drift from the set the array declares.
+#
+# What is different here, and deliberately so:
+#
+#   * the source is DRIFTWOOD's own repository at DRIFTWOOD's own signed tag. tuppence does not
+#     install platform's tree; it installs the artefact its own composition rendered from
+#     platform's and nist's signed parents (composed/HEADER.yaml records those parent SHAs, and
+#     fact 3 of the sample checks the live platform and nist pins against them).
+#   * the tag is v1.1.0, not the v1.0.0 in gitops/flux-system/gotk-sync.yaml. v1.0.0 predates
+#     composed/ and does not carry the tree this reconciles. A self-pin bump is a reviewed PR that
+#     moves tag and commit together (renovate.json's customManagers track nist and platform, not
+#     the self-pin).
+#   * there is no `spec.verify` here. Flux's GitRepository.spec.verify speaks OpenPGP, and one
+#     signature -- the gitsign tag -- is the only one this estate has (ADR-0023, D3). Verification
+#     at the source boundary is the identity-pinned gitsign-verifying controller of ticket 41,
+#     which reads the three `gitsign-*` annotations above. Where that controller has not run,
+#     nothing has looked at the signature, so fact 2 of the five-fact sample is observed NULL --
+#     could-not-look, which is never a pass. Writing a `verify:` block that cannot verify a
+#     gitsign tag would turn that honest could-not-look into a green that means nothing, and a
+#     `verify:` block that CAN pass is a second signer, which D3 forbids -- so fact 2 grades a
+#     source verified through `spec.verify` as observed FALSE.
+#
+# OPT-IN, exactly like gitops/platform/: not listed in gitops/apps/kustomization.yaml, whose
+# Kustomization health-gates the Phase-0 reconcile with `wait: true` and would fail on any cluster
+# without flux-operator's ResourceSet CRD. Apply it with:
+#
+#     kubectl apply -k gitops/composed/
+#
+# .github/workflows/drift-sample.yml does exactly that on its ephemeral cluster.
+# ponytail: still opt-in after ticket 42's widening, and deliberately. kind-tuppence carries
+# neither Kyverno nor flux-operator, and gitops/apps health-gates with `wait: true`, so listing
+# this there would break the offline touring demo on the one cluster that still runs it. The
+# ceiling is that the composed set is in force only where somebody applied this -- and the sample
+# reports that as facts 3, 4 and 5 observed false, never as a skip. Upgrade path: install the
+# engine on the long-lived cluster in scripts/up.sh, then move this into gitops/apps.
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: tuppence-composed
+  namespace: flux-system
+  annotations:
+    # Ticket 41's identity-pinned gitsign-verifying controller reads these three. Flux's own
+    # spec.verify cannot verify a gitsign tag (ADR-0023 D3, fluxcd/source-controller#1068), so
+    # this controller verifies tuppence's own tag and suspends the composed Kustomizations if it fails.
+    # The regexp and issuer are the constants tuppence's own release.yml pins; the five-fact
+    # sample re-reads them off the live object and grades fact 2 against them, so a boundary that
+    # verified with somebody else's identity is observed false rather than merely 'verified'.
+    policy-as-versioned.dev/gitsign-identity-regexp: ^https://github\.com/policy-as-versioned-tuppence/tuppence/\.github/workflows/cut-release\.yml@refs/heads/(main|release/[0-9]+\.[0-9]+\.x)$
+    policy-as-versioned.dev/gitsign-issuer: https://token.actions.githubusercontent.com
+    policy-as-versioned.dev/gitsign-gates: flux-system/composed-v2-0-0,flux-system/composed-v2-0-1,flux-system/composed-v3-0-0
+  labels:
+    policy-as-versioned.dev/composed-for: tuppence
+spec:
+  interval: 1m
+  url: https://github.com/policy-as-versioned-tuppence/tuppence
+  ref:
+    tag: v1.1.0
+    commit: 751522b3bca98c40373c9bcb8b72ab376ab3be5b
+    # The resolved SHA tuppence's own v1.1.0 tag points to (`git rev-parse v1.1.0^{commit}`,
+    # 2026-08-29). Belt-and-braces immutability, ADR-0001.
+---
+apiVersion: fluxcd.controlplane.io/v1
+kind: ResourceSet
+metadata:
+  name: composed-set
+  namespace: flux-system
+  labels:
+    policy-as-versioned.dev/composed-for: tuppence
+spec:
+  inputs:
+    - versions:
+        # The versions tuppence's composition rendered under composed/policies/. This array is
+        # the adopter's contract and `scripts/render_composed.py` READS IT to decide what to
+        # render offline, so the offline render and the install can never name different sets.
+        - { version: "2.0.0" }
+        - { version: "2.0.1" }
+        - { version: "3.0.0" }
+        # 4.0.0 -- the cage release (ticket 26) -- is NOT here yet on purpose. This array is
+        # reconciled from the tree at tag v1.1.0, and v1.1.0 carries composed/policies up to
+        # 3.0.0 only. Add the element in the same reviewed pull request that bumps the
+        # tuppence-composed pin to a tag whose tree carries composed/policies/v4.0.0, or the
+        # Kustomization reconciles a path that does not exist.
+  resourcesTemplate: |
+    << range $v := (index (inputs) "versions") >>
+    ---
+    apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
+    metadata:
+      name: composed-v<< $v.version | slugify >>
+      namespace: flux-system
+      labels:
+        policy-as-versioned.dev/composed-for: tuppence
+    spec:
+      interval: 5m
+      retryInterval: 1m
+      timeout: 3m
+      sourceRef:
+        kind: GitRepository
+        name: tuppence-composed
+      path: ./composed/policies/v<< $v.version >>
+      prune: true    # retire a version -> delete the array element -> its objects are pruned
+      wait: true
+    << end >>
+    ---
+    # The orphan-guard: rendered ONCE, allow-list ranged from the SAME array, so a pod claiming a
+    # policy version no element declares cannot run. composed/orphan-guard.yaml is the same object
+    # rendered by tuppence's composition; fact 4 of the sample compares the live object to THAT
+    # file, so the two copies diverging is observed rather than assumed away.
+    # ponytail: the duplication exists because composed/ carries no kustomization.yaml and a Flux
+    # Kustomization cannot select single files out of a directory that also holds HEADER.yaml and
+    # evidence.json. Upgrade path: composed/ grows a kustomization.yaml and this block becomes a
+    # second `path:`.
+    apiVersion: policies.kyverno.io/v1alpha1
+    kind: ValidatingPolicy
+    metadata:
+      name: policy-version-orphan-guard
+      labels:
+        policy-as-versioned.dev/policy: platform-machinery
+        policy-as-versioned.dev/composed-for: tuppence
+      annotations:
+        policy-as-versioned.dev/inherited-from: platform@1.1.1
+        policy-as-versioned.dev/source-path: distribution/versions.yaml (rendered from the array)
+    spec:
+      validationActions:
+      - Deny
+      matchConstraints:
+        resourceRules:
+        - apiGroups:
+          - ''
+          apiVersions:
+          - v1
+          operations:
+          - CREATE
+          - UPDATE
+          resources:
+          - pods
+      matchConditions:
+      - name: has-policy-version-label
+        expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('') != ''
+      variables:
+      - name: allowed
+        expression: '[<< range $i, $v := (index (inputs) "versions") >><< if $i >>, << end >>''<< $v.version >>''<< end >>]'
+      - name: claimed
+        expression: object.metadata.labels['policy-as-versioned.dev/policy-version']
+      validations:
+      - expression: variables.allowed.exists(v, v == variables.claimed)
+        message: 'policy-version not in the platform-declared version array (orphan): no ResourceSet element declares it, so it cannot run.'

@@ -1,0 +1,253 @@
+name: drift-sample
+
+# The five-fact sample, on tuppence's own clock (ecosystem ticket 40; ticket 16 answer items Q1,
+# Q2, Q3, Q5; ADR-0023 decisions D1 and D3). The pre-registration -- the five facts, the three
+# falsifiers, the coverage floor and the cadence below -- is `drift/window.yaml`, section
+# `five_fact_sample`, committed before this workflow ever ran.
+#
+# 08:22 UTC, tuppence's own choice, inside the daily floor ticket 28 sets. No cross-org ordering
+# is promised.
+#
+# WHY AN EPHEMERAL CLUSTER, and not the local kind-tuppence one:
+#   the local cluster reconciles from an in-cluster seeded git server (scripts/up.sh bakes a
+#   throwaway repo and repoints Flux at it), so fact 1 -- "the GitRepository is Ready at the pinned
+#   {tag, commit} AND its url is the publisher's real remote" -- is observed FALSE there by
+#   construction. A run against it proves nothing about an org boundary. This job brings up a
+#   cluster with a fresh name, reconciles from the REAL remotes on github.com, samples, and deletes
+#   the cluster. It never touches the three named KinD clusters.
+#
+# WHY THE RUN STAYS GREEN WHEN THE CLUSTER DOES NOT CONVERGE:
+#   a red reconcile is the measurement, not a broken job. Every wait below is bounded and
+#   best-effort, and what actually happened is recorded in the sample as facts observed false. A
+#   job that failed instead would leave a coverage hole and report nothing -- the exact failure
+#   mode `drift/probe.sh` was written to avoid.
+#
+# THE LANE (ADR-0023, D1): a sample is an OBSERVATION and a clock may append one. This job appends
+# `drift/samples.jsonl` and nothing else. The `observation cage` step below is the same shape
+# twin-sweep.yml carries -- stage only OBSERVATION_LANE, fail the run on anything else in the
+# index or the tree -- and verify/schedules/verify-schedules.sh in the hub parses that env list.
+# It cuts no tag, creates no release, merges no pull request.
+
+on:
+  schedule:
+    - cron: "22 8 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  # ADR-0023, D1. The ONLY path any scheduled job in this repository may commit. Declared here as
+  # data so the cage step below and the hub's verify-schedules.sh read the same list.
+  OBSERVATION_LANE: "drift/samples.jsonl"
+  # Every binary is a pinned version with a checked digest, the same rule release.yml and
+  # twin-sweep.yml already follow. A `curl | bash` installer would put an unreviewed script inside
+  # the identity that signs this repository's observation commits.
+  KIND_VERSION: 0.32.0
+  KIND_SHA256: 50030de23cf40a18505f20426f6a8506bedf13c6e509244bd1fa9463721b0f54
+  FLUX_VERSION: 2.9.3
+  FLUX_SHA256: eae4e8608c0ade2bf4e8dec1669dbb6b0c28b5822b252d97feccfb4fb1181fd2
+  GITSIGN_VERSION: 0.17.1
+  GITSIGN_SHA256: 69213a8a0813a151e5a47d0060862952ff833a845d57309dff76f7ba6600abae
+  # Kyverno serves the CRDs the composed policy objects are instances of, and flux-operator serves
+  # the ResourceSet CRD gitops/composed/ needs. Pinned to the same versions driftwood's own
+  # drift-sample.yml pins and kind-driftwood runs -- the local kind-tuppence cluster carries neither,
+  # so there is nothing here to match it against and the engine exists only on this ephemeral
+  # cluster. A difference between the adopters' pins is then a version bump somebody made on
+  # purpose, in a reviewed PR, and not a cluster that drifted.
+  KYVERNO_VERSION: 1.18.2
+  KYVERNO_SHA256: 3dcd43eaf11f0719084217148cd0c82a8fa49faa9b1a783ea5bea2cf84041bda
+  FLUX_OPERATOR_VERSION: 0.58.1
+  FLUX_OPERATOR_SHA256: d674546f8cd6c9a09c55a279b119c880ae6d79c726ff7c57ec4d92b26827a04d
+  # The tag gitops/composed/composed-set.yaml pins. The offline render fact 4 compares against is
+  # taken from the tree AT this ref, not from the working checkout, so the comparison is against
+  # what the cluster was actually told to install.
+  COMPOSED_REF: v1.1.0
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history and tags: render_composed.py renders `git show <ref>:composed/...`, and
+          # gitsign verify-tag needs the annotated tag object.
+          fetch-depth: 0
+
+      - name: read the platform pin (the tag the gitsign verifier is taken from)
+        id: platform
+        run: |
+          set -euo pipefail
+          tag="$(sed -n 's/^ *tag: *//p' gitops/platform/platform-pin.yaml | sed 1q)"
+          [ -n "${tag}" ] || { echo "::error::gitops/platform/platform-pin.yaml pins no tag"; exit 1; }
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+      - name: check out platform at that pin, read-only, for identity/gitsign-verifier
+        uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-platform/platform
+          ref: ${{ steps.platform.outputs.tag }}
+          path: .platform-src
+
+      - name: install the pinned tools (binary + checksum, no marketplace action)
+        run: |
+          set -euo pipefail
+          curl -sSL -o kind "https://github.com/kubernetes-sigs/kind/releases/download/v${KIND_VERSION}/kind-linux-amd64"
+          echo "${KIND_SHA256}  kind" | sha256sum -c -
+          chmod +x kind && sudo mv kind /usr/local/bin/kind
+
+          curl -sSL -o flux.tar.gz "https://github.com/fluxcd/flux2/releases/download/v${FLUX_VERSION}/flux_${FLUX_VERSION}_linux_amd64.tar.gz"
+          echo "${FLUX_SHA256}  flux.tar.gz" | sha256sum -c -
+          tar xzf flux.tar.gz flux && chmod +x flux && sudo mv flux /usr/local/bin/flux && rm -f flux.tar.gz
+
+          curl -sSL -o gitsign "https://github.com/sigstore/gitsign/releases/download/v${GITSIGN_VERSION}/gitsign_${GITSIGN_VERSION}_linux_amd64"
+          echo "${GITSIGN_SHA256}  gitsign" | sha256sum -c -
+          chmod +x gitsign && sudo mv gitsign /usr/local/bin/gitsign
+
+          curl -sSL -o kyverno.yaml "https://github.com/kyverno/kyverno/releases/download/v${KYVERNO_VERSION}/install.yaml"
+          echo "${KYVERNO_SHA256}  kyverno.yaml" | sha256sum -c -
+          curl -sSL -o flux-operator.yaml "https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v${FLUX_OPERATOR_VERSION}/install.yaml"
+          echo "${FLUX_OPERATOR_SHA256}  flux-operator.yaml" | sha256sum -c -
+
+          pip install --quiet pyyaml
+
+      - name: bring up the ephemeral cluster
+        id: cluster
+        run: |
+          set -euo pipefail
+          # A FRESH name every run, never one of the three named clusters. Deleted by the last
+          # step, which runs `if: always()`.
+          name="dsample-${GITHUB_RUN_ID}"
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+          echo "context=kind-${name}" >> "$GITHUB_OUTPUT"
+          kind create cluster --name "${name}" --wait 120s
+
+      - name: install the engine, then reconcile from the REAL remotes
+        env:
+          CTX: ${{ steps.cluster.outputs.context }}
+        run: |
+          # Deliberately NOT `set -e`: a reconcile that does not converge is what this job is here
+          # to observe. See the header.
+          set -uo pipefail
+          # --server-side: Kyverno's install.yaml carries two CRDs whose schemas exceed the
+          # 256KB metadata.annotations limit a client-side apply writes into
+          # last-applied-configuration. A plain `kubectl apply` fails on exactly those two with
+          # "Too long: may not be more than 262144 bytes" and the policy CRDs never land (found by
+          # running it, 2026-08-28).
+          kubectl --context "${CTX}" apply --server-side --force-conflicts -f kyverno.yaml
+          kubectl --context "${CTX}" apply --server-side --force-conflicts -f flux-operator.yaml
+          flux --context "${CTX}" install --components=source-controller,kustomize-controller
+
+          # Ticket 41's controller, from platform's own tree at the pinned tag. Without it
+          # nothing looks at a signature on this cluster and fact 2 is could-not-look for every
+          # source -- which is honest, and is exactly why it is installed here instead: the
+          # GitRepositories below carry the three gitsign-* annotations the controller watches for,
+          # so with it running fact 2 becomes an observation of WHAT the boundary verified with.
+          # `|| true` and not `set -e`: the package landed in platform AFTER the tag this
+          # repo currently pins, so until a reviewed PR moves the pin to a tag whose tree
+          # carries identity/gitsign-verifier this apply is a no-op and fact 2 stays
+          # could-not-look. A missing controller is a hole in the observation, never a
+          # failed job and never a green.
+          kubectl --context "${CTX}" apply -k .platform-src/identity/gitsign-verifier || true
+          kubectl --context "${CTX}" -n flux-system rollout status deploy/gitsign-verifier --timeout=120s || true
+
+          # The committed pins, unedited: gotk-sync.yaml and gotk-sync-nist.yaml point at
+          # https://github.com/policy-as-versioned-*/*, which is exactly what fact 1 asks about.
+          # scripts/up.sh's git-server rewrite is never applied here.
+          kubectl --context "${CTX}" apply -f gitops/flux-system/
+          # platform-pin.yaml ONLY, never `-k gitops/platform/`: platform stays a VERIFIED SOURCE
+          # and its own policy fan-out (platform-distribution.yaml) is deliberately not installed
+          # here. Both fan-outs render a cluster-scoped ValidatingPolicy called
+          # policy-version-orphan-guard, so installing both puts two owners on one name and the
+          # live guard stops being tuppence's (ticket 16 Q5: "no second policy install").
+          kubectl --context "${CTX}" apply -f gitops/platform/platform-pin.yaml
+          kubectl --context "${CTX}" apply -k gitops/composed/
+
+          # Bounded, best-effort. Whatever has or has not converged when this returns is the state
+          # the sample records.
+          kubectl --context "${CTX}" -n kyverno rollout status deploy/kyverno-admission-controller --timeout=180s || true
+          for k in $(kubectl --context "${CTX}" -n flux-system get kustomizations.kustomize.toolkit.fluxcd.io -o name 2>/dev/null); do
+            kubectl --context "${CTX}" -n flux-system wait "${k}" --for=condition=Ready --timeout=180s || true
+          done
+          kubectl --context "${CTX}" -n flux-system get gitrepositories,kustomizations,resourcesets -o wide || true
+
+      - name: take the five-fact sample and append it to the observation log
+        env:
+          CTX: ${{ steps.cluster.outputs.context }}
+          CLUSTER: ${{ steps.cluster.outputs.name }}
+        run: |
+          set -euo pipefail
+          # `--ref` renders composed/ from the tree at the tag the ResourceSet pins, so fact 4
+          # compares the cluster against what the cluster was told to install rather than against
+          # whatever the default branch happens to hold today.
+          python3 drift/five-facts.py sample \
+            --context "${CTX}" --cluster "${CLUSTER}" --ref "${COMPOSED_REF}"
+          tail -3 drift/samples.jsonl
+          # Report the grade in the log for a reader of the run, and never fail on it: the grade
+          # belongs to verify-reconcile.sh under the gate, and a red measurement is a measurement.
+          python3 drift/five-facts.py grade || true
+
+      # --- the cage (ADR-0023, D1) ---------------------------------------------
+      # The same shape twin-sweep.yml carries, and deliberately not a second one. Everything this
+      # job may commit is staged from OBSERVATION_LANE and nothing else; anything left in the tree
+      # afterwards is a declaration escaping the lane, and this step fails the run rather than
+      # pushing it.
+      - name: the observation cage -- a clock appends observations, never a declaration
+        if: always()
+        run: |
+          set -euo pipefail
+          head="$(git rev-parse --abbrev-ref HEAD)"
+          if [ "${head}" != "${GITHUB_REF_NAME}" ]; then
+            echo "ok  HEAD is ${head}, not ${GITHUB_REF_NAME} -- this run commits nothing"
+            exit 0
+          fi
+          # `git reset` FIRST: the cage builds the index and nothing else, so a declaration an
+          # earlier step left staged cannot ride along already-clean.
+          git reset -q
+          for path in ${OBSERVATION_LANE}; do
+            if [ -e "${path}" ]; then git add -Af -- "${path}"; fi
+          done
+          bad=""
+          for f in $(git diff --cached --name-only); do
+            ok=0
+            for path in ${OBSERVATION_LANE}; do
+              case "${f}" in "${path}"|"${path}"/*) ok=1 ;; esac
+            done
+            [ "${ok}" = 1 ] || bad="${bad} ${f}"
+          done
+          if [ -n "${bad}" ]; then
+            echo "::error::this clock staged a declaration outside the observation lane"
+            echo "${bad}"
+            exit 1
+          fi
+          outside="$(git status --porcelain --untracked-files=all | grep -v '^[AMD] ' || true)"
+          if [ -n "${outside}" ]; then
+            echo "::error::the scheduled drift sample left a change outside the observation lane"
+            echo "${outside}"
+            exit 1
+          fi
+          if git diff --cached --quiet; then
+            echo "ok  nothing to observe, and nothing declared"; exit 0
+          fi
+          # The signing config goes in the LOCAL CONFIG, not on the one commit command: a
+          # `git pull --rebase` replays the commit, and with no commit.gpgsign in scope the replay
+          # comes out unsigned -- in exactly the contended case the pull exists for.
+          git config user.name "tuppence drift sampler"
+          git config user.email "drift-sample@policy-as-versioned-tuppence.invalid"
+          git config gpg.format x509
+          git config gpg.x509.program gitsign
+          git config commit.gpgsign true
+          git commit -m "drift sample: five facts on an ephemeral cluster [skip ci]"
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: delete the ephemeral cluster
+        if: always()
+        env:
+          NAME: ${{ steps.cluster.outputs.name }}
+        run: |
+          set -uo pipefail
+          [ -n "${NAME:-}" ] || exit 0
+          kind delete cluster --name "${NAME}" || true
+          kind get clusters || true
