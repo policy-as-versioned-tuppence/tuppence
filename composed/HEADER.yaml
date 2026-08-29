@@ -21,7 +21,7 @@ parents:
   kind: feed
   name: threat-register
   version: v1
-  sha: ddace466f0cc410f228aeff3b4c5704eeea15a30
+  sha: 50a0b330a730f4f9ee9520561b0c05c8be4c9268
 baseline: MODERATE
 governed-namespaces:
 - tuppence
@@ -601,3 +601,35 @@ selected-controls:
 - sr-8
 ungoverned-namespaces:
 - tuppence-reset
+exposure:
+  perspective: tuppence
+  currency: GBP
+  attachment:
+    amount: 15000.0
+    currency: GBP
+  total: 9262365.331667097
+  regimes:
+  - name: uk-gdpr
+    source: ico
+    feed: penalty-schema
+    version: v3
+    amount: 9039791.01976426
+    controls:
+    - source: nist
+      id: pl-2
+      amount: 2711937.3059292776
+    - source: nist
+      id: ra-3
+      amount: 2711937.3059292776
+    - source: nist
+      id: ca-2
+      amount: 1807958.203952852
+    - source: nist
+      id: ir-8
+      amount: 1807958.203952852
+  - name: threat-register
+    source: feeds
+    feed: threat-register
+    version: v1
+    amount: 222574.31190283748
+    controls: []

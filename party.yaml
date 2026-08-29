@@ -8,7 +8,11 @@
 # the threat register's publisher moved from platform to the new `feeds`
 # repo as feed/threat-register.
 party: tuppence
-roles: [risk-bearer, adopter]
+# `publisher` because this party publishes something a named consumer pins: the
+# exposure section in publishes[] below, which the insurer pins as a parent. ADR-0019
+# point 5 makes publishes[] the discovery record, and a publishes[] record on a party
+# whose roles do not say publisher is a record no resolver will look at.
+roles: [risk-bearer, adopter, publisher]
 reporting_currency: GBP
 # Copied from platform/risk/appetite.json orgs.tuppence.tolerance.
 appetite:
@@ -26,3 +30,16 @@ inherits:
 overlay:
   add: []
   restate: []
+publishes:
+  # The exposure section this repository's own composition renders into
+  # composed/HEADER.yaml and signs under this repository's own tag. It is a
+  # SECTION of a signed artefact, not an ADR-0019 envelope of its own, so it
+  # declares no payload_schema and there is no <path>/v*/feed.json to read --
+  # the tag is what signs it. Declared here because ADR-0019 point 5 makes
+  # publishes[] the only discovery record there is, and the insurer pins this
+  # exposure as a parent; without this record its pin resolved to nothing.
+  - kind: feed
+    name: exposure
+    path: composed
+    payload_schema: null
+    revoked: []

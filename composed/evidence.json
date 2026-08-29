@@ -26,7 +26,7 @@
       "kind": "feed",
       "name": "threat-register",
       "version": "v1",
-      "sha": "ddace466f0cc410f228aeff3b4c5704eeea15a30"
+      "sha": "50a0b330a730f4f9ee9520561b0c05c8be4c9268"
     }
   ],
   "members": [
@@ -161,6 +161,51 @@
       "name": "require-nonroot",
       "kind": "ValidatingPolicy",
       "version": "3.0.0",
+      "source_party": "platform",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "action": "Audit"
+    },
+    {
+      "family": "graded-enforcement",
+      "name": "cage-netpol",
+      "kind": "GeneratingPolicy",
+      "version": "4.0.0",
+      "source_party": "platform",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "action": null
+    },
+    {
+      "family": "graded-enforcement",
+      "name": "cage-tier",
+      "kind": "MutatingPolicy",
+      "version": "4.0.0",
+      "source_party": "platform",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "action": null
+    },
+    {
+      "family": "posture",
+      "name": "posture-trust-boundary",
+      "kind": "ValidatingPolicy",
+      "version": "4.0.0",
+      "source_party": "platform",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "action": "Deny"
+    },
+    {
+      "family": "posture",
+      "name": "stamp-posture",
+      "kind": "MutatingPolicy",
+      "version": "4.0.0",
+      "source_party": "platform",
+      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "action": null
+    },
+    {
+      "family": "require-nonroot",
+      "name": "require-nonroot",
+      "kind": "ValidatingPolicy",
+      "version": "4.0.0",
       "source_party": "platform",
       "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
       "action": "Audit"
@@ -1351,6 +1396,12 @@
       "old_tier": "isolated",
       "proposed_tier": "isolated",
       "changed": false,
+      "lef": [
+        1,
+        2,
+        4
+      ],
+      "lef_basis": "lm sourced from ICO (Information Commissioner's Office) real public fines (UK GDPR / Data Protection Act 2018 s157). warn/deny lef are editorial (schema doesn't carry frequency). Not sized to any subscriber: priced at the statutory cap.",
       "proposed_as": "label",
       "holes": [
         {
@@ -1395,6 +1446,12 @@
       "old_tier": "isolated",
       "proposed_tier": "isolated",
       "changed": false,
+      "lef": [
+        3,
+        6,
+        14
+      ],
+      "lef_basis": "payment-fraud / account-takeover via API abuse (fintech, FCA/PCI, availability+fraud flavour). lef sourced from DBIR financial-sector base rate + card-scheme fraud-loss reporting, editorial midpoint.",
       "proposed_as": "label",
       "holes": [],
       "total": null
