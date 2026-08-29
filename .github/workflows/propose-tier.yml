@@ -2,12 +2,18 @@ name: propose-tier
 
 # Ticket 17 (policy-composition); ADR-0015. The proposer's LAST step, unlike
 # every propose-never-dispose demonstrator elsewhere in this estate: it
-# actually commits, pushes and opens -- a pull request editing
-# `posture.acme.io/tier` on deploy/pod.yaml, or (for a proposed `deny`) an
-# issue instead. It never merges either: the war-gamer/proposer_bounds/
-# tier_pr chain still exposes no merge()/approve()/dispose() by
-# construction (see each module's own selfcheck), and the opened PR still
-# rides ordinary human review.
+# actually commits, pushes and opens -- ALWAYS a pull request, editing
+# `posture.acme.io/tier` on this repo's GOVERNED NAMESPACE manifest, which
+# the proposer finds by its `policy-as-versioned.dev/governed: "true"`
+# label and never by a path. ADR-0022 made the Namespace the declaration
+# and the pod label its output (a pod-label edit would be clobbered at the
+# next admission and change nothing), and retired ADR-0015's "a proposed
+# deny opens an issue" branch: the bottom rung is `isolated`, a real
+# running cage, so nothing is refused and no proposal needs anything but a
+# PR. It never merges: the war-gamer/proposer_bounds/tier_pr chain still
+# exposes no merge()/approve()/dispose() by construction (see each
+# module's own selfcheck), and the opened PR still rides ordinary human
+# review.
 #
 # Reads composed/evidence.json -- tuppence's own committed evidence
 # document (ticket 18 wires composition into this repo's CI and commits it
@@ -46,7 +52,8 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  issues: write
+  # no `issues: write`: ADR-0022 removed the issue branch, so this job has
+  # no path that could open one.
 
 # The observation lane, declared once as data so the cage step and
 # verify/schedules/verify-schedules.sh read the SAME list (ADR-0024, D1). These
@@ -184,7 +191,7 @@ jobs:
           fi
           test -f "${out}/composed/evidence.json"
 
-      - name: run the proposer -- reads the FRESHLY re-composed evidence, lands PR or issue
+      - name: run the proposer -- re-composed evidence in, one PR on the governed Namespace out
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: policy-as-versioned-tuppence/tuppence
@@ -200,7 +207,6 @@ jobs:
           python3 platform/wargamer/tier_pr.py run \
             --adopter-dir tuppence \
             --evidence "${RUNNER_TEMP}/recomposed/composed/evidence.json" \
-            --workload tuppence/deploy/pod.yaml \
             --org tuppence \
             --as-of "${{ steps.recompose.outputs.as_of }}"
 
