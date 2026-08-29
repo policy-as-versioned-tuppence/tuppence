@@ -186,6 +186,19 @@ jobs:
             --head-ref HEAD \
             --out adopter-summary.json
 
+      # Ticket 43 (18 Answer 4): the per-institution matrix row is filled HERE,
+      # by the adopter, with platform's PUBLISHED computed-semver package, run
+      # against this institution's own claimed policy versions with its own
+      # workloads added to the generated corpus. The publisher's own matrix
+      # stays empty and says so -- NORTH-STAR §2 forbids platform reading this
+      # repository. The row lands in composed/evidence.json; the PR carries it
+      # like every other composed change, and a human merges.
+      - name: fill this institution's own per-institution matrix row (ticket 43)
+        run: |
+          set -euo pipefail
+          python3 tuppence/.github/scripts/adopter-gate.py --matrix-row \
+            --platform-dir platform --adopter-dir tuppence
+
       - name: render the verified evidence into the pull request BODY (cs-29 -- the body itself, not a comment)
         # `if: always()` -- a REFUSAL is the most valuable output this gate
         # produces (spec.md), so the reviewer sees WHY, not just a red X.
