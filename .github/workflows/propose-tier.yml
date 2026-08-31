@@ -167,6 +167,28 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      # The two parents ticket 21 added, on the same footing as ico above.
+      # This job composes, so it needs every parent party.yaml declares -- and
+      # it fetched only platform, nist and ico, so composition refused with
+      #     feeds/feed@v1: no parent tree provided
+      #     insurer/feed@v1: no parent tree provided
+      # and the proposer clock has been red since. shift-left.yml had the same
+      # hole and was fixed first; this is the second job that composes, and
+      # missing it is why the clock stayed red after that fix.
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-feeds/feeds
+          path: feeds
+          ref: ecosystem/thin-slice
+          fetch-depth: 0
+
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-insurer/insurer
+          path: insurer
+          ref: ecosystem/thin-slice
+          fetch-depth: 0
+
       - name: re-compose at today's date -- into RUNNER_TEMP, never into the repo
         id: recompose
         run: |
