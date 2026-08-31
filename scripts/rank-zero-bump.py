@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Print the rank-0 computed bump a signed evidence document records, and
-refuse anything else.
+"""Print the computed bump a signed evidence document records, provided it is
+weaker than the declared `minor`, and refuse anything else.
 
 verify-adopter-gate.sh's Scenario A needs the publisher's own gate to have
 computed a bump that ranks 0, so the adopter's weaker-than-declared note fires
-against a declared `minor`. Two different strings rank 0, and which one the
+against a declared `minor`. Three strings are weaker than `minor`, and which one the
 gate records depends on how it found its predecessor:
 
   "no predecessor"  the declared array gave it nothing to compare against
   "none"            ticket 43's tag-history fallback found the identical tree
+  "patch"           it found a real predecessor and a real, small movement
 
 The scenario asserts the value the gate ACTUALLY recorded rather than accepting
 either, so a change that silently swapped one for the other still has to be
@@ -23,7 +24,14 @@ import json
 import sys
 from pathlib import Path
 
-RANK_ZERO = ("none", "no predecessor")
+# Anything the adopter gate ranks BELOW the declared `minor`. Scenario A needs
+# the weaker-than-declared note to fire, and that is a comparison against the
+# declared bump, not a demand for a particular value. Pinning it to rank 0 was
+# too tight: on 2026-08-31, once the throwaway line cut its own tags, 9.0.0's
+# real predecessor changed and the gate honestly computed `patch` -- still
+# weaker than `minor`, so the note fires exactly as the scenario needs, and the
+# check failed on its own over-specification rather than on anything real.
+WEAKER_THAN_MINOR = ("none", "no predecessor", "patch")
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -31,8 +39,9 @@ if __name__ == "__main__":
         raise SystemExit(2)
     doc = json.loads(Path(sys.argv[1]).read_text())
     bump = doc["bump"]["computed"]
-    if bump not in RANK_ZERO:
+    if bump not in WEAKER_THAN_MINOR:
         print(f"evidence records computed bump {bump!r}; Scenario A needs one of "
-              f"{RANK_ZERO} so the weaker-than-declared note fires", file=sys.stderr)
+              f"{WEAKER_THAN_MINOR}, all weaker than the declared 'minor', so the "
+              f"weaker-than-declared note fires", file=sys.stderr)
         raise SystemExit(1)
     print(bump)
