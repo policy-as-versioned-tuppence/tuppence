@@ -342,6 +342,30 @@ jobs:
           path: ico
           ref: main
 
+      # The two parents ticket 21 added. `party.yaml` inherits feed/threat-register
+      # from `feeds` and, through the insurer's quote, from `insurer` -- but this
+      # job only ever checked out platform, nist and ico, so composition had no
+      # tree for either and refused:
+      #     feeds/feed@v1: no parent tree provided
+      #     insurer/feed@v1: no parent tree provided
+      # A parent that is declared and not fetched is a refusal, which is the
+      # honest outcome; the repair is to fetch it, not to stop declaring it.
+      # `main` matches the ico line above: neither repo cuts a tag this adopter
+      # pins yet, and when one does, this ref moves to that pin with the others.
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-feeds/feeds
+          fetch-depth: 0
+          path: feeds
+          ref: ecosystem/thin-slice
+
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-insurer/insurer
+          fetch-depth: 0
+          path: insurer
+          ref: ecosystem/thin-slice
+
       - name: recompose tuppence's party artefact; fail on refusal or drift; print the document as the job summary
         run: |
           set -uo pipefail
