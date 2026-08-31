@@ -82,6 +82,27 @@ jobs:
           fetch-depth: 0
           ref: main
 
+      # The two parents ticket 21 added. This job re-renders the composed
+      # artefact before any tag is cut, so it needs every parent party.yaml
+      # declares. Without them composition refuses with "feeds/feed@v1: no
+      # parent tree provided" and the release fails at its own gate. This is
+      # the third job in this repository that composes; shift-left.yml and
+      # propose-tier.yml were fixed first, and each was found only when it
+      # next ran, which is the argument for fixing all three together.
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-feeds/feeds
+          path: feeds
+          fetch-depth: 0
+          ref: ecosystem/thin-slice
+
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-insurer/insurer
+          path: insurer
+          fetch-depth: 0
+          ref: ecosystem/thin-slice
+
       - name: ticket 18 -- re-render the composed artefact from the recorded parent SHAs, byte-for-byte, before any tag is cut
         # Ticket 12's verify(): a release gate after the tag can only burn
         # the version number (ADR-0011's own reasoning for the publisher
