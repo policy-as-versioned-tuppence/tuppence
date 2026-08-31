@@ -61,7 +61,7 @@ command -v cosign >/dev/null 2>&1 || {
 }
 
 scratch="$(mktemp -d)"
-trap 'rm -rf "$scratch"' EXIT
+trap '[ -n "${KEEP_SCRATCH:-}" ] && echo "scratch kept: $scratch" || rm -rf "$scratch"' EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
 say() { echo; echo "== $* =="; }
 
@@ -295,23 +295,50 @@ git config user.name test
 export CUT_RELEASE_TEST_MODE=1
 export GITHUB_REPOSITORY_OWNER=scratch
 
-render_from() {  # render_from <new-version> <copy-from-version>
-  local nv="$1" cv="$2"
-  python3 - "$nv" "$cv" <<'PY'
+render_from() {  # render_from <new-version>
+  # Renders the tree with ticket 12's own renderer, because cut-release-gate.py
+  # re-renders the tree being cut and REFUSES anything that does not match --
+  # a hand-copied or hand-edited tree can never be cut, by design. So a scratch
+  # release always carries today's authoring body, and what decides whether it
+  # moves anything is which version the gate finds to compare it against. See
+  # tag_untagged_trees below.
+  local nv="$1"
+  python3 - "$nv" <<'PY'
 import sys, importlib.util
 from pathlib import Path
-nv, cv = sys.argv[1], sys.argv[2]
+nv = sys.argv[1]
 spec = importlib.util.spec_from_file_location("rvt", "distribution/render-version-tree.py")
 rvt = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(rvt)
-target = Path(f"distribution/policies/v{nv}")
-rvt.write_tree(nv, target)
-nv_slug, cv_slug = nv.replace(".", "-"), cv.replace(".", "-")
-src = Path(f"distribution/policies/v{cv}/require-nonroot.yaml").read_text()
-(target / "require-nonroot.yaml").write_text(
-    src.replace(f"{cv_slug}", nv_slug).replace(f"'{cv}'", f"'{nv}'")
-)
+rvt.write_tree(nv, Path(f"distribution/policies/v{nv}"))
 PY
+}
+
+tag_untagged_trees() {
+  # Every released tree in the throwaway clone gets its policy tag, if it does
+  # not already have one.
+  #
+  # WHY: ticket 43 (2026-08-29) taught cut-release-gate.py to fall back to the
+  # real TAG history for a predecessor when the declared array holds one line.
+  # In the real platform repo the newest TREE is 4.0.0 and the newest TAG is
+  # 3.0.0, because cutting policy/v4.0.0 needs a gitsign signature only
+  # cut-release.yml can make in Actions. A scratch release rendered from
+  # today's authoring copies is therefore compared against 3.0.0's body and
+  # honestly classifies MAJOR -- the whole cage release sits between them.
+  # Scenario A needs a release that moves nothing, so the throwaway clone is
+  # first brought to the state that exists the moment the owner lets CI cut the
+  # tag it is already waiting for. Nothing is faked: the tag is a plain local
+  # git tag in a scratch repo, it signs nothing, and the real repo is untouched.
+  local v
+  for v in $(python3 "${here}/scripts/untagged-released-trees.py" .); do
+    git -c tag.gpgSign=false tag -f -m "scratch: policy/v${v}" "policy/v${v}" HEAD >/dev/null
+    echo "  setup: tagged policy/v${v} in the throwaway clone (the real repo waits on CI to sign it)"
+  done
+  local newest_tree newest_tag
+  newest_tree=$(python3 "${here}/scripts/untagged-released-trees.py" . --newest-tree)
+  newest_tag=$(python3 "${here}/scripts/newest-released-tree.py" .)
+  [ "$newest_tree" = "$newest_tag" ] \
+    || fail "setup: newest released tree is $newest_tree but the newest tagged version is $newest_tag; a scratch release cannot move nothing"
 }
 
 set_array() {  # set_array '{"version":"1","tag":"policy/v1","commit":"..."}' ...  (zero args -> empty array)
@@ -372,9 +399,13 @@ cut() {  # cut <tags.json>
 # nothing this adopter-gate test needs to prove. Releases 2 and 3 below
 # stay at the array level on purpose -- real git commits and real tags,
 # just not run back through the (already cs-27-tested) publisher gate.
-render_from "9.0.0" "3.0.0"
+# Nothing about the version line is named here any more. This scenario exists
+# to test the ADOPTER gate's composition, not the publisher's window, so it
+# derives the state it needs and asserts it got it.
+tag_untagged_trees
+render_from "9.0.0"
 git add "distribution/policies/v9.0.0"
-git commit -q -m "scratch: render v9.0.0 (copy of v3.0.0, self-scope renamed)"
+git commit -q -m "scratch: render v9.0.0 from the authoring copies"
 tree_9_0_0=$(git rev-parse HEAD)
 set_array '{"version":"9.0.0","tag":"policy/v9.0.0","commit":"'"$tree_9_0_0"'"}'
 git add distribution/versions.yaml
@@ -420,22 +451,30 @@ set -e
 cat "$scratch/a.out"
 [ "$a_code" -eq 0 ] || fail "A: expected a real PASS (array unchanged, no retirement), got exit $a_code"
 grep -q "^declared (platform tag v2.0.0 -> v2.1.0): minor" "$scratch/a.out" || fail "A: expected declared=minor from the tag jump (v2.0.0->v2.1.0)"
-grep -q "NOTE: composed bump ('no predecessor') is weaker than the publisher's tag ('minor')" "$scratch/a.out" \
-  || fail "A: expected the weaker-than-declared note, informational only, nothing lowered"
+# The rank-0 bump the REAL gate recorded for 9.0.0, read back out of the
+# evidence it signed rather than named here: "no predecessor" when the array
+# gave the gate nothing to compare against, "none" when the tag-history
+# fallback found the identical newest tree. Both are rank 0, so the
+# weaker-than-declared note fires either way, and asserting the value the gate
+# actually recorded keeps the claim exact rather than accepting either.
+a_zero=$(python3 "${here}/scripts/rank-zero-bump.py" "$clone/computed-semver/evidence/9.0.0.json") \
+  || fail "A: 9.0.0's evidence does not carry a rank-0 computed bump"
+grep -q "NOTE: composed bump ('$a_zero') is weaker than the publisher's tag ('minor')" "$scratch/a.out" \
+  || fail "A: expected the weaker-than-declared note for '$a_zero', informational only, nothing lowered"
 python3 -c "
 import json
 d = json.load(open('$scratch/a-summary.json'))
 assert d['retired'] == [], d['retired']
-assert d['composed'] == 'no predecessor', d['composed']
+assert d['composed'] == '$a_zero', d['composed']
 assert {e['version'] for e in d['elements']} == {'9.0.0'}, d['elements']
-assert d['elements'][0]['evidence']['bump']['computed'] == 'no predecessor', d['elements']
+assert d['elements'][0]['evidence']['bump']['computed'] == '$a_zero', d['elements']
 print('ok  A: composed by RE-READING 9.0.0\\'s real committed evidence (never recomputed), no retirement, real PASS')
 "
 
 echo "  A-render: render-evidence-comment.py against this REAL summary (not the fixture its own selfcheck uses)"
 python3 "${here}/.github/scripts/render-evidence-comment.py" "$scratch/a-summary.json" > "$scratch/a-comment.md"
 grep -q '`minor`' "$scratch/a-comment.md" || fail "A-render: declared bump not rendered"
-grep -q '`no predecessor`' "$scratch/a-comment.md" || fail "A-render: composed bump not rendered"
+grep -q "\`$a_zero\`" "$scratch/a-comment.md" || fail "A-render: composed bump not rendered"
 grep -q 'sha256:' "$scratch/a-comment.md" || fail "A-render: corpus checksum not rendered"
 if grep -q '%' "$scratch/a-comment.md"; then fail "A-render: a coverage percentage leaked into the rendered comment"; fi
 echo "ok  A-render: rendered a real evidence summary to markdown, no percentage anywhere"
