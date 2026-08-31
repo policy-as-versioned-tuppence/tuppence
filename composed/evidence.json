@@ -5,8 +5,8 @@
     {
       "party": "platform",
       "kind": "implementations",
-      "version": "1.1.1",
-      "sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60"
+      "version": "2.0.1",
+      "sha": "533dccb0a823001b396fd60ab08014bf75065a37"
     },
     {
       "party": "nist",
@@ -16,15 +16,17 @@
     },
     {
       "party": "ico",
-      "kind": "pricing",
-      "version": "v1",
-      "sha": "5d1e76fa6cffe9bc42ffcae6ee2e06c29e841809"
+      "kind": "feed",
+      "name": "penalty-schema",
+      "version": "v3",
+      "sha": "e1fb8eb5663e50088b13d872a4e44112476f516e"
     },
     {
-      "party": "platform",
-      "kind": "threat",
+      "party": "feeds",
+      "kind": "feed",
+      "name": "threat-register",
       "version": "v1",
-      "sha": "7a36bf73c89fca4b168629b1a54635265158fa2a"
+      "sha": "50a0b330a730f4f9ee9520561b0c05c8be4c9268"
     }
   ],
   "members": [
@@ -32,135 +34,45 @@
       "family": "graded-enforcement",
       "name": "cage-netpol",
       "kind": "GeneratingPolicy",
-      "version": "2.0.0",
+      "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "source_sha": "533dccb0a823001b396fd60ab08014bf75065a37",
       "action": null
     },
     {
       "family": "graded-enforcement",
       "name": "cage-tier",
       "kind": "MutatingPolicy",
-      "version": "2.0.0",
+      "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "source_sha": "533dccb0a823001b396fd60ab08014bf75065a37",
       "action": null
     },
     {
       "family": "posture",
       "name": "posture-trust-boundary",
       "kind": "ValidatingPolicy",
-      "version": "2.0.0",
+      "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "source_sha": "533dccb0a823001b396fd60ab08014bf75065a37",
       "action": "Deny"
     },
     {
       "family": "posture",
       "name": "stamp-posture",
       "kind": "MutatingPolicy",
-      "version": "2.0.0",
+      "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "source_sha": "533dccb0a823001b396fd60ab08014bf75065a37",
       "action": null
     },
     {
       "family": "require-nonroot",
       "name": "require-nonroot",
       "kind": "ValidatingPolicy",
-      "version": "2.0.0",
+      "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": "Audit"
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-netpol",
-      "kind": "GeneratingPolicy",
-      "version": "2.0.1",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-tier",
-      "kind": "MutatingPolicy",
-      "version": "2.0.1",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "posture",
-      "name": "posture-trust-boundary",
-      "kind": "ValidatingPolicy",
-      "version": "2.0.1",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": "Deny"
-    },
-    {
-      "family": "posture",
-      "name": "stamp-posture",
-      "kind": "MutatingPolicy",
-      "version": "2.0.1",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "require-nonroot",
-      "name": "require-nonroot",
-      "kind": "ValidatingPolicy",
-      "version": "2.0.1",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": "Audit"
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-netpol",
-      "kind": "GeneratingPolicy",
-      "version": "3.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-tier",
-      "kind": "MutatingPolicy",
-      "version": "3.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "posture",
-      "name": "posture-trust-boundary",
-      "kind": "ValidatingPolicy",
-      "version": "3.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": "Deny"
-    },
-    {
-      "family": "posture",
-      "name": "stamp-posture",
-      "kind": "MutatingPolicy",
-      "version": "3.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
-      "action": null
-    },
-    {
-      "family": "require-nonroot",
-      "name": "require-nonroot",
-      "kind": "ValidatingPolicy",
-      "version": "3.0.0",
-      "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "source_sha": "533dccb0a823001b396fd60ab08014bf75065a37",
       "action": "Audit"
     },
     {
@@ -169,7 +81,7 @@
       "kind": "ValidatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "source_sha": "533dccb0a823001b396fd60ab08014bf75065a37",
       "action": null
     },
     {
@@ -178,7 +90,7 @@
       "kind": "ValidatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "source_sha": "533dccb0a823001b396fd60ab08014bf75065a37",
       "action": null
     }
   ],
@@ -1336,27 +1248,78 @@
   "prices": [
     {
       "source": "ico",
-      "kind": "pricing",
-      "old_version": "v1",
-      "new_version": "v1",
-      "old_price": 16901471.55226278,
-      "new_price": 16901471.55226278,
-      "old_tier": "deny",
-      "proposed_tier": "deny",
+      "kind": "feed",
+      "perspective": "tuppence",
+      "currency": "GBP",
+      "amount": 9039791.01976426,
+      "per_customer": null,
+      "name": "penalty-schema",
+      "old_version": "v3",
+      "new_version": "v3",
+      "old_price": 9039791.01976426,
+      "new_price": 9039791.01976426,
+      "old_tier": "isolated",
+      "proposed_tier": "isolated",
       "changed": false,
-      "proposed_as": "issue"
+      "lef": [
+        1,
+        2,
+        4
+      ],
+      "lef_basis": "lm sourced from ICO (Information Commissioner's Office) real public fines (UK GDPR / Data Protection Act 2018 s157). warn/deny lef are editorial (schema doesn't carry frequency). Not sized to any subscriber: priced at the statutory cap.",
+      "proposed_as": "label",
+      "holes": [
+        {
+          "source": "nist",
+          "id": "pl-2",
+          "weight": 0.3,
+          "amount": 2711937.3059292776
+        },
+        {
+          "source": "nist",
+          "id": "ra-3",
+          "weight": 0.3,
+          "amount": 2711937.3059292776
+        },
+        {
+          "source": "nist",
+          "id": "ca-2",
+          "weight": 0.2,
+          "amount": 1807958.203952852
+        },
+        {
+          "source": "nist",
+          "id": "ir-8",
+          "weight": 0.2,
+          "amount": 1807958.203952852
+        }
+      ],
+      "total": 9039791.01976426
     },
     {
-      "source": "platform",
-      "kind": "threat",
+      "source": "feeds",
+      "kind": "feed",
+      "perspective": "tuppence",
+      "currency": "GBP",
+      "amount": 222574.31190283748,
+      "per_customer": null,
+      "name": "threat-register",
       "old_version": "v1",
       "new_version": "v1",
       "old_price": 222574.31190283748,
       "new_price": 222574.31190283748,
-      "old_tier": "deny",
-      "proposed_tier": "deny",
+      "old_tier": "isolated",
+      "proposed_tier": "isolated",
       "changed": false,
-      "proposed_as": "issue"
+      "lef": [
+        3,
+        6,
+        14
+      ],
+      "lef_basis": "payment-fraud / account-takeover via API abuse (fintech, FCA/PCI, availability+fraud flavour). lef sourced from DBIR financial-sector base rate + card-scheme fraud-loss reporting, editorial midpoint.",
+      "proposed_as": "label",
+      "holes": [],
+      "total": null
     }
   ],
   "limits": [
@@ -1365,6 +1328,13 @@
       "detail": "the cross-party rule-conflict path above is only exercised in the real estate once a second implementations publisher is pinned",
       "count": 1,
       "status": "open"
+    },
+    {
+      "name": "pinned-parent-lacks-rendered-versions",
+      "detail": "the composed set renders policy versions the pinned parent commit does not contain; the header names a parent release that holds none of these trees. every rendered version is present at the pinned commit",
+      "count": 0,
+      "checked": 1,
+      "status": "closed"
     }
   ]
 }

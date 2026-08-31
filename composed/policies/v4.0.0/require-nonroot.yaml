@@ -1,15 +1,15 @@
 apiVersion: policies.kyverno.io/v1alpha1
 kind: ValidatingPolicy
 metadata:
-  name: require-nonroot-3-0-0
+  name: require-nonroot-4-0-0
   labels:
     app.kubernetes.io/part-of: platform
     policy-as-versioned.dev/policy: require-nonroot
-    policy-as-versioned.dev/policy-version: 3.0.0
+    policy-as-versioned.dev/policy-version: 4.0.0
     policy-as-versioned.dev/composed-for: tuppence
   annotations:
-    policy-as-versioned.dev/inherited-from: platform@1.1.1
-    policy-as-versioned.dev/source-path: distribution/policies/v3.0.0/require-nonroot.yaml
+    policy-as-versioned.dev/inherited-from: platform@2.0.1
+    policy-as-versioned.dev/source-path: distribution/policies/v4.0.0/require-nonroot.yaml
 spec:
   validationActions:
   - Audit
@@ -26,9 +26,9 @@ spec:
       - pods
   matchConditions:
   - name: only-this-policy-version
-    expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('') == '3.0.0'
+    expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('') == '4.0.0'
   validations:
   - expression: object.spec.?securityContext.?runAsNonRoot.orValue(false) == true
-    message: pods on policy-version 3.0.0 must set spec.securityContext.runAsNonRoot=true
+    message: pods on policy-version 4.0.0 must set spec.securityContext.runAsNonRoot=true
   - expression: object.spec.containers.all(c, c.?securityContext.?readOnlyRootFilesystem.orValue(false) == true)
-    message: pods on policy-version 3.0.0 must set readOnlyRootFilesystem=true on every container
+    message: pods on policy-version 4.0.0 must set readOnlyRootFilesystem=true on every container

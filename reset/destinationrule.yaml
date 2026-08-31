@@ -4,7 +4,7 @@
 # SAN from the destination's Kubernetes ServiceAccount, using Istio's OWN
 # standard shape — `spiffe://<trustDomain>/ns/<ns>/sa/<sa>` — regardless of
 # what SPIRE actually issues. `customer-accounts-reset`'s real SVID carries
-# the posture-prefixed path (`spiffe://acme.internal/posture/2.0.0/ns/
+# the posture-prefixed path (`spiffe://acme.internal/posture/4.0.0/ns/
 # tuppence-reset/sa/customer-accounts-reset`), so every caller's outbound
 # cluster rejects it outright: `CERTIFICATE_VERIFY_FAILED`, surfaced to the
 # caller as a 503 (not a 403 — the AuthorizationPolicy is never reached).
@@ -19,9 +19,21 @@
 # override wasn't honoured for ISTIO_MUTUAL, it works as expected on Istio
 # 1.24 — confirmed live (403→200 for the current caller).
 #
-# Calibration knob: the SAN's `posture/2.0.0` segment must track
+# Calibration knob: the SAN's `posture/4.0.0` segment must track
 # authorizationpolicy.yaml's and openbao-role.yaml's version glob — all three
 # move together on a currency bump.
+#
+# 2026-08-29: the posture ClusterSPIFFEID's template is
+# `/posture/<version>/cage/<tier>/ns/<ns>/sa/<sa>` — it carries the CAGE RUNG as
+# well as the version, and this pin was missing that segment entirely. It went
+# unnoticed while the workloads claimed 2.0.0, a version whose cage-tier stamped
+# no tier at all. Moving them onto 4.0.0 (2.0.0 was retired for being unable to
+# admit a pod; every live version cages, and only 4.0.0's `baseline` rung leaves
+# a meshed workload its egress to istiod) made the rung real -- `baseline`, from
+# 4.0.0's ungoverned-namespace default -- and the pin stopped matching: 503, a
+# TLS SAN mismatch, not an RBAC 403. The rung is now part of the knob: if this
+# namespace ever becomes governed and declares a tier, this segment moves with
+# it.
 apiVersion: networking.istio.io/v1
 kind: DestinationRule
 metadata:
@@ -33,4 +45,4 @@ spec:
     tls:
       mode: ISTIO_MUTUAL
       subjectAltNames:
-        - "spiffe://acme.internal/posture/2.0.0/ns/tuppence-reset/sa/customer-accounts-reset"
+        - "spiffe://acme.internal/posture/4.0.0/cage/baseline/ns/tuppence-reset/sa/customer-accounts-reset"

@@ -1,0 +1,23 @@
+# Platform's own version fan-out, split out of platform-pin.yaml on 2026-08-29 (ecosystem
+# ticket 42, widening ticket 40). See the note at the foot of platform-pin.yaml for why the
+# source and the install are now two files: an adopter that wants platform as a VERIFIED
+# SOURCE ONLY must be able to apply the source without also installing platform's whole
+# policy tree.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: platform-distribution
+  namespace: flux-system
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 3m
+  sourceRef:
+    kind: GitRepository
+    name: platform
+  # ./distribution carries versions.yaml (the ResourceSet) — flux-operator
+  # expands its version array into the per-version GitRepository/Kustomization
+  # set + the orphan-guard.
+  path: ./distribution
+  prune: true   # retire a version upstream -> it prunes here on the next reconcile
+  wait: true

@@ -5,9 +5,9 @@
 # segment (ticket 15), not the caller's network position or a per-service
 # allowlist. Two callers prove both sides of the gate on one root:
 #
-#   teller-current -> claims policy-version 2.0.0 (current) -> stamp-posture
-#       stamps posture=2.0.0 -> posture ClusterSPIFFEID bakes
-#       spiffe://acme.internal/posture/2.0.0/ns/tuppence-reset/sa/teller-current
+#   teller-current -> claims policy-version 4.0.0 (current) -> stamp-posture
+#       stamps posture=4.0.0 -> posture ClusterSPIFFEID bakes
+#       spiffe://acme.internal/posture/4.0.0/ns/tuppence-reset/sa/teller-current
 #       -> matches the AuthorizationPolicy prefix -> REACHES, and OpenBao's jwt
 #       role globs the same prefix -> GETS the secret.
 #   teller-stale   -> claims 1.0.0 (still supported, but below this service's
@@ -58,7 +58,7 @@ spec:
       labels:
         app: customer-accounts-reset
         spiffe.io/spire-managed-identity: "true"          # opt into a SPIRE SVID
-        policy-as-versioned.dev/policy-version: "2.0.0"   # current bar; stamps posture
+        policy-as-versioned.dev/policy-version: "4.0.0"   # current bar; stamps posture
       annotations:
         inject.istio.io/templates: "sidecar,spire"        # opt into the SPIRE CSI mount
     spec:
@@ -76,7 +76,7 @@ spec:
   selector: { app: customer-accounts-reset }
   ports: [{ port: 80, targetPort: 8080 }]
 ---
-# ---- current caller: attests 2.0.0, reaches + gets the secret -------------
+# ---- current caller: attests 4.0.0, reaches + gets the secret -------------
 apiVersion: v1
 kind: ServiceAccount
 metadata: { name: teller-current, namespace: tuppence-reset }
@@ -94,7 +94,7 @@ spec:
       labels:
         app: teller-current
         spiffe.io/spire-managed-identity: "true"
-        policy-as-versioned.dev/policy-version: "2.0.0"   # current
+        policy-as-versioned.dev/policy-version: "4.0.0"   # current
       annotations:
         inject.istio.io/templates: "sidecar,spire"        # opt into the SPIRE CSI mount
     spec:

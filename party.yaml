@@ -2,18 +2,44 @@
 # Same shape driftwood's copy documents in full -- see that repo's
 # party.yaml for the long form. Signed under the same gitsign tag as every
 # other artefact this repo publishes -- no second mechanism.
+#
+# 2026-08-28 (ADR-0019): the `pricing` and `threat` parent kinds became one
+# `feed` kind carrying a `name` -- ico's schema is feed/penalty-schema, and
+# the threat register's publisher moved from platform to the new `feeds`
+# repo as feed/threat-register.
 party: tuppence
-roles: [risk-bearer, adopter]
+# `publisher` because this party publishes something a named consumer pins: the
+# exposure section in publishes[] below, which the insurer pins as a parent. ADR-0019
+# point 5 makes publishes[] the discovery record, and a publishes[] record on a party
+# whose roles do not say publisher is a record no resolver will look at.
+roles: [risk-bearer, adopter, publisher]
+reporting_currency: GBP
+# Copied from platform/risk/appetite.json orgs.tuppence.tolerance.
+appetite:
+  tolerance: { amount: 15000, currency: GBP }
 # MODERATE: 287 controls, holds ac-6, cm-6 and ac-6.10. LOW excludes ac-6,
 # one of the two controls this estate implements (ADR-0013). May add
 # controls to this selection; may never remove one. Mirrored, advisory only,
 # in gitops/apps/nist-pin-configmap.yaml's data.baselineName.
 baseline: MODERATE
 inherits:
-  - { party: platform, kind: implementations, version: "1.1.1" }
-  - { party: nist,     kind: controls,        version: "1.1.0" }
-  - { party: ico,      kind: pricing,         version: "v1" }
-  - { party: platform, kind: threat,          version: "v1" }
+  - { party: platform, kind: implementations, version: "2.0.1", since: '2026-08-28' }
+  - { party: nist,     kind: controls,        version: "1.1.0", since: '2026-08-28' }
+  - { party: ico,      kind: feed, name: penalty-schema,    version: "v3", since: '2026-08-28' }
+  - { party: feeds,    kind: feed, name: threat-register,   version: "v1", since: '2026-08-28' }
 overlay:
   add: []
   restate: []
+publishes:
+  # The exposure section this repository's own composition renders into
+  # composed/HEADER.yaml and signs under this repository's own tag. It is a
+  # SECTION of a signed artefact, not an ADR-0019 envelope of its own, so it
+  # declares no payload_schema and there is no <path>/v*/feed.json to read --
+  # the tag is what signs it. Declared here because ADR-0019 point 5 makes
+  # publishes[] the only discovery record there is, and the insurer pins this
+  # exposure as a parent; without this record its pin resolved to nothing.
+  - kind: feed
+    name: exposure
+    path: composed
+    payload_schema: null
+    revoked: []

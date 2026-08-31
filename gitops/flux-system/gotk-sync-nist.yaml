@@ -19,6 +19,15 @@ kind: GitRepository
 metadata:
   name: nist
   namespace: flux-system
+  annotations:
+    # Ticket 41's identity-pinned gitsign-verifying controller reads these three. Flux's own
+    # spec.verify cannot verify a gitsign tag (ADR-0023 D3, fluxcd/source-controller#1068), so
+    # this controller verifies nist's tag; nist is a verified source only, so it gates nothing.
+    # The regexp and issuer are the constants nist's own release.yml pins; the five-fact
+    # sample re-reads them off the live object and grades fact 2 against them, so a boundary that
+    # verified with somebody else's identity is observed false rather than merely 'verified'.
+    policy-as-versioned.dev/gitsign-identity-regexp: ^https://github\.com/policy-as-versioned-nist/nist/\.github/workflows/cut-release\.yml@refs/heads/(main|release/[0-9]+\.[0-9]+\.x)$
+    policy-as-versioned.dev/gitsign-issuer: https://token.actions.githubusercontent.com
   labels:
     policy-as-versioned.dev/upstream: nist
 spec:

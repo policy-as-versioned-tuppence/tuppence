@@ -6,7 +6,7 @@ metadata:
     policy-as-versioned.dev/policy: platform-machinery
     policy-as-versioned.dev/composed-for: tuppence
   annotations:
-    policy-as-versioned.dev/inherited-from: platform@1.1.1
+    policy-as-versioned.dev/inherited-from: platform@2.0.1
     policy-as-versioned.dev/source-path: distribution/versions.yaml (rendered from the array)
 spec:
   validationActions:
@@ -27,7 +27,7 @@ spec:
     expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('') != ''
   variables:
   - name: allowed
-    expression: '[''2.0.0'', ''2.0.1'', ''3.0.0'']'
+    expression: '[''4.0.0'']'
   - name: claimed
     expression: object.metadata.labels['policy-as-versioned.dev/policy-version']
   validations:

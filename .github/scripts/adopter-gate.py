@@ -51,6 +51,7 @@ import argparse
 import importlib.util
 import json
 import re
+import tempfile
 import subprocess
 import sys
 from pathlib import Path
@@ -283,6 +284,167 @@ def compose(platform_dir: Path, new_array: dict[str, dict], old_array: dict[str,
     return {"composed": worst, "retired": retired, "elements": elements}
 
 
+PARTY = "tuppence"
+
+# --------------------------------------------------------------------------
+# Ticket 43 (ticket 18 Answer 4): the per-institution matrix row, computed
+# HERE, by the adopter.
+#
+# The publisher's `matrix` is empty and says so: NORTH-STAR §2 forbids
+# platform reading this repository, and a hub-maintained pins file is the
+# central catalogue ticket 04 refused. So the row about tuppence's own pin is
+# computed by tuppence, running platform's PUBLISHED computed-semver package
+# against tuppence's OWN claimed policy versions, with tuppence's OWN workloads
+# added to the generated corpus, and lands in tuppence's own composed
+# evidence.
+#
+# This is not "recomputing the publisher's answer" (ADR-0011 still holds):
+# the publisher's number is the strictest band across its whole window, and
+# this is the band for ONE pin -- the one this institution is actually
+# running. Two different questions, and only the adopter can ask the second,
+# because only the adopter knows what it claims and what it runs.
+# --------------------------------------------------------------------------
+CLAIM_LABEL = "policy-as-versioned.dev/policy-version"
+GOVERNED_LABEL = "policy-as-versioned.dev/governed"
+
+
+def _docs(path: Path) -> list[dict]:
+    try:
+        return [d for d in yaml.safe_load_all(path.read_text()) if isinstance(d, dict)]
+    except (yaml.YAMLError, UnicodeDecodeError):
+        return []
+
+
+def claimed_versions(adopter_dir: Path) -> dict[str, list[Path]]:
+    """Every policy version THIS repository's own manifests claim, and the
+    workload files claiming it. Read here, never from the publisher: the row
+    is about what this institution actually runs. `composed/` is skipped --
+    those are the rendered policy bodies, not workloads."""
+    claims: dict[str, list[Path]] = {}
+    for path in sorted(adopter_dir.rglob("*.yaml")):
+        if ".git" in path.parts or "composed" in path.parts:
+            continue
+        for doc in _docs(path):
+            if doc.get("kind") != "Pod":
+                continue
+            version = ((doc.get("metadata") or {}).get("labels") or {}).get(CLAIM_LABEL)
+            if version:
+                claims.setdefault(str(version), []).append(path)
+    return claims
+
+
+def governed_namespace(adopter_dir: Path) -> dict | None:
+    """This institution's own governed Namespace manifest -- the object that
+    declares the cage tier (ADR-0022). It rides beside every extra corpus
+    entry as the `.ns.yaml` sibling cage_engine.namespace_for reads, so the
+    workload is classified in the cage it really runs in, not in the
+    unlabelled default."""
+    for path in sorted(adopter_dir.rglob("*.yaml")):
+        if ".git" in path.parts:
+            continue
+        for doc in _docs(path):
+            if doc.get("kind") == "Namespace" and \
+                    ((doc.get("metadata") or {}).get("labels") or {}).get(GOVERNED_LABEL) == "true":
+                return doc
+    return None
+
+
+def matrix_row(platform_dir: Path, adopter_dir: Path, party: str = PARTY) -> dict:
+    """One row per policy version this institution claims: the bump IT takes
+    moving from its own pin to the version the publisher's array now
+    declares, computed with the published package over the published corpus
+    plus this institution's own workloads."""
+    sys.path.insert(0, str(Path(platform_dir) / "computed-semver"))
+    import comparison_window          # noqa: E402  -- the PUBLISHED package
+    import corpus_generator           # noqa: E402
+
+    dist = Path(platform_dir) / "distribution"
+    array = [str(e["version"])
+             for e in corpus_generator._orphan_guard.elements(dist / "versions.yaml")]
+    if not array:
+        raise SystemExit("FAIL: platform's versions.yaml declares no versions")
+    declared = max(array, key=comparison_window.parse_semver)
+    tree_for = lambda v: dist / "policies" / f"v{v}"          # noqa: E731
+    ns = governed_namespace(Path(adopter_dir))
+
+    rows: dict[str, dict] = {}
+    for version, workloads in sorted(claimed_versions(Path(adopter_dir)).items(),
+                                      key=lambda kv: comparison_window.parse_semver(kv[0])):
+        relative = [str(w.relative_to(adopter_dir)) for w in workloads]
+        if version not in array:
+            rows[version] = {
+                "pinned_version": version, "computed_bump": None, "movement": [],
+                "extra_corpus_entries": relative,
+                "note": (f"{version} is not in the publisher's declared version array "
+                         f"({', '.join(array)}) -- it is retired or was never published, so there "
+                         f"is no line to classify. This institution is claiming a version nothing "
+                         f"serves; that is the row, not a missing row."),
+            }
+            continue
+        if comparison_window.parse_semver(version) >= comparison_window.parse_semver(declared):
+            rows[version] = {
+                "pinned_version": version, "computed_bump": "none", "movement": [],
+                "extra_corpus_entries": relative,
+                "note": f"already on the newest declared version ({declared}) -- nothing to move to",
+            }
+            continue
+
+        corpus_dir = Path(tempfile.mkdtemp(prefix=f"matrix-{party}-{version}-"))
+        manifest = corpus_generator.build_manifest(
+            tree_for(version), tree_for(declared), inside_pin=declared, out_dir=corpus_dir)
+        pods = [corpus_dir / rec["file"]
+                for rec in manifest["populations"]["generated-spine"]["entries"]]
+        # This institution's OWN workloads, added to the generated corpus as
+        # extra entries -- each beside a copy of its real governed Namespace,
+        # so the cage that classifies it is the cage it actually runs in.
+        for i, workload in enumerate(workloads):
+            for j, doc in enumerate(d for d in _docs(workload) if d.get("kind") == "Pod"):
+                own = corpus_dir / f"own-{i}-{j}.yaml"
+                own.write_text(yaml.safe_dump(doc, sort_keys=True))
+                if ns is not None:
+                    own.with_name(own.stem + ".ns.yaml").write_text(yaml.safe_dump(ns, sort_keys=True))
+                pods.append(own)
+
+        window = comparison_window.ComparisonWindow(
+            old_window=[version], new_window=array, subject_tree_for=tree_for,
+            institution_pins={party: version})
+        outcome = comparison_window.evaluate(window, declared, tree_for(declared), pods)
+        if outcome.pairing_failure is not None:
+            rows[version] = {"pinned_version": version, "computed_bump": None, "movement": [],
+                             "extra_corpus_entries": relative,
+                             "note": f"pairing failure: {outcome.pairing_failure}"}
+            continue
+        row = dict(outcome.matrix[party])
+        row["extra_corpus_entries"] = relative
+        row["corpus_checksum"] = manifest["populations"]["generated-spine"]["checksum"]
+        rows[version] = row
+
+    return {
+        "party": party,
+        "declared_by_publisher": declared,
+        "computed_by": "the adopter, with platform's published computed-semver package "
+                       "(ticket 18 Answer 4) -- the publisher's own matrix is empty on purpose",
+        "generator_version": corpus_generator.GENERATOR_VERSION,
+        "rows": rows,
+    }
+
+
+def write_matrix_row(platform_dir: Path, adopter_dir: Path, party: str = PARTY) -> dict:
+    """Compute the row and land it in this institution's own composed
+    evidence, under `semver_matrix`.
+      ponytail: composition.py rewrites composed/evidence.json wholesale on a
+      re-compose, so this is re-run after one (shift-left.yml runs it after
+      the compose step). Upgrade path: composition carries the key through.
+    """
+    row = matrix_row(platform_dir, adopter_dir, party)
+    evidence_path = Path(adopter_dir) / "composed" / "evidence.json"
+    document = json.loads(evidence_path.read_text()) if evidence_path.exists() else {}
+    document["semver_matrix"] = row
+    evidence_path.parent.mkdir(parents=True, exist_ok=True)
+    evidence_path.write_text(json.dumps(document, indent=2))
+    return row
+
+
 def main(argv: list[str]) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--platform-dir", type=Path)
@@ -303,10 +465,27 @@ def main(argv: list[str]) -> int:
     p.add_argument("--head-ref", default=None, help="commit-ish for composed/evidence.json 'after' "
                                                       "(with --adopter-dir)")
     p.add_argument("--selfcheck", action="store_true")
+    p.add_argument("--matrix-row", action="store_true",
+                    help="ticket 43 (18 Answer 4): compute THIS institution's per-institution "
+                         "matrix row with platform's published computed-semver package, over its "
+                         "own claimed versions and its own workloads, and land it in "
+                         "composed/evidence.json (needs --platform-dir and --adopter-dir)")
+    p.add_argument("--print-only", action="store_true",
+                    help="with --matrix-row: print the row without writing composed/evidence.json")
     args = p.parse_args(argv[1:])
 
     if args.selfcheck:
         return selfcheck()
+
+    if args.matrix_row:
+        for name in ("platform_dir",):
+            if getattr(args, name) is None:
+                p.error(f"--{name.replace('_', '-')} is required with --matrix-row")
+        adopter_dir = args.adopter_dir or Path(".")
+        row = (matrix_row(args.platform_dir, adopter_dir) if args.print_only
+               else write_matrix_row(args.platform_dir, adopter_dir))
+        print(json.dumps(row, indent=2))
+        return 0
 
     for name in ("platform_dir", "new_pin_yaml", "identity_regexp", "issuer"):
         if getattr(args, name) is None:

@@ -50,7 +50,13 @@ def openbao_sub_glob(path: str = None) -> str:
     """The bound_claims sub glob from the OpenBao role Job's shell args."""
     path = path or os.path.join(HERE, "openbao-role.yaml")
     text = open(path).read()
-    m = re.search(r'bound_claims=\'{"sub":"([^"]+)"}\'', text)
+    # The role payload is written as JSON on stdin (`printf ... | bao write ... -`),
+    # not as `bound_claims='{...}'` key=value arguments: the OpenBao CLI passed
+    # that argument through as a STRING and the server refused the whole write,
+    # so the Job had been Failed and the role absent (fixed 2026-08-28). Read the
+    # sub glob out of the JSON body, whichever shape it is written in.
+    m = re.search(r'"bound_claims"\s*:\s*{\s*"sub"\s*:\s*"([^"]+)"', text) \
+        or re.search(r'bound_claims=\'{"sub":"([^"]+)"}\'', text)
     assert m, "could not find bound_claims sub glob in openbao-role.yaml"
     return m.group(1)
 
@@ -113,7 +119,7 @@ def selfcheck() -> None:
     check(not admits(secret, base), "de-postured (base) SVID is refused the secret")
 
     # a forged version-lookalike must not sneak past the prefix boundary:
-    # posture segment is a distinct path element, so /posture/2.0.0-evil/… must not match /posture/2.0.0/*
+    # posture segment is a distinct path element, so /posture/4.0.0-evil/… must not match /posture/4.0.0/*
     evil = f"spiffe://{TRUST_DOMAIN}/posture/{ver}-evil/ns/x/sa/y"
     check(not admits(reach_spiffe, evil), "a version-lookalike (vN-evil) does not satisfy the prefix")
 

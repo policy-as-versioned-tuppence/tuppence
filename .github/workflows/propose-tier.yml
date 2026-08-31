@@ -2,21 +2,45 @@ name: propose-tier
 
 # Ticket 17 (policy-composition); ADR-0015. The proposer's LAST step, unlike
 # every propose-never-dispose demonstrator elsewhere in this estate: it
-# actually commits, pushes and opens -- a pull request editing
-# `posture.acme.io/tier` on deploy/pod.yaml, or (for a proposed `deny`) an
-# issue instead. It never merges either: the war-gamer/proposer_bounds/
-# tier_pr chain still exposes no merge()/approve()/dispose() by
-# construction (see each module's own selfcheck), and the opened PR still
-# rides ordinary human review.
+# actually commits, pushes and opens -- ALWAYS a pull request, editing
+# `posture.acme.io/tier` on this repo's GOVERNED NAMESPACE manifest, which
+# the proposer finds by its `policy-as-versioned.dev/governed: "true"`
+# label and never by a path. ADR-0022 made the Namespace the declaration
+# and the pod label its output (a pod-label edit would be clobbered at the
+# next admission and change nothing), and retired ADR-0015's "a proposed
+# deny opens an issue" branch: the bottom rung is `isolated`, a real
+# running cage, so nothing is refused and no proposal needs anything but a
+# PR. It never merges: the war-gamer/proposer_bounds/tier_pr chain still
+# exposes no merge()/approve()/dispose() by construction (see each
+# module's own selfcheck), and the opened PR still rides ordinary human
+# review.
 #
 # Reads composed/evidence.json -- tuppence's own committed evidence
 # document (ticket 18 wires composition into this repo's CI and commits it
 # on success; until that PR has landed once, this job finds nothing and
 # exits quietly, same as propose-policy-pr.sh's own "no drift" no-op).
 #
-# Trigger, exactly ADR-0015 point 5: a MERGED pin bump, or a human
-# workflow_dispatch. Nothing timed, ever -- no `schedule:` anywhere.
+# Triggers, superseding ADR-0015 point 5. That point read "No schedule runs
+# anywhere", and this workflow used to repeat it as "Nothing timed, ever -- no
+# `schedule:` anywhere". ADR-0024 replaces both: there is now a daily clock at
+# 08:49 UTC as well as a merged pin bump and a human dispatch. The old line was
+# written when a recurring re-price was a standing decision nobody had made;
+# ticket 28 made it. The price is a function of the date -- the EOL ramp moves
+# with `--as-of`, a stale signed size widens to the cap -- so a proposer that
+# only runs on a push reads last month's number. tuppence picks 08:49 for
+# itself: no cross-org ordering is promised and none is needed, because every
+# joint in the chain waits on a human merge anyway.
+#
+# The clock RE-COMPOSES FIRST, at today's date, into the runner's temp directory,
+# and COMMITS NOTHING (ADR-0024, D1). A date-driven band crossing with no new tag
+# is a proposal trigger like any other, and the proposal carries its own priced
+# evidence in the pull request body, so nothing needs writing back to main. The
+# cage step at the end fails the run if this job left one byte in the working
+# tree -- a clock appends observations, never a declaration, and a re-composed
+# `composed/evidence.json` is a declaration.
 on:
+  schedule:
+    - cron: "49 8 * * *"
   pull_request:
     types: [closed]
     paths:
@@ -28,11 +52,18 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  issues: write
+  # no `issues: write`: ADR-0022 removed the issue branch, so this job has
+  # no path that could open one.
+
+# The observation lane, declared once as data so the cage step and
+# verify/schedules/verify-schedules.sh read the SAME list (ADR-0024, D1). These
+# are the only paths any scheduled job in this repository may ever commit.
+env:
+  OBSERVATION_LANE: "talk/truth.log drift/samples.jsonl talk/captures observations"
 
 jobs:
   propose-tier:
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -95,7 +126,72 @@ jobs:
           print(f'ok  platform checked out commit matches the pin ({resolved})')
           "
 
-      - name: run the proposer -- reads tuppence's own composed/evidence.json, lands PR or issue
+
+      # --- re-compose at today's date, into the runner's temp dir (ADR-0024) ---
+      # The proposer used to read tuppence's COMMITTED composed/evidence.json,
+      # which is only rewritten when a pull request runs shift-left.yml. On a
+      # clock that means proposing from the price of whichever day the last PR
+      # landed. These three steps re-run the same composition the adopter gate
+      # runs, at the parents tuppence pins today, and write the result OUTSIDE the
+      # repository so the working tree cannot be touched.
+      #
+      # ponytail: composition.py deliberately reads no wall clock of its own and
+      # its selfcheck asserts it cannot (`import datetime` is a forbidden token
+      # there), so "today's date" is the date this run happens on and the
+      # `published_at` the envelopes it reads carry. The moment a converter takes
+      # an explicit --as-of, pass $AS_OF straight through; the run already
+      # computes it and stamps it on the pull request.
+      - name: read the pins the composition resolves against (platform + nist)
+        id: pins
+        run: |
+          set -euo pipefail
+          python3 tuppence/.github/scripts/read-two-pins.py \
+            tuppence/gitops/platform/platform-pin.yaml platform \
+            tuppence/gitops/flux-system/gotk-sync-nist.yaml nist \
+            >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-nist/nist
+          path: nist
+          ref: ${{ steps.pins.outputs.nist_tag }}
+          fetch-depth: 0
+
+      # ico ships no Flux/Renovate pin for the pricing kind anywhere in this
+      # estate today (party_artefact.py's own NOTE says so), so it resolves at
+      # its default branch -- the same choice shift-left.yml's compose job makes.
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-ico/ico
+          path: ico
+          ref: main
+          fetch-depth: 0
+
+      - name: re-compose at today's date -- into RUNNER_TEMP, never into the repo
+        id: recompose
+        run: |
+          set -uo pipefail
+          as_of="$(date -u +%F)"
+          echo "as_of=${as_of}" >> "$GITHUB_OUTPUT"
+          out="${RUNNER_TEMP}/recomposed"
+          mkdir -p "${out}"
+          python3 platform/compose/composition.py compose tuppence --estate-clone . --out "${out}" \
+            2>&1 | tee "${RUNNER_TEMP}/compose.json"
+          status=${PIPESTATUS[0]}
+          {
+            echo "## re-composed at ${as_of}"
+            echo
+            echo '```json'
+            cat "${RUNNER_TEMP}/compose.json"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${status}" -ne 0 ]; then
+            echo "::error::composition refused at ${as_of} -- see the job summary"
+            exit 1
+          fi
+          test -f "${out}/composed/evidence.json"
+
+      - name: run the proposer -- re-composed evidence in, one PR on the governed Namespace out
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: policy-as-versioned-tuppence/tuppence
@@ -103,8 +199,59 @@ jobs:
           set -euo pipefail
           git -C tuppence config user.email "wargamer-proposer@policy-as-versioned-tuppence.invalid"
           git -C tuppence config user.name "wargamer proposer"
+          # The rejection ledger is DERIVED from this repo's own closed-unmerged
+          # proposal PRs (ADR-0024); there is no rejections.json anywhere any
+          # more, and no adopter reads platform's fixture as its own. When
+          # GitHub cannot be reached the ledger is EMPTY and tier_pr.py prints
+          # "ledger UNAVAILABLE" -- it never suppresses in silence.
           python3 platform/wargamer/tier_pr.py run \
             --adopter-dir tuppence \
-            --evidence tuppence/composed/evidence.json \
-            --workload tuppence/deploy/pod.yaml \
-            --org tuppence
+            --evidence "${RUNNER_TEMP}/recomposed/composed/evidence.json" \
+            --org tuppence \
+            --as-of "${{ steps.recompose.outputs.as_of }}"
+
+      # --- the cage (ADR-0024, D1) -------------------------------------------
+      # This job may propose and it may observe. It may not declare. The
+      # re-composed artefact lives in RUNNER_TEMP, the tier edit lives on a
+      # `wargamer/retune-*` branch behind a pull request, and main is untouched.
+      # OBSERVATION_LANE is the job's declared allow-list; verify-schedules.sh
+      # parses it out of this workflow's YAML and checks it against the hub's.
+      - name: the observation cage -- a clock appends observations, never a declaration
+        if: always()
+        run: |
+          set -euo pipefail
+          cd tuppence
+          # `git reset` FIRST: the cage builds the index and nothing else. The old
+          # guard filtered `git status --porcelain` with `grep -v '^[AMD] '`, which
+          # strips exactly the staged-and-clean entries -- so a declaration any
+          # earlier step had left in the index was committed and pushed while this
+          # step printed "this clock declared nothing" (review, 2026-08-28).
+          git reset -q
+          for path in ${OBSERVATION_LANE}; do
+            # -f: talk/captures/ is gitignored for local runs; the clock is the one
+            # caller allowed to commit it.
+            if [ -e "${path}" ]; then git add -Af -- "${path}"; fi
+          done
+          # The STAGED set, judged against the same OBSERVATION_LANE list, never a
+          # second regex that could drift from it.
+          bad=""
+          for f in $(git diff --cached --name-only); do
+            ok=0
+            for path in ${OBSERVATION_LANE}; do
+              case "${f}" in "${path}"|"${path}"/*) ok=1 ;; esac
+            done
+            [ "${ok}" = 1 ] || bad="${bad} ${f}"
+          done
+          if [ -n "${bad}" ]; then
+            echo "::error::this clock staged a declaration outside the observation lane"
+            echo "${bad}"
+            exit 1
+          fi
+          outside="$(git status --porcelain --untracked-files=all | grep -v '^[AMD] ' || true)"
+          if [ -n "${outside}" ]; then
+            echo "::error::the scheduled proposer left a change outside the observation lane"
+            echo "${outside}"
+            exit 1
+          fi
+          echo "ok  working tree clean outside the observation lane -- this clock declared nothing"
+

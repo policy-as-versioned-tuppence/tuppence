@@ -15,8 +15,8 @@ prefix glob:
 
 | surface | file | mechanism |
 |---|---|---|
-| **reach** | `authorizationpolicy.yaml` | Istio `AuthorizationPolicy` ALLOW, `source.principals: acme.internal/posture/2.0.0/*` (scheme-less — Istio prepends `spiffe://` itself) |
-| **secret** | `openbao-role.yaml` | OpenBao jwt role, `bound_claims` glob `sub: spiffe://…/posture/2.0.0/*` (the JWT `sub` claim IS the full URI) |
+| **reach** | `authorizationpolicy.yaml` | Istio `AuthorizationPolicy` ALLOW, `source.principals: acme.internal/posture/4.0.0/*` (scheme-less — Istio prepends `spiffe://` itself) |
+| **secret** | `openbao-role.yaml` | OpenBao jwt role, `bound_claims` glob `sub: spiffe://…/posture/4.0.0/*` (the JWT `sub` claim IS the full URI) |
 
 Posture leads the path, so **one** prefix wildcard matches every current
 identity regardless of ns/sa. ALLOW-only ⇒ Istio default-denies unmatched
@@ -24,14 +24,14 @@ callers; a failed `bound_claims` ⇒ OpenBao refuses login. No explicit Deny.
 
 ```mermaid
 flowchart LR
-  subgraph current["teller-current — claims 2.0.0"]
-    C["SVID posture/2.0.0/…"]
+  subgraph current["teller-current — claims 4.0.0"]
+    C["SVID posture/4.0.0/…"]
   end
   subgraph stale["teller-stale — claims 1.0.0"]
     S["SVID posture/1.0.0/…"]
   end
-  C -->|prefix match| R{{"Istio ALLOW\nposture/2.0.0/*"}}
-  C -->|prefix match| B{{"OpenBao role\nposture/2.0.0/*"}}
+  C -->|prefix match| R{{"Istio ALLOW\nposture/4.0.0/*"}}
+  C -->|prefix match| B{{"OpenBao role\nposture/4.0.0/*"}}
   S -.no match.-> R
   S -.no match.-> B
   R -->|200| SVC[customer-accounts-reset]
@@ -40,8 +40,8 @@ flowchart LR
 
 ## "Current" is one value, moved by one edit
 
-The prefix is `2.0.0` — the latest element of platform's version array
-(`estate/platform/distribution/versions.yaml`). Bump the bar (or retire 2.0.0)
+The prefix is `4.0.0` — the newest element of platform's version array
+(`estate/platform/distribution/versions.yaml`). Bump the bar (or retire 4.0.0)
 by editing both globs to the new version; `reach.py selfcheck` **asserts the two
 globs agree**, so reach and secret can never drift to different versions. A pod
 that later falls out of currency is de-postured by the currency controller

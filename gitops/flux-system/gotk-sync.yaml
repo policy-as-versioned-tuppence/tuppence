@@ -19,8 +19,11 @@ spec:
   url: https://github.com/policy-as-versioned-tuppence/tuppence
   ref:
     tag: v1.0.0
-    # commit pinned at release by the wave-push (belt-and-braces immutability):
-    # commit: <40-char-sha>
+    commit: 9862d846332031d7cb5cf38894d3b0ed321928df
+    # commit pinned at release (belt-and-braces immutability, ADR-0001) --
+    # the resolved SHA tuppence's own v1.0.0 tag points to. Not covered by the
+    # Renovate customManagers in renovate.json (those track nist and platform
+    # only); a self-pin bump is a reviewed PR that moves both fields together.
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -34,6 +37,13 @@ spec:
   sourceRef:
     kind: GitRepository
     name: tuppence
-  path: ./apps
+  # ./gitops/apps, NOT ./apps (ecosystem ticket 42, found by running driftwood's ticket-40 dry
+  # run against the real remote). This object's source is the github.com remote above, whose tree
+  # root holds gitops/, so ./apps resolves to nothing there and the Kustomization never becomes
+  # Ready. ./apps was right only in the OFFLINE SEED world: scripts/up.sh seeds a throwaway repo
+  # from the gitops/ directory itself, so gitops/ IS that repo's root -- and up.sh applies its own
+  # inline Kustomization with ./apps for exactly that reason, so this line does not touch the
+  # touring demo.
+  path: ./gitops/apps
   prune: true   # prune-on-retire: remove what git no longer declares
   wait: true    # health-gate the reconcile

@@ -24,16 +24,23 @@
 # plain HTTPS to other hosts, including rekor.sigstore.dev itself, works
 # fine -- a specific unreachable host, not a blanket network outage).
 #
-# `cosign verify-blob` itself DOES run here for real, and DOES correctly
-# refuse -- Scenarios C and D below prove that with the real binary, against
-# a real missing-evidence case and a real malformed/non-cosign bundle case
-# (each completes in ~30s: cosign's own TUF-fetch timeout, then a real
-# fallback verification that still correctly fails). What this sandbox
-# cannot produce is a bundle cosign would genuinely ACCEPT, so Scenarios A
-# and B verify the REST of the pipeline -- checkout-at-tag, the commit pin,
-# reading real committed evidence content, the composition arithmetic
-# (retirement forces major, strictest wins, weaker-than-declared prints and
-# never downgrades) -- with adopter-gate.py's `--skip-cosign-verify`
+# `cosign verify-blob` itself runs here for real, in BOTH directions, and no
+# longer only refuses. Scenarios D2 and E2 prove real refusals with the real
+# binary (a present-but-malformed bundle; and a real bundle whose real Fulcio
+# certificate identity does not match the institution's own constant).
+# Scenario E proves a real ACCEPT: platform's own cut-release.yml has since
+# committed real evidence bundles (computed-semver/evidence/*.json.bundle,
+# Fulcio certs from that real Actions run, logged to Rekor), and VERIFYING
+# them needs no ambient credential and no network at all -- only signing ever
+# did -- so the whole gate runs unskipped, with the real identity constants,
+# against the real committed pin, in about a second.
+#
+# What remains out of reach here is only signing NEW evidence, so Scenarios A
+# and B -- which invent a fresh release line in a throwaway clone -- verify
+# the REST of the pipeline: checkout-at-tag, the commit pin, reading real
+# committed evidence content, the composition arithmetic (retirement forces
+# major, strictest wins, weaker-than-declared prints and never downgrades),
+# with adopter-gate.py's `--skip-cosign-verify`
 # (TEST-ONLY, never set by shift-left.yml; mirrors platform's own
 # CUT_RELEASE_TEST_MODE precedent exactly: it wraps only the cosign
 # subprocess call, never the file-existence checks or the decision logic
@@ -45,9 +52,16 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 platform_repo="${PLATFORM_REPO:-${here}/../platform}"
 [ -d "${platform_repo}/.git" ] || { echo "FAIL: no platform clone at ${platform_repo} (set PLATFORM_REPO=)" >&2; exit 1; }
+command -v cosign >/dev/null 2>&1 || {
+  # Genuine could-not-look: without the real binary the refusals AND the
+  # accept below cannot be observed at all, and asserting them from reading
+  # the code is exactly what this script exists not to do.
+  echo "SKIP: cosign is not installed -- Scenarios D2/E/E2 run the real binary against real bundles" >&2
+  exit 3
+}
 
 scratch="$(mktemp -d)"
-trap 'rm -rf "$scratch"' EXIT
+trap '[ -n "${KEEP_SCRATCH:-}" ] && echo "scratch kept: $scratch" || rm -rf "$scratch"' EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
 say() { echo; echo "== $* =="; }
 
@@ -134,43 +148,112 @@ grep -q "cosign verify-blob failed for policy version 2.0.0" "$scratch/d2.out" \
   || fail "D2: expected the real cosign failure reason, got: $(cat "$scratch/d2.out")"
 echo "ok  D2: real cosign verify-blob genuinely rejects a present-but-malformed bundle (not just a missing-file check)"
 
-say "Scenario E: parse_pin() against the REAL, committed platform-pin.yaml shape -- a genuine two-document YAML stream (GitRepository + Kustomization), not a hand-written single-document fixture"
-# Every earlier scenario's pin fixtures are single-document YAML
-# (`spec: {ref: {...}}`) -- convenient, but they never exercise the shape
-# gitops/platform/platform-pin.yaml (and shift-left.yml's real
-# --new-pin-yaml / --old-pin-yaml args) actually have: a GitRepository
-# document, a `---` separator, then a Kustomization document with no `ref`
-# at all. yaml.safe_load() (single-document) raises ComposerError on this
-# shape; this scenario proves parse_pin() reads it correctly by literally
-# using the real, unmodified, currently-committed file as the pin input.
+say "Scenario E: the REAL, unmodified, currently-committed platform-pin.yaml -- a genuine two-document YAML stream (GitRepository + Kustomization) -- verified end to end with REAL cosign against platform's REAL committed evidence bundles"
+# Two things at once, both against real objects, with no fixture rewriting
+# at all:
+#
+#  * parse_pin(). Every other scenario's pin fixture is single-document
+#    (`spec: {ref: {...}}`) -- convenient, but never the shape
+#    gitops/platform/platform-pin.yaml (and shift-left.yml's real
+#    --new-pin-yaml / --old-pin-yaml args) actually has: a GitRepository
+#    document, a `---` separator, then a Kustomization document with no
+#    `ref` at all. yaml.safe_load() (single-document) raises ComposerError
+#    on that shape. This scenario feeds the real file in, byte for byte,
+#    and reads the tag it names out of the file rather than assuming one --
+#    an earlier version of this scenario string-replaced a then-current
+#    tag literal, which silently became a no-op the moment the pin was
+#    bumped, and quietly stopped testing what it claimed to test.
+#  * a REAL cosign ACCEPT. The older disclosure above -- that this sandbox
+#    cannot produce a bundle cosign would genuinely accept -- no longer
+#    holds: platform's own cut-release.yml has since committed real
+#    evidence bundles (computed-semver/evidence/*.json.bundle, Fulcio certs
+#    from that real Actions run, logged to Rekor), and `cosign verify-blob`
+#    verifies them here offline, in under a second, with no ambient
+#    credential of any kind -- verification never needed one, only signing
+#    did. So this scenario runs with cosign NOT skipped, against the REAL
+#    identity constants read straight out of shift-left.yml (never
+#    hand-copied here), and demands a real PASS with every composed
+#    element's evidence really verified.
 e_platform="$scratch/platform-e"
 git clone --local --quiet "$platform_repo" "$e_platform"
-git -C "$e_platform" checkout --quiet v1.0.0
-e_commit=$(git -C "$e_platform" rev-parse HEAD)
-python3 - "$here/gitops/platform/platform-pin.yaml" "$scratch/new-pin-e.yaml" v1.0.0 "$e_commit" <<'PY'
-import sys
-src, dst, tag, commit = sys.argv[1:]
-text = open(src).read()
-# Same real two-document shape, just re-pointed at this scenario's own real
-# tag/commit so checkout_tag()/resolved_commit() have something real to
-# check out against, without touching the real file on disk.
-text = text.replace("v0.1.0", tag).replace(
-    "336aef2147344ae3dbcfe8450865a8806ecbe2af", commit
-)
-open(dst, "w").write(text)
-PY
-grep -q '^---$' "$scratch/new-pin-e.yaml" || fail "E: test setup bug -- expected the real file's own '---' document separator to survive"
-grep -q '^kind: Kustomization$' "$scratch/new-pin-e.yaml" || fail "E: test setup bug -- expected the real file's own second (Kustomization) document to survive"
+e_pin="${here}/gitops/platform/platform-pin.yaml"
+e_dist="${here}/gitops/platform/platform-distribution.yaml"
+# Until 2026-08-29 this file WAS the two-document stream (GitRepository +
+# Kustomization) and E asserted that shape directly. Ticket 42 split the
+# Kustomization out into platform-distribution.yaml, because applying the pin
+# alone must not also install the cluster-scoped policy fan-out (two
+# ResourceSets rendering one orphan guard fight over it -- observed live). The
+# regression E exists for -- parse_pin() must walk PAST a non-GitRepository
+# document instead of raising ComposerError -- is still proved for real below,
+# on the two REAL committed files concatenated into the same stream
+# `kubectl apply -k gitops/platform/` feeds the API server. Nothing here is a
+# fixture: both halves are the repo's own content.
+grep -q '^kind: GitRepository$' "$e_pin" || fail "E: expected the real pin file's own GitRepository document"
+grep -q '^kind: Kustomization$' "$e_dist" || fail "E: expected the real platform-distribution.yaml Kustomization document"
+e_multi="$scratch/platform-pin-multidoc.yaml"
+{ cat "$e_pin"; echo '---'; cat "$e_dist"; } > "$e_multi"
+grep -q '^---$' "$e_multi" || fail "E: the reassembled real stream carries no '---' separator"
+e_tag=$(awk '/^    tag: / {print $2; exit}' "$e_pin")
+e_regexp=$(awk -F': ' '/^  EVIDENCE_EXPECTED_IDENTITY_REGEXP:/ {print $2; exit}' "${here}/.github/workflows/shift-left.yml")
+e_issuer=$(awk -F': ' '/^  EXPECTED_ISSUER:/ {print $2; exit}' "${here}/.github/workflows/shift-left.yml")
+[ -n "$e_tag" ] || fail "E: could not read the pinned tag out of ${e_pin}"
+[ -n "$e_regexp" ] || fail "E: could not read EVIDENCE_EXPECTED_IDENTITY_REGEXP out of shift-left.yml"
+[ -n "$e_issuer" ] || fail "E: could not read EXPECTED_ISSUER out of shift-left.yml"
 set +e
-gate --platform-dir "$e_platform" --new-pin-yaml "$scratch/new-pin-e.yaml" \
-     --identity-regexp '.*' --issuer '.*' > "$scratch/e.out" 2>&1
+gate --platform-dir "$e_platform" --new-pin-yaml "$e_pin" \
+     --identity-regexp "$e_regexp" --issuer "$e_issuer" \
+     --out "$scratch/e-summary.json" > "$scratch/e.out" 2>&1
 e_code=$?
 set -e
 cat "$scratch/e.out"
 grep -q "^Traceback" "$scratch/e.out" && fail "E: parse_pin() crashed on the real multi-document pin shape (ComposerError) -- see output above"
-grep -q "^ok  platform checked out at v1.0.0, resolved commit matches the pinned commit field" "$scratch/e.out" \
+grep -q "^ok  platform checked out at ${e_tag}, resolved commit matches the pinned commit field" "$scratch/e.out" \
   || fail "E: expected parse_pin() to read tag/commit past the real file's Kustomization document and reach a real checkout+commit-match, got: $(cat "$scratch/e.out")"
-echo "ok  E: parse_pin() reads the real two-document platform-pin.yaml shape correctly (no ComposerError), reaches real checkout + commit verification"
+[ "$e_code" -eq 0 ] || fail "E: expected a real PASS against the real pin and platform's real signed evidence, got exit $e_code"
+python3 -c "
+import json
+d = json.load(open('$scratch/e-summary.json'))
+assert d['elements'], 'the real versions array composed to nothing -- no evidence was verified at all'
+unverified = [e['version'] for e in d['elements'] if e['verified'] is not True]
+assert not unverified, f'cosign did not verify: {unverified}'
+print('ok  E: real cosign verify-blob ACCEPTED platform\\'s real committed evidence for ' + ', '.join(e['version'] for e in d['elements']))
+"
+echo "ok  E: the gate PASSES against the real, currently-committed platform-pin.yaml -- real checkout at ${e_tag}, commit verification, real identity constants, real cosign signature verification"
+
+# E-multi: the same gate, over the REAL two-document stream the two committed
+# files form together. This is the parse_pin() ComposerError regression, kept
+# alive after the ticket-42 split: a second, non-GitRepository document in the
+# stream must be walked past, not choked on.
+set +e
+gate --platform-dir "$e_platform" --new-pin-yaml "$e_multi" \
+     --identity-regexp "$e_regexp" --issuer "$e_issuer" \
+     --out "$scratch/e-multi-summary.json" > "$scratch/e-multi.out" 2>&1
+e_multi_code=$?
+set -e
+grep -q "^Traceback" "$scratch/e-multi.out" && fail "E-multi: parse_pin() crashed on the real multi-document pin shape (ComposerError) -- $(cat "$scratch/e-multi.out")"
+[ "$e_multi_code" -eq 0 ] || fail "E-multi: expected a real PASS over the reassembled two-document stream, got exit $e_multi_code: $(cat "$scratch/e-multi.out")"
+cmp -s "$scratch/e-summary.json" "$scratch/e-multi-summary.json" \
+  || fail "E-multi: the gate reached a different verdict on the two-document stream than on the pin file alone"
+echo "ok  E-multi: parse_pin() reads tag/commit past a second (Kustomization) document with no ComposerError, and the gate reaches the identical verdict"
+
+say "Scenario E2: the SAME real bundles, refused by REAL cosign when the identity constant names a foreign publisher -- the identity pin is load-bearing against a real Fulcio certificate, not only against a string"
+# verify-identity-regexp.sh proves the CONSTANT's anchoring and escaping
+# with no cosign process. This proves the other half: that the constant is
+# actually handed to, and enforced by, the real binary against the real
+# certificate in the real committed bundle.
+set +e
+gate --platform-dir "$e_platform" --new-pin-yaml "$e_pin" \
+     --identity-regexp '^https://github\.com/evil-org/platform/\.github/workflows/cut-release\.yml@refs/heads/main$' \
+     --issuer "$e_issuer" > "$scratch/e2.out" 2>&1
+e2_code=$?
+set -e
+cat "$scratch/e2.out"
+[ "$e2_code" -ne 0 ] || fail "E2: a foreign-org identity regexp must refuse platform's real evidence, got a PASS"
+grep -q "cosign verify-blob failed for policy version" "$scratch/e2.out" \
+  || fail "E2: expected a real cosign identity refusal, got: $(cat "$scratch/e2.out")"
+grep -q "none of the expected identities matched" "$scratch/e2.out" \
+  || fail "E2: expected cosign's own identity-mismatch reason, got: $(cat "$scratch/e2.out")"
+echo "ok  E2: the same real bundle that just verified is refused by the real binary when the identity constant names a different publisher"
 
 say "Scenario F: old_tag == new_tag -- the ordinary PR that never touches gitops/platform/platform-pin.yaml at all"
 # shift-left.yml carries no \`paths:\` filter specifically so this required
@@ -212,23 +295,50 @@ git config user.name test
 export CUT_RELEASE_TEST_MODE=1
 export GITHUB_REPOSITORY_OWNER=scratch
 
-render_from() {  # render_from <new-version> <copy-from-version>
-  local nv="$1" cv="$2"
-  python3 - "$nv" "$cv" <<'PY'
+render_from() {  # render_from <new-version>
+  # Renders the tree with ticket 12's own renderer, because cut-release-gate.py
+  # re-renders the tree being cut and REFUSES anything that does not match --
+  # a hand-copied or hand-edited tree can never be cut, by design. So a scratch
+  # release always carries today's authoring body, and what decides whether it
+  # moves anything is which version the gate finds to compare it against. See
+  # tag_untagged_trees below.
+  local nv="$1"
+  python3 - "$nv" <<'PY'
 import sys, importlib.util
 from pathlib import Path
-nv, cv = sys.argv[1], sys.argv[2]
+nv = sys.argv[1]
 spec = importlib.util.spec_from_file_location("rvt", "distribution/render-version-tree.py")
 rvt = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(rvt)
-target = Path(f"distribution/policies/v{nv}")
-rvt.write_tree(nv, target)
-nv_slug, cv_slug = nv.replace(".", "-"), cv.replace(".", "-")
-src = Path(f"distribution/policies/v{cv}/require-nonroot.yaml").read_text()
-(target / "require-nonroot.yaml").write_text(
-    src.replace(f"{cv_slug}", nv_slug).replace(f"'{cv}'", f"'{nv}'")
-)
+rvt.write_tree(nv, Path(f"distribution/policies/v{nv}"))
 PY
+}
+
+tag_untagged_trees() {
+  # Every released tree in the throwaway clone gets its policy tag, if it does
+  # not already have one.
+  #
+  # WHY: ticket 43 (2026-08-29) taught cut-release-gate.py to fall back to the
+  # real TAG history for a predecessor when the declared array holds one line.
+  # In the real platform repo the newest TREE is 4.0.0 and the newest TAG is
+  # 3.0.0, because cutting policy/v4.0.0 needs a gitsign signature only
+  # cut-release.yml can make in Actions. A scratch release rendered from
+  # today's authoring copies is therefore compared against 3.0.0's body and
+  # honestly classifies MAJOR -- the whole cage release sits between them.
+  # Scenario A needs a release that moves nothing, so the throwaway clone is
+  # first brought to the state that exists the moment the owner lets CI cut the
+  # tag it is already waiting for. Nothing is faked: the tag is a plain local
+  # git tag in a scratch repo, it signs nothing, and the real repo is untouched.
+  local v
+  for v in $(python3 "${here}/scripts/untagged-released-trees.py" .); do
+    git -c tag.gpgSign=false tag -f -m "scratch: policy/v${v}" "policy/v${v}" HEAD >/dev/null
+    echo "  setup: tagged policy/v${v} in the throwaway clone (the real repo waits on CI to sign it)"
+  done
+  local newest_tree newest_tag
+  newest_tree=$(python3 "${here}/scripts/untagged-released-trees.py" . --newest-tree)
+  newest_tag=$(python3 "${here}/scripts/newest-released-tree.py" .)
+  [ "$newest_tree" = "$newest_tag" ] \
+    || fail "setup: newest released tree is $newest_tree but the newest tagged version is $newest_tag; a scratch release cannot move nothing"
 }
 
 set_array() {  # set_array '{"version":"1","tag":"policy/v1","commit":"..."}' ...  (zero args -> empty array)
@@ -250,8 +360,20 @@ if entries:
     new_block = f"    - versions:\n{lines}\n"
 else:
     new_block = "    - versions: []\n"
-text = re.sub(r"    - versions:(?: \[\]| *\n(?:        - \{[^\n]*\}\n)*)", new_block, text, count=1)
+# The `#` alternative in the element run is load-bearing, not decoration.
+# Ticket 26 added platform's 4.0.0 element behind an eight-line comment
+# block; an elements-only run stopped at that comment and left 4.0.0 in the
+# array after every set_array call, so Scenarios A and B were composing
+# against a version whose evidence this throwaway line never produced. The
+# claim is unchanged and now actually held: the assertion below re-reads the
+# file and demands the array really is what was asked for.
+text = re.sub(
+    r"    - versions:(?: \[\]| *\n(?:        (?:- \{|#)[^\n]*\n)*)", new_block, text, count=1)
 path.write_text(text)
+import yaml
+got = [e["version"] for e in (yaml.safe_load(text)["spec"]["inputs"][0]["versions"] or [])]
+want = [e["version"] for e in entries]
+assert got == want, f"set_array wrote {got}, asked for {want}"
 PY
 }
 
@@ -277,9 +399,13 @@ cut() {  # cut <tags.json>
 # nothing this adopter-gate test needs to prove. Releases 2 and 3 below
 # stay at the array level on purpose -- real git commits and real tags,
 # just not run back through the (already cs-27-tested) publisher gate.
-render_from "9.0.0" "3.0.0"
+# Nothing about the version line is named here any more. This scenario exists
+# to test the ADOPTER gate's composition, not the publisher's window, so it
+# derives the state it needs and asserts it got it.
+tag_untagged_trees
+render_from "9.0.0"
 git add "distribution/policies/v9.0.0"
-git commit -q -m "scratch: render v9.0.0 (copy of v3.0.0, self-scope renamed)"
+git commit -q -m "scratch: render v9.0.0 from the authoring copies"
 tree_9_0_0=$(git rev-parse HEAD)
 set_array '{"version":"9.0.0","tag":"policy/v9.0.0","commit":"'"$tree_9_0_0"'"}'
 git add distribution/versions.yaml
@@ -325,22 +451,30 @@ set -e
 cat "$scratch/a.out"
 [ "$a_code" -eq 0 ] || fail "A: expected a real PASS (array unchanged, no retirement), got exit $a_code"
 grep -q "^declared (platform tag v2.0.0 -> v2.1.0): minor" "$scratch/a.out" || fail "A: expected declared=minor from the tag jump (v2.0.0->v2.1.0)"
-grep -q "NOTE: composed bump ('no predecessor') is weaker than the publisher's tag ('minor')" "$scratch/a.out" \
-  || fail "A: expected the weaker-than-declared note, informational only, nothing lowered"
+# The rank-0 bump the REAL gate recorded for 9.0.0, read back out of the
+# evidence it signed rather than named here: "no predecessor" when the array
+# gave the gate nothing to compare against, "none" when the tag-history
+# fallback found the identical newest tree. Both are rank 0, so the
+# weaker-than-declared note fires either way, and asserting the value the gate
+# actually recorded keeps the claim exact rather than accepting either.
+a_zero=$(python3 "${here}/scripts/rank-zero-bump.py" "$clone/computed-semver/evidence/9.0.0.json") \
+  || fail "A: 9.0.0's evidence does not carry a rank-0 computed bump"
+grep -q "NOTE: composed bump ('$a_zero') is weaker than the publisher's tag ('minor')" "$scratch/a.out" \
+  || fail "A: expected the weaker-than-declared note for '$a_zero', informational only, nothing lowered"
 python3 -c "
 import json
 d = json.load(open('$scratch/a-summary.json'))
 assert d['retired'] == [], d['retired']
-assert d['composed'] == 'no predecessor', d['composed']
+assert d['composed'] == '$a_zero', d['composed']
 assert {e['version'] for e in d['elements']} == {'9.0.0'}, d['elements']
-assert d['elements'][0]['evidence']['bump']['computed'] == 'no predecessor', d['elements']
+assert d['elements'][0]['evidence']['bump']['computed'] == '$a_zero', d['elements']
 print('ok  A: composed by RE-READING 9.0.0\\'s real committed evidence (never recomputed), no retirement, real PASS')
 "
 
 echo "  A-render: render-evidence-comment.py against this REAL summary (not the fixture its own selfcheck uses)"
 python3 "${here}/.github/scripts/render-evidence-comment.py" "$scratch/a-summary.json" > "$scratch/a-comment.md"
 grep -q '`minor`' "$scratch/a-comment.md" || fail "A-render: declared bump not rendered"
-grep -q '`no predecessor`' "$scratch/a-comment.md" || fail "A-render: composed bump not rendered"
+grep -q "\`$a_zero\`" "$scratch/a-comment.md" || fail "A-render: composed bump not rendered"
 grep -q 'sha256:' "$scratch/a-comment.md" || fail "A-render: corpus checksum not rendered"
 if grep -q '%' "$scratch/a-comment.md"; then fail "A-render: a coverage percentage leaked into the rendered comment"; fi
 echo "ok  A-render: rendered a real evidence summary to markdown, no percentage anywhere"
@@ -375,9 +509,12 @@ print('ok  B: real refusal -- a composed major fails the required check for real
 echo
 echo "PASS: adopter-gate.py checks out the tag under review (never the default branch), refuses a"
 echo "resolved-commit disagreement with the pinned commit field, and refuses -- with the real cosign"
-echo "binary, real subprocess, real exit code -- both when signed evidence is entirely missing"
-echo "(the real, currently-tagged v1.0.0, which honestly predates cs-27) and when a present bundle is"
-echo "malformed. On real committed evidence it composes across real multi-version content with no"
+echo "binary, real subprocess, real exit code -- when signed evidence is entirely missing (the real,"
+echo "currently-tagged v1.0.0, which honestly predates cs-27), when a present bundle is malformed,"
+echo "and when a real bundle's real certificate identity is not the publisher this institution pins."
+echo "Against the REAL committed platform-pin.yaml, and against the two-document stream it forms with"
+echo "cosign really ACCEPTS platform's real committed evidence: the gate passes unskipped. On real"
+echo "committed evidence it composes across real multi-version content with no"
 echo "retirement to a real PASS (printing, never downgrading, when composed is weaker than the"
 echo "publisher's own tag), and forces a real non-zero-exit FAIL, naming the version, when a composed"
 echo "bump goes major on a real retirement."

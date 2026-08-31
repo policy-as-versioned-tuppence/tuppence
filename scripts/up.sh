@@ -34,9 +34,10 @@ git -C "$WORK/seed" -c user.email=demo@tuppence -c user.name=demo add -A
 git -C "$WORK/seed" -c user.email=demo@tuppence -c user.name=demo commit -q -m "tuppence gitops @1.0.0"
 # Annotated tag = the pinned release. On the real remote this tag is
 # gitsign-signed (keyless -> Rekor); offline we pin tag+commit for immutability.
-git -C "$WORK/seed" -c user.email=demo@tuppence -c user.name=demo tag -a v1.0.0 -m "tuppence v1.0.0"
+SEED_TAG=v1.0.0
+git -C "$WORK/seed" -c user.email=demo@tuppence -c user.name=demo tag -a "$SEED_TAG" -m "tuppence $SEED_TAG"
 COMMIT="$(git -C "$WORK/seed" rev-parse HEAD)"
-say "pinned revision: v1.0.0 @ ${COMMIT}"
+say "pinned revision: $SEED_TAG @ ${COMMIT}"
 git -C "$WORK/seed" clone -q --bare "$WORK/seed" "$WORK/ctx/tuppence.git"
 cp "$GITSERVER_DIR/Dockerfile" "$GITSERVER_DIR/lighttpd.conf" "$WORK/ctx/"
 
@@ -49,9 +50,27 @@ cp -R "$NIST_DIR/catalog/." "$NIST_SEED/"
 git -C "$NIST_SEED" init -q -b main
 git -C "$NIST_SEED" -c user.email=regulator@nist -c user.name=nist add -A
 git -C "$NIST_SEED" -c user.email=regulator@nist -c user.name=nist commit -q -m "nist 800-53 catalog @ 1.0.0"
-git -C "$NIST_SEED" -c user.email=regulator@nist -c user.name=nist tag -a v1.0.0 -m "nist catalog v1.0.0"
+NIST_SEED_TAG=v1.0.0
+git -C "$NIST_SEED" -c user.email=regulator@nist -c user.name=nist tag -a "$NIST_SEED_TAG" -m "nist catalog $NIST_SEED_TAG"
 NIST_COMMIT="$(git -C "$NIST_SEED" rev-parse HEAD)"
-say "pinned nist revision: v1.0.0 @ ${NIST_COMMIT}"
+say "pinned nist revision: $NIST_SEED_TAG @ ${NIST_COMMIT}"
+
+# Record what THIS run seeded. The seed is a fresh `git init` every time, so its
+# sha is new every run and can never equal the github.com pin in
+# gitops/flux-system/gotk-sync.yaml -- that pin is the real remote's release,
+# this file is the offline demo's. verify-reconcile.sh reads whichever the live
+# GitRepository url says applies. Throwaway: in .work/, wiped by reset.sh, never
+# committed.
+cat > "$WORK/seeded-pin.yaml" <<YAML
+# written by scripts/up.sh: the revisions this run actually seeded into the
+# in-cluster git server. Not a declaration -- an observation of the seed.
+url: ${GIT_URL_IN_CLUSTER}
+tag: ${SEED_TAG}
+commit: ${COMMIT}
+nist_url: ${NIST_URL_IN_CLUSTER}
+nist_tag: ${NIST_SEED_TAG}
+nist_commit: ${NIST_COMMIT}
+YAML
 git -C "$NIST_SEED" clone -q --bare "$NIST_SEED" "$WORK/ctx/nist.git"
 
 docker build -q -t "$IMAGE" "$WORK/ctx" >/dev/null
@@ -59,10 +78,18 @@ kind load docker-image "$IMAGE" --name "$CLUSTER"
 
 # 4. run the git server ----------------------------------------------------
 kubectl apply -f "$GITSERVER_DIR/deployment.yaml"
+# The image tag never changes ("<inst>-git:local"), so an unchanged Deployment
+# spec means kubelet keeps the pod it already has and goes on serving the
+# PREVIOUS seed -- Flux then cannot resolve the commit this run just pinned
+# ("object not found", observed 2026-08-28). Restart it whenever the pod is
+# already there, so the server always serves the seed this run built.
+if kubectl -n flux-system get deploy git-server >/dev/null 2>&1; then
+  kubectl -n flux-system rollout restart deploy/git-server
+fi
 kubectl -n flux-system rollout status deploy/git-server --timeout=120s
 
 # 5. GitRepository (pinned tag+commit) + Kustomization ---------------------
-say "applying GitRepository (pinned v1.0.0 @ ${COMMIT:0:12}) + Kustomization"
+say "applying GitRepository (pinned $SEED_TAG @ ${COMMIT:0:12}) + Kustomization"
 cat <<YAML | kubectl apply -f -
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
@@ -71,7 +98,7 @@ spec:
   interval: 1m
   url: ${GIT_URL_IN_CLUSTER}
   ref:
-    tag: v1.0.0
+    tag: ${SEED_TAG}
     commit: ${COMMIT}
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -87,7 +114,7 @@ spec:
   wait: true
 YAML
 
-say "applying pinned nist GitRepository (v1.0.0 @ ${NIST_COMMIT:0:12})"
+say "applying pinned nist GitRepository ($NIST_SEED_TAG @ ${NIST_COMMIT:0:12})"
 cat <<YAML | kubectl apply -f -
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
@@ -97,9 +124,9 @@ metadata:
   labels: { policy-as-versioned.dev/upstream: nist }
 spec:
   interval: 5m
-  url: http://git-server.flux-system.svc.cluster.local/cgi-bin/git/nist.git
+  url: ${NIST_URL_IN_CLUSTER}
   ref:
-    tag: v1.0.0
+    tag: ${NIST_SEED_TAG}
     commit: ${NIST_COMMIT}
 YAML
 

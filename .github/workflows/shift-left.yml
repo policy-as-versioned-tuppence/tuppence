@@ -186,6 +186,19 @@ jobs:
             --head-ref HEAD \
             --out adopter-summary.json
 
+      # Ticket 43 (18 Answer 4): the per-institution matrix row is filled HERE,
+      # by the adopter, with platform's PUBLISHED computed-semver package, run
+      # against this institution's own claimed policy versions with its own
+      # workloads added to the generated corpus. The publisher's own matrix
+      # stays empty and says so -- NORTH-STAR §2 forbids platform reading this
+      # repository. The row lands in composed/evidence.json; the PR carries it
+      # like every other composed change, and a human merges.
+      - name: fill this institution's own per-institution matrix row (ticket 43)
+        run: |
+          set -euo pipefail
+          python3 tuppence/.github/scripts/adopter-gate.py --matrix-row \
+            --platform-dir platform --adopter-dir tuppence
+
       - name: render the verified evidence into the pull request BODY (cs-29 -- the body itself, not a comment)
         # `if: always()` -- a REFUSAL is the most valuable output this gate
         # produces (spec.md), so the reviewer sees WHY, not just a red X.
@@ -328,6 +341,30 @@ jobs:
           fetch-depth: 0
           path: ico
           ref: main
+
+      # The two parents ticket 21 added. `party.yaml` inherits feed/threat-register
+      # from `feeds` and, through the insurer's quote, from `insurer` -- but this
+      # job only ever checked out platform, nist and ico, so composition had no
+      # tree for either and refused:
+      #     feeds/feed@v1: no parent tree provided
+      #     insurer/feed@v1: no parent tree provided
+      # A parent that is declared and not fetched is a refusal, which is the
+      # honest outcome; the repair is to fetch it, not to stop declaring it.
+      # `main` matches the ico line above: neither repo cuts a tag this adopter
+      # pins yet, and when one does, this ref moves to that pin with the others.
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-feeds/feeds
+          fetch-depth: 0
+          path: feeds
+          ref: ecosystem/thin-slice
+
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-insurer/insurer
+          fetch-depth: 0
+          path: insurer
+          ref: ecosystem/thin-slice
 
       - name: recompose tuppence's party artefact; fail on refusal or drift; print the document as the job summary
         run: |
