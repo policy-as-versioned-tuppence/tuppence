@@ -5,8 +5,8 @@
     {
       "party": "platform",
       "kind": "implementations",
-      "version": "1.1.1",
-      "sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60"
+      "version": "2.0.0",
+      "sha": "8fa915f2e5771d87516bd739b7eb72a4a56bc722"
     },
     {
       "party": "nist",
@@ -36,7 +36,7 @@
       "kind": "GeneratingPolicy",
       "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "source_sha": "8fa915f2e5771d87516bd739b7eb72a4a56bc722",
       "action": null
     },
     {
@@ -45,7 +45,7 @@
       "kind": "MutatingPolicy",
       "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "source_sha": "8fa915f2e5771d87516bd739b7eb72a4a56bc722",
       "action": null
     },
     {
@@ -54,7 +54,7 @@
       "kind": "ValidatingPolicy",
       "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "source_sha": "8fa915f2e5771d87516bd739b7eb72a4a56bc722",
       "action": "Deny"
     },
     {
@@ -63,7 +63,7 @@
       "kind": "MutatingPolicy",
       "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "source_sha": "8fa915f2e5771d87516bd739b7eb72a4a56bc722",
       "action": null
     },
     {
@@ -72,7 +72,7 @@
       "kind": "ValidatingPolicy",
       "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "source_sha": "8fa915f2e5771d87516bd739b7eb72a4a56bc722",
       "action": "Audit"
     },
     {
@@ -81,7 +81,7 @@
       "kind": "ValidatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "source_sha": "8fa915f2e5771d87516bd739b7eb72a4a56bc722",
       "action": null
     },
     {
@@ -90,7 +90,7 @@
       "kind": "ValidatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "58ef9c57e53543997e5ddbe829a7b7c9a2282c60",
+      "source_sha": "8fa915f2e5771d87516bd739b7eb72a4a56bc722",
       "action": null
     }
   ],
@@ -1331,7 +1331,7 @@
     },
     {
       "name": "pinned-parent-lacks-rendered-versions",
-      "detail": "the composed set renders policy versions the pinned parent commit does not contain; the header names a parent release that holds none of these trees. platform@1.1.1 (58ef9c57) does not contain distribution/policies/v4.0.0",
+      "detail": "the composed set renders policy versions the pinned parent commit does not contain; the header names a parent release that holds none of these trees. platform@2.0.0 (8fa915f2) does not contain distribution/policies/v4.0.0",
       "count": 1,
       "checked": 1,
       "status": "open"
