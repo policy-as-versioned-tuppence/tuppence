@@ -5,7 +5,43 @@
 #   FAIL (exit 1)  an assertion observed false
 #   SKIP (exit 3)  could not look: no docker, no kind cluster, Flux not Ready
 source "$(dirname "${BASH_SOURCE[0]}")/scripts/lib.sh"
+
+# --- the five-fact sample grades FIRST, cluster-free (ecosystem ticket 60) -------------------
+# The sample is taken by .github/workflows/drift-sample.yml on the observation lane and graded
+# from drift/samples.jsonl; no cluster is needed to READ it. This grading used to sit at the
+# end of this file, BELOW need_substrate, so the citable run (no kind in CI) exited 3 before
+# ever reading the lane -- the gate could not consume the conversion machinery
+# (REVIEW-2026-08-31, M7). So it grades first:
+#   a lane fact observed false     -> FAIL now, cluster or no cluster;
+#   sample PASS, no local cluster  -> PASS on the sample alone: the local touring cluster is a
+#     seeded rehearsal world, and the sample observes a cluster reconciling the REAL remotes,
+#     which is the stronger claim;
+#   no gradable sample, no cluster -> SKIP carrying both reasons.
+# A local cluster that EXISTS keeps the old behaviour in full: every live assertion below runs.
+SAMPLE_RC=3
+SAMPLE_OUT="SKIP: python3 here has no pyyaml, so drift/five-facts.py cannot read the pins or the pre-registration"
+if python3 -c 'import yaml' 2>/dev/null; then
+  set +e
+  SAMPLE_OUT="$(python3 "$(dirname "${BASH_SOURCE[0]}")/drift/five-facts.py" grade --max-age-hours "${FIVE_FACT_MAX_AGE_HOURS:-48}" 2>&1)"; SAMPLE_RC=$?
+  set -e
+fi
+say "0. the five-fact sample: the composed set in force, from signed sources (graded first, cluster-free)"
+printf '%s\n' "$SAMPLE_OUT" | sed 's/^/   /'
+if [ "$SAMPLE_RC" != 0 ] && [ "$SAMPLE_RC" != 3 ]; then
+  echo "FAIL: $(printf '%s\n' "$SAMPLE_OUT" | tail -1)" >&2; exit 1
+fi
+
+# --- the local cluster, when there is one ----------------------------------------------------
+if ! { have docker && have kind && have kubectl && docker info >/dev/null 2>&1 \
+       && kind get clusters 2>/dev/null | grep -qx "$CLUSTER"; }; then
+  if [ "$SAMPLE_RC" = 0 ]; then
+    echo "PASS: no local kind cluster '$CLUSTER' here, and none is needed: the latest lane sample observes the composed set in force from signed sources on a cluster reconciling the real remotes."
+    exit 0
+  fi
+  skip "no local kind cluster '$CLUSTER' to observe here, and the lane sample cannot stand in: $(printf '%s\n' "$SAMPLE_OUT" | sed -n 's/^SKIP: //p' | tail -1)"
+fi
 need_substrate
+
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 ready() { # kind/name/ns -> asserts Ready=True
@@ -145,17 +181,9 @@ echo "   the cage this repo composes is installed on $CTX"
 # undeclared is a fail), AND unless the newest sample is attributable to the observation lane --
 # an Actions run id and a signed lane commit, so three lines typed into samples.jsonl by hand
 # cannot grade PASS.
-say "7. the five-fact sample: the composed set in force, from signed sources"
-python3 -c 'import yaml' 2>/dev/null \
-  || skip "python3 here has no pyyaml, so drift/five-facts.py cannot read the pins or the pre-registration"
-# `set -e` is on (scripts/lib.sh). Without this the non-zero grade would kill the script here and
-# the reason -- the whole point of an exit-3 contract -- would never be printed.
-set +e
-out="$(python3 "$HERE/drift/five-facts.py" grade --max-age-hours "${FIVE_FACT_MAX_AGE_HOURS:-48}" 2>&1)"; rc=$?
-set -e
-printf '%s\n' "$out" | sed 's/^/   /'
-case "$rc" in
+say "7. the five-fact sample verdict (graded above, before the substrate gate)"
+py_done=graded-above
+case "$SAMPLE_RC" in
   0) echo "PASS: the reconcile is healthy AND the latest five-fact sample observes the composed set in force from signed sources.";;
-  3) skip "$(printf '%s\n' "$out" | sed -n 's/^SKIP: //p' | tail -1)";;
-  *) echo "FAIL: $(printf '%s\n' "$out" | tail -1)" >&2; exit 1;;
+  *) skip "$(printf '%s\n' "$SAMPLE_OUT" | sed -n 's/^SKIP: //p' | tail -1)";;
 esac
