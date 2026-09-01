@@ -168,6 +168,16 @@ jobs:
           # policy-version-orphan-guard, so installing both puts two owners on one name and the
           # live guard stops being tuppence's (ticket 16 Q5: "no second policy install").
           kubectl --context "${CTX}" apply -f gitops/platform/platform-pin.yaml
+          # The composed ResourceSet's objects are Kyverno policies; flux-operator dry-runs them
+          # against Kyverno's admission webhook. Applied before that webhook serves, the first
+          # reconcile fails with 'connection refused' and the sample reads red before the retry
+          # heals it -- the instrument, not the estate (observed 2026-09-01: tuppence run
+          # 33556798230 and ludlow run 33556801679, both 16-of-16 absent on exactly this). So
+          # both controllers are waited for BEFORE the composed set is applied.
+          for r in $(kubectl --context "${CTX}" -n flux-system get resourcesets.fluxcd.controlplane.io -o name 2>/dev/null); do
+            kubectl --context "${CTX}" -n flux-system wait "${r}" --for=condition=Ready --timeout=180s || true
+          done
+          kubectl --context "${CTX}" -n flux-system rollout status deploy/flux-operator --timeout=180s || true
           kubectl --context "${CTX}" apply -k gitops/composed/
 
           # Bounded, best-effort. Whatever has or has not converged when this returns is the state
