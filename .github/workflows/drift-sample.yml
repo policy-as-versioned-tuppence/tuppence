@@ -174,17 +174,17 @@ jobs:
           # heals it -- the instrument, not the estate (observed 2026-09-01: tuppence run
           # 33556798230 and ludlow run 33556801679, both 16-of-16 absent on exactly this). So
           # both controllers are waited for BEFORE the composed set is applied.
-          for r in $(kubectl --context "${CTX}" -n flux-system get resourcesets.fluxcd.controlplane.io -o name 2>/dev/null); do
-            kubectl --context "${CTX}" -n flux-system wait "${r}" --for=condition=Ready --timeout=180s || true
-          done
+          kubectl --context "${CTX}" -n kyverno rollout status deploy/kyverno-admission-controller --timeout=180s || true
           kubectl --context "${CTX}" -n flux-system rollout status deploy/flux-operator --timeout=180s || true
           kubectl --context "${CTX}" apply -k gitops/composed/
 
           # Bounded, best-effort. Whatever has or has not converged when this returns is the state
           # the sample records.
-          kubectl --context "${CTX}" -n kyverno rollout status deploy/kyverno-admission-controller --timeout=180s || true
           for k in $(kubectl --context "${CTX}" -n flux-system get kustomizations.kustomize.toolkit.fluxcd.io -o name 2>/dev/null); do
             kubectl --context "${CTX}" -n flux-system wait "${k}" --for=condition=Ready --timeout=180s || true
+          done
+          for r in $(kubectl --context "${CTX}" -n flux-system get resourcesets.fluxcd.controlplane.io -o name 2>/dev/null); do
+            kubectl --context "${CTX}" -n flux-system wait "${r}" --for=condition=Ready --timeout=180s || true
           done
           kubectl --context "${CTX}" -n flux-system get gitrepositories,kustomizations,resourcesets -o wide || true
 
