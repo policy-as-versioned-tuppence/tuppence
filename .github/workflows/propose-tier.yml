@@ -52,6 +52,10 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  # gitsign signs the proposal commit with THIS workflow's own keyless Actions
+  # identity (OIDC -> Fulcio -> Rekor), the same chain cut-release.yml uses for
+  # tags and twin-sweep.yml for its observation commit. Reversal 16, ticket 78.
+  id-token: write
   # no `issues: write`: ADR-0022 removed the issue branch, so this job has
   # no path that could open one.
 
@@ -60,6 +64,18 @@ permissions:
 # are the only paths any scheduled job in this repository may ever commit.
 env:
   OBSERVATION_LANE: "talk/truth.log drift/samples.jsonl talk/captures observations"
+  GITSIGN_VERSION: 0.17.1
+  GITSIGN_SHA256: 69213a8a0813a151e5a47d0060862952ff833a845d57309dff76f7ba6600abae
+  # What a proposal commit's certificate must say -- anchored to THIS workflow,
+  # on this repo, on main. Deliberately a SECOND constant, not an alternation
+  # widened into release.yml's EXPECTED_IDENTITY_REGEXP: a release tag must keep
+  # verifying against cut-release.yml and nothing else, and a proposer that could
+  # sign a release would be a bigger hole than the one this closes (ticket 78).
+  # `refs/heads/main` is the ref the WORKFLOW runs on, never the `wargamer/retune-*`
+  # branch it writes: propose-tier.yml runs on a schedule, a dispatch and a merged
+  # pin bump, all of which are main.
+  EXPECTED_PROPOSAL_IDENTITY_REGEXP: ^https://github\.com/policy-as-versioned-tuppence/tuppence/\.github/workflows/propose-tier\.yml@refs/heads/main$
+  EXPECTED_ISSUER: https://token.actions.githubusercontent.com
 
 jobs:
   propose-tier:
@@ -213,6 +229,14 @@ jobs:
           fi
           test -f "${out}/composed/evidence.json"
 
+      - name: install pinned gitsign (binary + checksum, no marketplace action)
+        run: |
+          set -euo pipefail
+          curl -sSL -o gitsign "https://github.com/sigstore/gitsign/releases/download/v${GITSIGN_VERSION}/gitsign_${GITSIGN_VERSION}_linux_amd64"
+          echo "${GITSIGN_SHA256}  gitsign" | sha256sum -c -
+          chmod +x gitsign && sudo mv gitsign /usr/local/bin/gitsign
+          rm -f gitsign
+
       - name: run the proposer -- re-composed evidence in, one PR on the governed Namespace out
         env:
           GH_TOKEN: ${{ github.token }}
@@ -221,6 +245,14 @@ jobs:
           set -euo pipefail
           git -C tuppence config user.email "wargamer-proposer@policy-as-versioned-tuppence.invalid"
           git -C tuppence config user.name "wargamer proposer"
+          # The proposal commit is SIGNED, and the signature is gitsign's to make,
+          # never a field the proposal claims about itself (ticket 76 item 6 --
+          # wargamer.py's `"signed": True` literals are gone). tier_pr.py runs a
+          # plain `git commit`, so the signing is configured here, repo-locally,
+          # and the commit it makes is signed by this run's own Actions identity.
+          git -C tuppence config gpg.format x509
+          git -C tuppence config gpg.x509.program gitsign
+          git -C tuppence config commit.gpgsign true
           # The rejection ledger is DERIVED from this repo's own closed-unmerged
           # proposal PRs (ADR-0024); there is no rejections.json anywhere any
           # more, and no adopter reads platform's fixture as its own. When
@@ -230,7 +262,38 @@ jobs:
             --adopter-dir tuppence \
             --evidence "${RUNNER_TEMP}/recomposed/composed/evidence.json" \
             --org tuppence \
-            --as-of "${{ steps.recompose.outputs.as_of }}"
+            --as-of "${{ steps.recompose.outputs.as_of }}" \
+            | tee "${RUNNER_TEMP}/proposals.json"
+
+      # --- the proposal commit verifies against this workflow's own identity ---
+      # Not a claim: `gitsign verify` reads the certificate off each branch this
+      # run actually wrote and checks it against EXPECTED_PROPOSAL_IDENTITY_REGEXP
+      # and the issuer. A proposal signed by anything else -- a person, another
+      # workflow, another repo -- fails the run rather than being merged on trust.
+      # `${{ runner.temp }}` holds the proposer's own JSON: writing it into the
+      # repository would trip the observation cage below, and rightly.
+      - name: verify the proposal commit's signature and identity (ticket 78)
+        run: |
+          set -euo pipefail
+          out="${RUNNER_TEMP}/proposals.json"
+          [ -s "${out}" ] || { echo "the proposer wrote no JSON -- nothing proposed, nothing to verify"; exit 0; }
+          # `landed` is a dict only where a branch was really written; in dry-run
+          # tier_pr.py sets it to the STRING "dry-run", and `.get` on a str raised
+          # AttributeError here until 2026-09-04 -- this step died instead of saying
+          # there was nothing to verify.
+          branches="$(python3 -c 'import json,sys; print("\n".join(p["branch"] for p in json.load(open(sys.argv[1])) if isinstance(p.get("landed"), dict) and p["landed"].get("action") in ("created","updated")))' "${out}")"
+          if [ -z "${branches}" ]; then
+            echo "no branch was written this run (held, suppressed or no drift) -- nothing to verify"
+            exit 0
+          fi
+          for b in ${branches}; do
+            echo "verifying the proposal commit on ${b}"
+            git -C tuppence rev-parse --verify "${b}" >/dev/null
+            ( cd tuppence && gitsign verify "${b}" \
+                --certificate-identity-regexp="${EXPECTED_PROPOSAL_IDENTITY_REGEXP}" \
+                --certificate-oidc-issuer="${EXPECTED_ISSUER}" )
+            echo "ok  ${b} is signed by propose-tier.yml's own Actions identity"
+          done
 
       # --- the cage (ADR-0024, D1) -------------------------------------------
       # This job may propose and it may observe. It may not declare. The
