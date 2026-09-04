@@ -142,7 +142,6 @@ jobs:
           print(f'ok  platform checked out commit matches the pin ({resolved})')
           "
 
-
       # --- re-compose at today's date, into the runner's temp dir (ADR-0024) ---
       # The proposer used to read tuppence's COMMITTED composed/evidence.json,
       # which is only rewritten when a pull request runs shift-left.yml. On a
@@ -161,9 +160,11 @@ jobs:
         id: pins
         run: |
           set -euo pipefail
-          python3 tuppence/.github/scripts/read-two-pins.py \
+          python3 tuppence/.github/scripts/read-pins.py \
             tuppence/gitops/platform/platform-pin.yaml platform \
             tuppence/gitops/flux-system/gotk-sync-nist.yaml nist \
+            tuppence/gitops/flux-system/gotk-sync-ico.yaml ico \
+            tuppence/gitops/flux-system/gotk-sync-feeds.yaml feeds \
             >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
@@ -173,17 +174,17 @@ jobs:
           ref: ${{ steps.pins.outputs.nist_tag }}
           fetch-depth: 0
 
-      # ico ships no Flux/Renovate pin for the pricing kind anywhere in this
-      # estate today (party_artefact.py's own NOTE says so), so it resolves at
-      # its default branch -- the same choice shift-left.yml's compose job makes.
+      # ico now ships a {tag, commit} pin in this repository, like nist and platform:
+      # gitops/flux-system/gotk-sync-ico.yaml, read by the pins step above (ticket 62).
       - uses: actions/checkout@v4
         with:
           repository: policy-as-versioned-ico/ico
           path: ico
-          ref: main
+          ref: ${{ steps.pins.outputs.ico_tag }}
           fetch-depth: 0
 
-      # The two parents ticket 21 added, on the same footing as ico above.
+      # The two parents ticket 21 added, on the same footing as ico above -- each at the
+      # {tag, commit} pair this repository pins (tickets 62 and 77).
       # This job composes, so it needs every parent party.yaml declares -- and
       # it fetched only platform, nist and ico, so composition refused with
       #     feeds/feed@v1: no parent tree provided
@@ -195,15 +196,22 @@ jobs:
         with:
           repository: policy-as-versioned-feeds/feeds
           path: feeds
-          ref: ecosystem/thin-slice
+          ref: ${{ steps.pins.outputs.feeds_tag }}
           fetch-depth: 0
 
-      - uses: actions/checkout@v4
-        with:
-          repository: policy-as-versioned-insurer/insurer
-          path: insurer
-          ref: ecosystem/thin-slice
-          fetch-depth: 0
+      - name: every parent is at the {tag, commit} pair this repository pins
+        # Tickets 62 and 77. `ref:` above is the TAG, because the tag is what carries the
+        # publisher's gitsign signature and a SHA ref cannot be verified as signed. This
+        # step closes the other half of the pair: the tree the runner actually got must be
+        # the commit the pin file names. Without it the `commit:` field is decoration and a
+        # moved tag would go unnoticed.
+        run: |
+          set -euo pipefail
+          python3 tuppence/.github/scripts/verify-pinned-checkouts.py \
+            tuppence/gitops/platform/platform-pin.yaml platform \
+            tuppence/gitops/flux-system/gotk-sync-nist.yaml nist \
+            tuppence/gitops/flux-system/gotk-sync-ico.yaml ico \
+            tuppence/gitops/flux-system/gotk-sync-feeds.yaml feeds
 
       - name: re-compose at today's date -- into RUNNER_TEMP, never into the repo
         id: recompose

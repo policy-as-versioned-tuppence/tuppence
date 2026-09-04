@@ -96,20 +96,28 @@ jobs:
       - uses: actions/checkout@v4
         with: { path: tuppence, fetch-depth: 0 }
 
+      - name: read the platform tag this PR's own head pins
+        id: pin
+        run: |
+          set -euo pipefail
+          pip install --quiet pyyaml
+          python3 tuppence/.github/scripts/read-pins.py \
+            tuppence/gitops/platform/platform-pin.yaml platform >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
         with:
           repository: policy-as-versioned-platform/platform
           path: platform
           fetch-depth: 0
           fetch-tags: true
-          # Live bug #1 (spec.md, "Two live bugs"): no `ref:` here means
-          # this checkout is platform's DEFAULT BRANCH -- correct for a
-          # normal PR (workload manifest changes, checked against whatever
-          # ci-check.py's own version window resolves), but on a Renovate
-          # bump PR the platform tag under review is a SEPARATE, later step
-          # below: adopter-gate.py re-checks-out this SAME directory at the
-          # exact tag gitops/platform/platform-pin.yaml's PR-head content
-          # names, before verifying anything against it.
+          ref: ${{ steps.pin.outputs.platform_tag }}
+          # Ticket 77 item 4. This used to carry no `ref:` at all -- platform's DEFAULT
+          # BRANCH -- documented in spec.md as "live bug #1" and left because a later
+          # adopter-gate.py step re-checks-out this SAME directory at the exact tag
+          # gitops/platform/platform-pin.yaml's PR-head content names. Reading that pin
+          # file HERE is the same tag by the same route, one step earlier, and it means
+          # no job in this repository consumes another organisation at a branch. ludlow
+          # and driftwood already had this shape; tuppence was the odd one out.
 
       - name: party artefact check (ticket 11) -- schema, pinned tags, baseline mirror
         # platform/party/party_artefact.py, called through the pinned platform
@@ -316,9 +324,11 @@ jobs:
         run: |
           set -euo pipefail
           pip install --quiet pyyaml
-          python3 tuppence/.github/scripts/read-two-pins.py \
+          python3 tuppence/.github/scripts/read-pins.py \
             tuppence/gitops/platform/platform-pin.yaml platform \
             tuppence/gitops/flux-system/gotk-sync-nist.yaml nist \
+            tuppence/gitops/flux-system/gotk-sync-ico.yaml ico \
+            tuppence/gitops/flux-system/gotk-sync-feeds.yaml feeds \
             >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
@@ -340,7 +350,7 @@ jobs:
           repository: policy-as-versioned-ico/ico
           fetch-depth: 0
           path: ico
-          ref: main
+          ref: ${{ steps.pins.outputs.ico_tag }}
 
       # The two parents ticket 21 added. `party.yaml` inherits feed/threat-register
       # from `feeds` and, through the insurer's quote, from `insurer` -- but this
@@ -350,21 +360,30 @@ jobs:
       #     insurer/feed@v1: no parent tree provided
       # A parent that is declared and not fetched is a refusal, which is the
       # honest outcome; the repair is to fetch it, not to stop declaring it.
-      # `main` matches the ico line above: neither repo cuts a tag this adopter
-      # pins yet, and when one does, this ref moves to that pin with the others.
+      # Both now resolve to the {tag, commit} pair this repository pins in
+      # gitops/flux-system/ (tickets 62 and 77): a branch was never a pinned, signed
+      # dependency, and when ticket 57 renamed the default branch the branch refs died
+      # at fetch and took the clock with them.
       - uses: actions/checkout@v4
         with:
           repository: policy-as-versioned-feeds/feeds
           fetch-depth: 0
           path: feeds
-          ref: ecosystem/thin-slice
+          ref: ${{ steps.pins.outputs.feeds_tag }}
 
-      - uses: actions/checkout@v4
-        with:
-          repository: policy-as-versioned-insurer/insurer
-          fetch-depth: 0
-          path: insurer
-          ref: ecosystem/thin-slice
+      - name: every parent is at the {tag, commit} pair this repository pins
+        # Tickets 62 and 77. `ref:` above is the TAG, because the tag is what carries the
+        # publisher's gitsign signature and a SHA ref cannot be verified as signed. This
+        # step closes the other half of the pair: the tree the runner actually got must be
+        # the commit the pin file names. Without it the `commit:` field is decoration and a
+        # moved tag would go unnoticed.
+        run: |
+          set -euo pipefail
+          python3 tuppence/.github/scripts/verify-pinned-checkouts.py \
+            tuppence/gitops/platform/platform-pin.yaml platform \
+            tuppence/gitops/flux-system/gotk-sync-nist.yaml nist \
+            tuppence/gitops/flux-system/gotk-sync-ico.yaml ico \
+            tuppence/gitops/flux-system/gotk-sync-feeds.yaml feeds
 
       - name: recompose tuppence's party artefact; fail on refusal or drift; print the document as the job summary
         run: |

@@ -34,6 +34,32 @@
       "datasourceTemplate": "git-refs",
       "depNameTemplate": "https://github.com/policy-as-versioned-platform/platform",
       "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Cross-org bump surface: the pinned ico parent (eco-system tickets 62 and 77). Until 2026-09-04 this parent was consumed at a branch and had no pin for Renovate to bump. Same {tag, commit}-pair reasoning as the nist and platform managers above.",
+      "managerFilePatterns": [
+        "/^gitops/flux-system/gotk-sync-ico\\.yaml$/"
+      ],
+      "matchStrings": [
+        "tag: (?<currentValue>v[0-9.]+)\\s*\\n\\s*commit: (?<currentDigest>[a-f0-9]{40})"
+      ],
+      "datasourceTemplate": "git-refs",
+      "depNameTemplate": "https://github.com/policy-as-versioned-ico/ico",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Cross-org bump surface: the pinned feeds parent (eco-system tickets 62 and 77). Until 2026-09-04 this parent was consumed at a branch and had no pin for Renovate to bump. Same {tag, commit}-pair reasoning as the nist and platform managers above.",
+      "managerFilePatterns": [
+        "/^gitops/flux-system/gotk-sync-feeds\\.yaml$/"
+      ],
+      "matchStrings": [
+        "tag: (?<currentValue>threat-register/v[0-9.]+)\\s*\\n\\s*commit: (?<currentDigest>[a-f0-9]{40})"
+      ],
+      "datasourceTemplate": "git-refs",
+      "depNameTemplate": "https://github.com/policy-as-versioned-feeds/feeds",
+      "versioningTemplate": "semver"
     }
   ],
   "packageRules": [
