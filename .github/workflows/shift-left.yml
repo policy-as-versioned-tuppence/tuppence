@@ -392,3 +392,40 @@ jobs:
             exit 1
           fi
           echo "composed artefact matches the committed copy -- no drift"
+
+      # --- the enacted tier is bound to the priced tier (ticket 78; ADR-0022) ---
+      # The proposer only tightens, but a human edits gitops/apps/namespace.yaml
+      # by hand too, and a merge can race a re-price. This is the pull-request
+      # gate that catches either before Flux renders a cage looser than tuppence's
+      # worst-priced regime: it reads `proposed_tier` off every prices[] line in
+      # the evidence document the step above just proved matches the committed
+      # copy, reads `posture.acme.io/tier` off the GOVERNED Namespace manifest
+      # (found by its label, never by a path), and refuses a declaration looser
+      # than the strictest priced line clamped to this party's own overlay.floor.
+      # It runs THROUGH the pinned platform checkout, like every other check in
+      # this job: the rule is platform's to publish and tuppence's to pin.
+      # Exit 3 is could-not-look (no evidence, no governed Namespace, or two of
+      # them) and is not a pass -- this job treats it as a failure, because on a
+      # pull request in this repository all three of those are present.
+      - name: the enacted tier is bound to the priced tier (ticket 78)
+        run: |
+          set -uo pipefail
+          python3 platform/shift-left/tier_binding.py check \
+            --evidence tuppence/composed/evidence.json \
+            --adopter-dir tuppence | tee "${RUNNER_TEMP}/tier-binding.txt"
+          status=${PIPESTATUS[0]}
+          {
+            echo "## tier binding"
+            echo
+            echo '```'
+            cat "${RUNNER_TEMP}/tier-binding.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$status" -eq 3 ]; then
+            echo "::error::the tier binding check could not look -- see the job summary"
+            exit 1
+          fi
+          if [ "$status" -ne 0 ]; then
+            echo "::error::the governed Namespace declares a tier looser than this party's strictest priced line"
+            exit 1
+          fi
