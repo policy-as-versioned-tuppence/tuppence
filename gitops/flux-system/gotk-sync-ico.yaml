@@ -1,0 +1,38 @@
+# tuppence consumes `ico` as a PINNED, SIGNED dependency -- the same
+# {tag, commit} pair shape gotk-sync-nist.yaml and gitops/platform/platform-pin.yaml
+# already carry, and for the same reason (ADR-0001: post-merge tamper resistance).
+#
+# WHY THIS FILE EXISTS (eco-system tickets 62 and 77). Until 2026-09-04 the composing
+# jobs in this repository checked ico out at a BRANCH -- `main`, and before ticket 57
+# renamed it, `ecosystem/thin-slice`, which stopped existing and killed the clock at
+# fetch. A branch is not a pinned, signed dependency (NORTH-STAR section 2), and there
+# was nowhere in this repository that said which version of ico this party consumes.
+# party.yaml declares the pin as feed/penalty-schema at "v3"; this file is the {tag, commit}
+# pair that declaration resolves to, and .github/workflows/*.yml read `ref:` out of it.
+#
+# It is a VERIFIED SOURCE ONLY and gates nothing -- the same standing gotk-sync-nist.yaml
+# has. Nothing in gitops/apps references it, so applying it installs no policy; it is here
+# so the pin is one declared fact in one place that Renovate bumps, that the workflows
+# read, and that a reader of this repository can see.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: ico
+  namespace: flux-system
+  annotations:
+    # Ticket 41's identity-pinned gitsign-verifying controller reads these two. Flux's own
+    # spec.verify cannot verify a gitsign tag (ADR-0023 D3, fluxcd/source-controller#1068).
+    # They are the constants ico's own release.yml pins.
+    policy-as-versioned.dev/gitsign-identity-regexp: ^https://github\.com/policy-as-versioned-ico/ico/\.github/workflows/cut-release\.yml@refs/heads/(main|release/[0-9]+\.[0-9]+\.x)$
+    policy-as-versioned.dev/gitsign-issuer: https://token.actions.githubusercontent.com
+  labels:
+    policy-as-versioned.dev/upstream: ico
+spec:
+  interval: 5m
+  url: https://github.com/policy-as-versioned-ico/ico
+  ref:
+    tag: v3.0.0
+    commit: 9d09222117dde1257e5b43401caa43342f47bae3
+    # The commit this tag resolved to when the pin was written (2026-09-04),
+    # read off the publisher's real remote. Bumped as a PAIR by the Renovate
+    # customManager in renovate.json -- never by hand, never a moving branch.

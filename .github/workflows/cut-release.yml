@@ -56,9 +56,11 @@ jobs:
         run: |
           set -euo pipefail
           pip install --quiet pyyaml
-          python3 .github/scripts/read-two-pins.py \
+          python3 .github/scripts/read-pins.py \
             gitops/platform/platform-pin.yaml platform \
             gitops/flux-system/gotk-sync-nist.yaml nist \
+            gitops/flux-system/gotk-sync-ico.yaml ico \
+            gitops/flux-system/gotk-sync-feeds.yaml feeds \
             >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
@@ -80,7 +82,7 @@ jobs:
           repository: policy-as-versioned-ico/ico
           path: ico
           fetch-depth: 0
-          ref: main
+          ref: ${{ steps.pins.outputs.ico_tag }}
 
       # The two parents ticket 21 added. This job re-renders the composed
       # artefact before any tag is cut, so it needs every parent party.yaml
@@ -94,14 +96,21 @@ jobs:
           repository: policy-as-versioned-feeds/feeds
           path: feeds
           fetch-depth: 0
-          ref: ecosystem/thin-slice
+          ref: ${{ steps.pins.outputs.feeds_tag }}
 
-      - uses: actions/checkout@v4
-        with:
-          repository: policy-as-versioned-insurer/insurer
-          path: insurer
-          fetch-depth: 0
-          ref: ecosystem/thin-slice
+      - name: every parent is at the {tag, commit} pair this repository pins
+        # Tickets 62 and 77. `ref:` above is the TAG, because the tag is what carries the
+        # publisher's gitsign signature and a SHA ref cannot be verified as signed. This
+        # step closes the other half of the pair: the tree the runner actually got must be
+        # the commit the pin file names. Without it the `commit:` field is decoration and a
+        # moved tag would go unnoticed.
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/verify-pinned-checkouts.py \
+            gitops/platform/platform-pin.yaml platform \
+            gitops/flux-system/gotk-sync-nist.yaml nist \
+            gitops/flux-system/gotk-sync-ico.yaml ico \
+            gitops/flux-system/gotk-sync-feeds.yaml feeds
 
       - name: ticket 18 -- re-render the composed artefact from the recorded parent SHAs, byte-for-byte, before any tag is cut
         # Ticket 12's verify(): a release gate after the tag can only burn
