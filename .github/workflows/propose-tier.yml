@@ -277,7 +277,11 @@ jobs:
           set -euo pipefail
           out="${RUNNER_TEMP}/proposals.json"
           [ -s "${out}" ] || { echo "the proposer wrote no JSON -- nothing proposed, nothing to verify"; exit 0; }
-          branches="$(python3 -c 'import json,sys; print("\n".join(p["branch"] for p in json.load(open(sys.argv[1])) if p.get("landed",{}).get("action") in ("created","updated")))' "${out}")"
+          # `landed` is a dict only where a branch was really written; in dry-run
+          # tier_pr.py sets it to the STRING "dry-run", and `.get` on a str raised
+          # AttributeError here until 2026-09-04 -- this step died instead of saying
+          # there was nothing to verify.
+          branches="$(python3 -c 'import json,sys; print("\n".join(p["branch"] for p in json.load(open(sys.argv[1])) if isinstance(p.get("landed"), dict) and p["landed"].get("action") in ("created","updated")))' "${out}")"
           if [ -z "${branches}" ]; then
             echo "no branch was written this run (held, suppressed or no drift) -- nothing to verify"
             exit 0
