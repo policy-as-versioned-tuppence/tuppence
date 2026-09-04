@@ -352,15 +352,17 @@ jobs:
           path: ico
           ref: ${{ steps.pins.outputs.ico_tag }}
 
-      # The two parents ticket 21 added. `party.yaml` inherits feed/threat-register
-      # from `feeds` and, through the insurer's quote, from `insurer` -- but this
-      # job only ever checked out platform, nist and ico, so composition had no
-      # tree for either and refused:
+      # The `feeds` parent ticket 21 added. `party.yaml` inherits feed/threat-register
+      # from `feeds`, but this job only ever checked out platform, nist and ico,
+      # so composition had no tree for it and refused:
       #     feeds/feed@v1: no parent tree provided
-      #     insurer/feed@v1: no parent tree provided
       # A parent that is declared and not fetched is a refusal, which is the
       # honest outcome; the repair is to fetch it, not to stop declaring it.
-      # Both now resolve to the {tag, commit} pair this repository pins in
+      # An insurer checkout stood beside this one until 2026-09-04 and is gone
+      # rather than pinned: this repository's party.yaml declares no insurer
+      # parent, so composition never read that tree and there was no pin to move
+      # its dead branch ref to (tickets 62 and 77, decision 5).
+      # It now resolves to the {tag, commit} pair this repository pins in
       # gitops/flux-system/ (tickets 62 and 77): a branch was never a pinned, signed
       # dependency, and when ticket 57 renamed the default branch the branch refs died
       # at fetch and took the clock with them.

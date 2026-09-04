@@ -183,12 +183,17 @@ jobs:
           ref: ${{ steps.pins.outputs.ico_tag }}
           fetch-depth: 0
 
-      # The two parents ticket 21 added, on the same footing as ico above -- each at the
+      # The `feeds` parent ticket 21 added, on the same footing as ico above -- at the
       # {tag, commit} pair this repository pins (tickets 62 and 77).
       # This job composes, so it needs every parent party.yaml declares -- and
       # it fetched only platform, nist and ico, so composition refused with
       #     feeds/feed@v1: no parent tree provided
-      #     insurer/feed@v1: no parent tree provided
+      # The insurer was fetched here too until 2026-09-04, on a `ref:` that had
+      # been dead since ticket 57 renamed the branch. It is gone rather than
+      # pinned: this repository's party.yaml declares no insurer parent, so
+      # composition never reads that tree and there was no pin to move the ref to
+      # (tickets 62 and 77, decision 5). Fetching a parent nobody declares would
+      # have invented a dependency.
       # and the proposer clock has been red since. shift-left.yml had the same
       # hole and was fixed first; this is the second job that composes, and
       # missing it is why the clock stayed red after that fix.

@@ -50,15 +50,16 @@
     },
     {
       "customType": "regex",
-      "description": "Cross-org bump surface: the pinned feeds parent (eco-system tickets 62 and 77). Until 2026-09-04 this parent was consumed at a branch and had no pin for Renovate to bump. Same {tag, commit}-pair reasoning as the nist and platform managers above.",
+      "description": "Cross-org bump surface: the pinned feeds parent (eco-system tickets 62 and 77). Until 2026-09-04 this parent was consumed at a branch and had no pin for Renovate to bump. Same {tag, commit}-pair reasoning as the nist and platform managers above, with the one difference the `feeds` repo forces: it signs PER-FEED tags (`<name>/vX.Y.Z`), so a manager that captured the whole tag would hand `threat-register/v2.0.0` to semver versioning, which cannot parse it, and the pin would never be bumped. The feed prefix therefore stays OUTSIDE the capture group -- currentValue is the plain semver, Renovate rewrites only that substring and the prefix survives -- and extractVersionTemplate maps the datasource's per-feed tags back onto it. That is the shape the party.yaml feeds manager above already uses for the same reason.",
       "managerFilePatterns": [
         "/^gitops/flux-system/gotk-sync-feeds\\.yaml$/"
       ],
       "matchStrings": [
-        "tag: (?<currentValue>threat-register/v[0-9.]+)\\s*\\n\\s*commit: (?<currentDigest>[a-f0-9]{40})"
+        "tag: threat-register/(?<currentValue>v[0-9.]+)\\s*\\n\\s*commit: (?<currentDigest>[a-f0-9]{40})"
       ],
       "datasourceTemplate": "git-refs",
       "depNameTemplate": "https://github.com/policy-as-versioned-feeds/feeds",
+      "extractVersionTemplate": "^threat-register/(?<version>v[0-9.]+)$",
       "versioningTemplate": "semver"
     }
   ],
