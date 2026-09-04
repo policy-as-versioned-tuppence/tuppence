@@ -1,0 +1,11 @@
+id: payments-api
+name: Payments API
+kind: activity
+evolution: product
+visibility: 0.64
+needs: [cloud-compute]
+description: >-
+  The caged workload. Authorises and settles card and faster-payment instructions for this
+  institution's own account holders, inside the governed namespace this repo's composed artefact
+  renders, at whatever cage tier the price lands on. The tier is a Namespace declaration and the
+  pod label is an output of it (ADR-0022).

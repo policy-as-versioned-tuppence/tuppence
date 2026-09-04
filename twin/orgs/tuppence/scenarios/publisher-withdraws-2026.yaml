@@ -1,0 +1,22 @@
+id: publisher-withdraws-2026
+question: >-
+  Does a publisher in this party's inherits[] withdraw a feed this repository pins, inside the
+  horizon, leaving the pin in force and unreplaced?
+proposition: a-publisher-withdraws-a-feed-the-organisation-pins
+at: '2026-09-04'
+horizon: '2027-09-04'
+components:
+  - sole-source-publisher-feed
+  - cage-policy-line
+world_models:
+  - reference-map
+note: >-
+  No class, for the same reason as rival-reads-my-holes-2026. The switching cost itself is not
+  forecast here: it is computed by this repository's own composition, by re-composing with that
+  publisher's edges dropped (ticket 19 answer item 4). This scenario asks whether the withdrawal
+  happens; where the publisher is the sole source of a declared obligation, the answer the estate
+  records is a named refusal, not a number (ADR-0020).
+affected_parties:
+  - id: the-other-adopters-of-the-same-feed
+    who: Every other party pinning the same feed, none of them represented in this model.
+    consequence: A withdrawal this scenario forecasts lands on all of them at once; the twin prices this institution's exposure only, and publishes nothing about theirs.

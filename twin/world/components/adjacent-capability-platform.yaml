@@ -1,0 +1,5 @@
+id: adjacent-capability-platform
+name: Adjacent capability platform
+kind: capability
+evolution: product
+visibility: 0.3

@@ -1,0 +1,10 @@
+id: banking-licence-standing
+name: Standing with the conduct regulator
+kind: capability
+evolution: genesis
+visibility: 0.95
+description: >-
+  Named so that it is visible and unpriced, rather than absent. No evidenced causal path runs from
+  here to a declared cash flow in this overlay, so it leaves any payload as a register entry with
+  no figure -- never as a shadow price. A conduct penalty is the regulator's to publish and the
+  estate's to price; what it does to standing is not a number this overlay has.

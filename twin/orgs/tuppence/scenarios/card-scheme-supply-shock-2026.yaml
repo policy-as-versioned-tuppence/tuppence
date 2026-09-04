@@ -1,0 +1,24 @@
+id: card-scheme-supply-shock-2026
+question: >-
+  A tier-one supplier of this institution's own settlement chain -- the card scheme connection and
+  the processor behind it -- fails to deliver against a material contract inside the horizon. What
+  does that cost the payments API?
+proposition: a-tier-one-supplier-fails-to-deliver-within-the-horizon
+at: '2026-09-04'
+horizon: '2027-09-04'
+components:
+  - tier-one-supplier-relationship
+  - payments-api
+world_models:
+  - reference-map
+class: supply-shock
+note: >-
+  The standing supply-shock question, authored for a settlement chain rather than a hardware one.
+  It lives in this overlay and is never an entry in the news feed: a headline is a dated signal
+  somebody classified, and this is the standing question a headline moves. Keeping it here is what
+  stops a published feed carrying the twin's own subject matter back to it as though it were
+  external evidence.
+affected_parties:
+  - id: the-suppliers-own-workforce
+    who: The workforce of the constrained processor, whose livelihoods depend on the contract, not represented in this model.
+    consequence: A failure this scenario forecasts is priced from the buyer's side only; the twin carries no perspective for the workforce whose contract it is.

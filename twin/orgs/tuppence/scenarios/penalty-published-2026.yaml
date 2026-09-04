@@ -1,0 +1,32 @@
+id: penalty-published-2026
+question: >-
+  When the conduct regulator publishes a penalty under a regime this institution is subject to,
+  what does the publication itself do to fee income -- accounts closed, new business lost -- over
+  the horizon?
+proposition: a-regulator-publishes-a-penalty-under-a-regime-in-force
+at: '2026-09-04'
+horizon: '2027-09-04'
+components:
+  - published-enforcement-record
+  - customer-account-records
+  - payment-fee-income
+world_models:
+  - reference-map
+class: penalty-published
+note: >-
+  The seam, and it is structural rather than a promise: this scenario prices the consequence on
+  the value chain and never the fine. The amount of a fine is computed by the estate from the
+  regulator's own published penalty schema, through composition and `prices[]`; a number for it
+  here would be the same fine priced twice by two engines answering the same question (ADR-0021).
+
+  And the honest other half: the consequence this question asks about is NOT PRICED, and for this
+  institution it is unpriced twice over. This overlay carries one causal edge to the declared cash
+  flow and that edge is graded 3, outside the ladder's path admission threshold; and the
+  perspective carries no amount at all, because party.yaml publishes no signed size. Pricing this
+  scenario needs both: a signed size the owner declares, and a graded-1-or-2 causal edge from
+  this institution's own dated record. Until then, read this file as a standing question with a
+  register attached and no number behind it.
+affected_parties:
+  - id: the-account-holders-the-penalty-is-for
+    who: The account holders whose records the penalty would be imposed over, not represented in this model.
+    consequence: A publication this scenario forecasts is priced as this institution's lost fee income; the twin carries no perspective for the people the regulator fined it on behalf of.

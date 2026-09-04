@@ -1,0 +1,84 @@
+# The pinned-feed-version -> dated-signal lookup (ticket 29; ticket 64; spec user story 45).
+#
+# WHY A TABLE AND NOT A HEURISTIC. A clock consumes only committed, reviewed claim files, and
+# reasoning is a skill a human runs (ticket 28, ADR-0024). So when the twin sweep asks "what
+# changed that I should play forward?", it must not decide. It reads the pins on `party.yaml`,
+# looks each one up HERE, and gets back one dated signal and the standing scenario that signal
+# moves. A pin with no row is a named hole in this file, reviewed in a pull request like any other
+# declaration -- never a guess made at 06:20 UTC.
+#
+# WHAT A ROW IS. `pin` is the subscription exactly as `party.yaml` `inherits[]` spells it, so the
+# lookup key is the pin and not a paraphrase of it. `signal.at` is the date the pin last moved.
+# `signal.scenario` is an id under `orgs/tuppence/scenarios/`; the binding is many-to-one on
+# purpose, because two pinned dependencies can pass an end-of-life date the same way.
+#
+# WHAT THIS DOES NOT DO. It carries no probability, no elasticity and no price. The scenario
+# carries the question; the overlay carries the graded edge; composition carries the pound. A
+# lookup that priced anything would be judgement wearing a table's clothes.
+
+schema: twin.signal-lookup/v1
+version: 1
+org: tuppence
+pins_read_from: party.yaml
+
+signals:
+  - pin: { party: platform, kind: implementations, version: '2.0.1' }
+    signal:
+      id: platform-implementations-2.0.1-is-the-pinned-release
+      at: '2026-08-28'
+      scenario: eol-date-passes-2026
+      what: >-
+        This institution's cage policy line comes from platform 2.0.1. The end-of-life date for
+        that release is the publisher's to publish; this row is what binds it to the standing
+        question about a pinned dependency passing one. `at` is the `since` date on the
+        subscription in party.yaml, which is the day this pin was last declared.
+
+  - pin: { party: nist, kind: controls, version: '1.1.0' }
+    signal:
+      id: nist-controls-1.1.0-is-the-pinned-catalogue
+      at: '2026-08-28'
+      scenario: eol-date-passes-2026
+      what: >-
+        The control ids every claim in this repository keys on come from nist 1.1.0. A catalogue
+        version can pass its own end-of-life exactly as a policy release can, and it moves the
+        same standing question.
+
+  - pin: { party: ico, kind: feed, name: penalty-schema, version: v3 }
+    signal:
+      id: ico-penalty-schema-v3-is-the-pinned-regime
+      at: '2026-08-28'
+      scenario: penalty-published-2026
+      what: >-
+        The regime this institution is priced under is the one it pins. A penalty published under
+        that regime is the dated signal; what it does to the value chain is the scenario, and the
+        amount of the fine is the estate's, never the twin's.
+
+  - pin: { party: feeds, kind: feed, name: threat-register, version: v1 }
+    signal:
+      id: feeds-threat-register-v1-names-tuppence
+      at: '2026-08-28'
+      scenario: rival-reads-my-holes-2026
+      what: >-
+        The threat register is a PUBLISHED document naming this institution's exposure, and the
+        subscription is public on the party artefact. That is exactly the standing question about
+        a rival reading the published exposure and acting on it.
+
+# Scenarios no subscribed feed version binds. Declared, so that "six scenarios and four rows" is
+# an observation rather than a hole somebody has to notice.
+unbound_scenarios:
+  - scenario: key-person-2026
+    why: >-
+      A bus-factor-one holder departing is an internal event. It arrives through the roles in this
+      overlay, not through anybody's pinned feed version, so there is no version to look up.
+  - scenario: card-scheme-supply-shock-2026
+    why: >-
+      A tier-one settlement supplier failing to deliver arrives as a dated headline a human
+      classifies with the classify-and-judge skill (ticket 50). Binding it to a pin here would be
+      the twin deciding on the clock, which is the one thing this table exists to prevent.
+  - scenario: publisher-withdraws-2026
+    why: >-
+      Unbound here and bound in driftwood's copy, and the difference is a fact about the party
+      artefacts rather than a gap: driftwood pins insurer/feed:quote-driftwood and this party pins
+      no insurer feed at all. Every publisher this institution does pin already binds a different
+      standing question above, so there is no version whose withdrawal is THIS question's signal.
+      The day this party pins a feed whose sole source is one publisher, that pin gets a row here.

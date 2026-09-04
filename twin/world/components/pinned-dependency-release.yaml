@@ -1,0 +1,8 @@
+id: pinned-dependency-release
+name: A pinned release of a published dependency
+kind: activity
+evolution: commodity
+visibility: 0.25
+description: >-
+  The version of a publisher's artefact an organisation currently pins. It has a publisher, a
+  published end-of-life date, and a newer release the organisation has not merged.

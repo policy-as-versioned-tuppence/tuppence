@@ -1,0 +1,11 @@
+# The currency each perspective in this overlay values in.
+#
+# ponytail: the twin's `valuation` schema is closed to amount/evidence_grade/basis, so a
+# perspective cannot carry its currency yet -- ticket 11 answer item 2 bumps that schema, and it
+# lives in the hub's `twin` package, not in this repository. Until the bump lands the currency is
+# declared here, beside the overlay, and verify-twin-overlay.sh checks it against party.yaml's
+# `reporting_currency`. Declared even though no valuation in this overlay carries an amount: the
+# currency a seat would value in is a fact about the seat, not about whether a figure exists yet.
+# Upgrade path: move `currency` onto the valuation and delete this file.
+perspectives:
+  tuppence: GBP

@@ -1,0 +1,5 @@
+id: cryptographic-key-material
+name: Cryptographic key material
+kind: data
+evolution: product
+visibility: 0.2

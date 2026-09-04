@@ -1,0 +1,11 @@
+id: customer-account-records
+name: Customer account and transaction records
+kind: data
+evolution: product
+visibility: 0.52
+needs: [payments-api]
+description: >-
+  The regulated data: account identity, transaction history and the financial-crime screening
+  record held against each account holder. Retained for the statutory record-keeping period rather
+  than the life of a session, which is why this institution carries a tighter appetite than the
+  retailer in this estate and a looser one than the plan administrator.

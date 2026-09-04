@@ -1,0 +1,29 @@
+# The cage ladder this overlay prices a response for, and where the rung names come from.
+#
+# WHY THIS FILE EXISTS. driftwood reads its rungs from its own versioned `selection-policy`
+# package, because driftwood ships one: `verify-twin-overlay.sh` there checks that the emitted
+# curve's accounts are exactly the ladder that package can select, so a curve missing a rung is
+# caught as a rung nobody priced. This repository ships no selection-policy package -- authoring
+# one is ticket 25's shape, not this ticket's -- so the rungs are DECLARED here instead, beside
+# the overlay, exactly as `currency.yaml` declares a currency the twin's closed schema cannot yet
+# carry. One place, reviewed in a pull request like any other declaration.
+#
+# WHERE THE RUNGS COME FROM. platform's `graded/cage.py`, in the release this repository pins
+# (gitops/platform/platform-pin.yaml -> platform v2.0.1): the ORDER tuple, loosest first, with
+# `infra` deliberately absent because nothing selects it -- it is declared by role on a Namespace
+# by a platform-role party and no price can reach it (ADR-0022).
+#
+# HOW IT IS CHECKED. `verify-twin-overlay.sh` compares this list against platform's own
+# graded/cage.py WHEN a platform checkout is present, and says it could not look when one is not.
+# It never treats absence as agreement. It also checks that this overlay prices exactly one
+# response per rung, which is the half that would otherwise silently stop matching.
+schema: twin.cage-ladder/v1
+version: 1
+source:
+  party: platform
+  kind: implementations
+  version: '2.0.1'
+  path: graded/cage.py
+  symbol: ORDER
+  table_version: '1.0.0'
+rungs: [baseline, restricted, quarantine, isolated]

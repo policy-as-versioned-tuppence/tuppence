@@ -1,0 +1,8 @@
+id: world
+unit: world
+name: Shared world layer
+description: >-
+  The committed scenario classes (build ticket 69; ecosystem ticket 29 added eol-date-passes and
+  penalty-published). Generic by construction — none names a tenant — so any org overlay could
+  reference them; one overlay exists only to run them, and each adopter vendors this layer to
+  author its own standing scenarios against it.

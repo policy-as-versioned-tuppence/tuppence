@@ -1,0 +1,5 @@
+id: temporal-sequence-authorisation
+name: Temporal, sequence-of-actions authorisation
+kind: practice
+evolution: genesis
+visibility: 0.1

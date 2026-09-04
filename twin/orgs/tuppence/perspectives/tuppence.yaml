@@ -1,0 +1,39 @@
+id: tuppence
+name: Tuppence Bank Ltd, the employer's own seat
+party: employer
+pays: >-
+  This institution's own balance sheet. Suppressed fee income, the incident response bill and the
+  conduct regulator's penalty all land here, and this is the only seat this overlay carries.
+values:
+  payment-fee-income:
+    evidence_grade: 3
+    basis: >-
+      NO AMOUNT, and the absence is the honest answer rather than an omission. party.yaml for this
+      institution publishes no `size:` block at all -- no turnover, no customer count, no
+      as_of date -- so there is no signed party fact for a valuation to derive from, the way
+      driftwood's checkout-revenue derives from its signed size.turnover. The only revenue figures
+      available for an institution of this shape are a comparable firm's published filings
+      (Starling Bank Limited: 452,800,000 GBP revenue for 2023 per the FCA's Final Notice of
+      2024-09-27, 414,814,000 GBP Total Income for the year ended 2023-03-31 per its own audited
+      Annual Report 2023; see the hub's .scratch/ecosystem/research/94-studied-firms.md). Those
+      are real, published and dated, and they are somebody else's, which is grade 3 on the
+      published ladder -- outside the pricing threshold of 2, so this valuation may carry no
+      figure. Signing a `size:` block is this party's own act and money is the owner's decision
+      (ADR-0025 point 6); until one exists, this seat is a register entry with no number, and
+      emit-forward-intel.py refuses rather than inventing one.
+  banking-licence-standing:
+    evidence_grade: 5
+    basis: >-
+      Asserted, not measured. No evidenced causal path runs from standing with the conduct
+      regulator to fee income in this overlay, so it carries no amount and travels as a register
+      entry instead.
+ruin:
+  cannot-settle-payments: >-
+    The payments API unable to authorise or settle for a full business day. Ruin for this seat is
+    not insolvency but the loss of the function the banking permission is held for.
+cash_flow: [payment-fee-income]
+note: >-
+  The currency of these valuations is declared in ../../../currency.yaml until the twin's closed
+  `valuation` schema gains a currency field (ticket 11 answer item 2). It is declared even though
+  no valuation here carries an amount: the currency a seat would value in is a fact about the seat,
+  not about whether a figure happens to exist yet.

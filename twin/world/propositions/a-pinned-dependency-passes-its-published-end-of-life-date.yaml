@@ -1,0 +1,4 @@
+id: a-pinned-dependency-passes-its-published-end-of-life-date
+text: >-
+  A release the organisation currently pins passes the end-of-life date its own publisher
+  published, within the scenario horizon, with no newer pin merged.

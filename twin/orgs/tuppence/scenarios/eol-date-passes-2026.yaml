@@ -1,0 +1,23 @@
+id: eol-date-passes-2026
+question: >-
+  Does the platform release this repository pins pass the end-of-life date its own publisher
+  published, with no newer pin merged, inside the horizon?
+proposition: a-pinned-dependency-passes-its-published-end-of-life-date
+at: '2026-09-04'
+horizon: '2027-09-04'
+components:
+  - pinned-dependency-release
+  - cage-policy-line
+world_models:
+  - reference-map
+class: eol-date-passes
+note: >-
+  The subscribed eol feed carries the date; this scenario carries what passing it does to the
+  pinned cage policy line. The ramp that prices a pin sitting behind a newer published version is
+  the estate's (`to_fair_scenario.py eol_ramp`, decision D5) and is not restated here. For this
+  institution the pinned line also holds the namespace a payment permission is exercised in, which
+  is why the same standing question is authored here and not inherited from another adopter's copy.
+affected_parties:
+  - id: account-holders-on-the-unpatched-cage
+    who: This institution's own account holders, whose instructions run inside the governed namespace while its policy line is past its publisher's end-of-life date, not represented in this model.
+    consequence: A date this scenario forecasts leaves them behind a cage nobody is maintaining; the twin prices this institution's exposure, never theirs.

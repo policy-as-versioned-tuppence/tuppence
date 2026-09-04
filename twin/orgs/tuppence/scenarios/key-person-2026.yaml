@@ -1,0 +1,22 @@
+id: key-person-2026
+question: >-
+  The payments namespace has one person on call who knows how the cage, the pins and the composed
+  set fit together. Does that concentrated knowledge lose its sole holder inside the horizon?
+proposition: a-bus-factor-one-holder-departs-within-the-horizon
+at: '2026-09-04'
+horizon: '2027-09-04'
+components:
+  - concentrated-knowledge-domain
+  - payments-api
+world_models:
+  - reference-map
+class: bus-factor-key-person
+note: >-
+  A role, never a person: `people/payments-engineer.yaml` is the subject and it names no
+  individual. Sensing a real departure would need admission through the ethics gate, a DPIA and
+  the roles register, which is a separate ticket and is not what this scenario does -- it asks the
+  standing question against the role.
+affected_parties:
+  - id: the-role-holder-themselves
+    who: Whoever currently holds the on-call role, an individual this model deliberately does not name.
+    consequence: A scenario about a departure is about the institution's exposure to losing the knowledge; the twin holds no perspective for the person, and nothing here observes one.

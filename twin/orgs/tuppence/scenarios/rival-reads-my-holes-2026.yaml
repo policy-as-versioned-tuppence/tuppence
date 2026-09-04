@@ -1,0 +1,22 @@
+id: rival-reads-my-holes-2026
+question: >-
+  Everything this institution publishes about its own exposure -- HEADER.yaml's holes,
+  evidence.json's prices, its composed set -- is one clone away. Does a rival read it and act on it
+  commercially inside the horizon, and what does that cost fee income?
+proposition: a-rival-reads-the-published-exposure-and-acts-on-it
+at: '2026-09-04'
+horizon: '2027-09-04'
+components:
+  - published-holes-and-prices
+  - payment-fee-income
+world_models:
+  - reference-map
+note: >-
+  Carries no class on purpose. The scenario `class` field is optional and names only the closed
+  committed set, so a scenario outside it is simply not part of that enumeration. Legibility is
+  priced here rather than carved out -- a rival's reading is another perspective's price, which is
+  the perspective rule doing the work a private repository would otherwise do.
+affected_parties:
+  - id: the-rival-reading-it
+    who: A competitor, who holds no seat in this model and never consented to being modelled in it.
+    consequence: This scenario prices what their reading costs this institution; it makes no claim about them, and publishes no forecast under their name.
