@@ -404,16 +404,50 @@ jobs:
       # than the strictest priced line clamped to this party's own overlay.floor.
       # It runs THROUGH the pinned platform checkout, like every other check in
       # this job: the rule is platform's to publish and tuppence's to pin.
-      # Exit 3 is could-not-look (no evidence, no governed Namespace, or two of
-      # them) and is not a pass -- this job treats it as a failure, because on a
-      # pull request in this repository all three of those are present.
+      #
+      # ORDERING, named 2026-09-04. That pinned checkout is at THIS repo's own
+      # platform tag, and the tag pinned today (v2.0.1) predates
+      # shift-left/tier_binding.py -- so on the first pull request after this
+      # workflow lands there is no module here to run. Two things have to happen
+      # before this step can be green, in this order: platform cuts a release tag
+      # carrying the module, and this repo bumps its platform pin to that tag.
+      # Both are in ticket 78's `## Waits on the owner`. Until then the step says
+      # SKIP, with the reason, in the log and in the job summary: a check that
+      # cannot look says so (ADR-0020) -- it does not fail the pull request for a
+      # rule its pin does not carry, and it does not pass silently as though it
+      # had looked.
+      #
+      # Once the module IS here, exit 3 is could-not-look (no evidence, no
+      # governed Namespace, or two of them) and this job treats it as a failure,
+      # because on a pull request in this repository all three of those are
+      # present.
       - name: the enacted tier is bound to the priced tier (ticket 78)
+        env:
+          PLATFORM_TAG: ${{ steps.pins.outputs.platform_tag }}
         run: |
           set -uo pipefail
-          python3 platform/shift-left/tier_binding.py check \
+          rule="platform/shift-left/tier_binding.py"
+          if [ ! -f "$rule" ]; then
+            reason="the pinned platform checkout ${PLATFORM_TAG} does not carry shift-left/tier_binding.py -- platform must cut a tag publishing the binding rule and this repo must bump its platform pin to it before this check can look (ticket 78)"
+            echo "SKIP: ${reason}"
+            {
+              echo "## tier binding"
+              echo
+              echo "SKIP: ${reason}"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # `set +e` around the check, and nothing else lifts it. GitHub runs this
+          # step as `bash -e {0}`, and `set -uo pipefail` does not turn -e off --
+          # so a non-zero exit would abort the step before $status could be read,
+          # and the summary and the ::error:: annotations below would be dead code.
+          # driftwood's own twin-sweep.yml documents this from ticket 72.
+          set +e
+          python3 "$rule" check \
             --evidence tuppence/composed/evidence.json \
             --adopter-dir tuppence | tee "${RUNNER_TEMP}/tier-binding.txt"
           status=${PIPESTATUS[0]}
+          set -e
           {
             echo "## tier binding"
             echo
