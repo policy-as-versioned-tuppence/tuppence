@@ -112,8 +112,17 @@ def render(summary: dict) -> str:
     lines.append("| | bump |")
     lines.append("| --- | --- |")
     lines.append(f"| **declared** (platform tag delta) | `{summary['declared']}` |")
-    lines.append(f"| **composed** (this institution, across every currently-supported version) | `{summary['composed']}` |")
+    lines.append(f"| **composed** (this institution, over what this pull request adds and retires) "
+                  f"| `{summary['composed']}` |")
     lines.append("")
+
+    # Eco-system ticket 99: the fold's subject is the movement, so a pull request that moves
+    # nothing renders as moving nothing rather than silently rendering an empty element list.
+    if not summary["elements"] and not summary["retired"]:
+        lines.append("This pull request adds and retires no policy version, so there is no movement "
+                      "to compose. A major already standing in the composed window is reported by the "
+                      "estate's own truth surface on every run, not here.")
+        lines.append("")
 
     if summary["retired"]:
         lines.append(f"**Retired, reaching this institution as major:** {', '.join(f'`{v}`' for v in summary['retired'])}")

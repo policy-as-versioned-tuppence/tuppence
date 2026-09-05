@@ -304,13 +304,23 @@ spec.loader.exec_module(ag)
 got = ag.classify_tag_bump('v1.0.0', 'v1.0.0')
 assert got == 'none', f'expected classify_tag_bump on an unchanged tag to return none, got {got!r}'
 "
-# This platform tag (v1.0.0) genuinely predates cs-27 (same honest history
-# Scenario D already establishes) so composition still refuses -- for the
-# REAL reason (no evidence committed yet), never for the same-tag bug.
-[ "$f_code" -ne 0 ] || fail "F: expected this real v1.0.0 tag to still refuse on missing evidence, same as Scenario D"
-grep -q "no signed evidence committed for policy version 2.0.0" "$scratch/f.out" \
-  || fail "F: expected the same real missing-evidence refusal Scenario D shows, got: $(cat "$scratch/f.out")"
-echo "ok  F: an unchanged pin (old_tag == new_tag) classifies as a real no-op ('none'), never refuses as 'does not move forward'; the real refusal that does fire is the genuine missing-evidence one, unrelated to the same-tag bug"
+# Eco-system ticket 99. Until 2026-09-05 this scenario ALSO expected the
+# missing-evidence refusal here, because the fold ran over the whole window
+# and so read 2.0.0's (absent) evidence even though this pull request moves
+# nothing. That is the defect ticket 99 names: a pull request that adds and
+# retires nothing now composes 'none' and the gate passes, and the evidence
+# for a version standing at both ends is not read at all -- there is nothing
+# to compose about it. The missing-evidence refusal is still proved for real,
+# by Scenario D, where there is no predecessor pin and every version in the
+# window is therefore genuinely added.
+[ "$f_code" -eq 0 ] || fail "F: a pull request that touches nothing must compose 'none' and pass, got exit $f_code: $(cat "$scratch/f.out")"
+grep -q "^composed (this institution, over what this pull request moves -- added \[\], retired \[\]" "$scratch/f.out" \
+  || fail "F: expected the composed line to name an empty added and retired set, got: $(cat "$scratch/f.out")"
+grep -q "no signed evidence committed for policy version" "$scratch/f.out" \
+  && fail "F: the gate read evidence for a version this pull request does not move"
+grep -q "^PASS: composed bump 'none'" "$scratch/f.out" \
+  || fail "F: expected the composed-none pass line, got: $(cat "$scratch/f.out")"
+echo "ok  F: an unchanged pin (old_tag == new_tag) classifies as a real no-op ('none'), never refuses as 'does not move forward', and composes 'none' without reading evidence for a version it does not move"
 
 say "Scenario A/B setup: one real gated release, plus two real array-level releases (unchanged, then retired)"
 clone="$scratch/clone"
@@ -469,9 +479,22 @@ git commit -q -m "scratch: array = [] -- 9.0.0 retired, nothing replaces it"
 echo '[{"tag":"v3.0.0","message":"release 3: retirement only"}]' > "$scratch/tags3.json"
 cut "$scratch/tags3.json"
 r3_commit=$(git rev-parse v3.0.0^{commit})
-echo "ok  one real gated release (9.0.0, real evidence), plus two real array-level releases (unchanged, then retired), real tags v2.0.0/v2.1.0/v3.0.0"
 
-say "Scenario A: real PASS -- array unchanged (v2.0.0 -> v2.1.0), composed re-reads 9.0.0's real committed evidence, weaker-than-declared note fires"
+# Release 4 (eco-system ticket 99): 9.0.0 comes BACK into the array, with its
+# real evidence still committed from release 1. This is the arrival case --
+# the only case whose bump the delta fold reads evidence for -- and Scenario
+# A2 below is what proves the arithmetic still re-reads the publisher's own
+# signed number rather than recomputing it. A bare tag, like release 2: no
+# new policy tag is cut, only the array moves.
+set_array '{"version":"9.0.0","tag":"policy/v9.0.0","commit":"'"$tree_9_0_0"'"}'
+git add distribution/versions.yaml
+git commit -q -m "scratch: array = [9.0.0] -- 9.0.0 returns"
+git tag -a v4.0.0 -m "release 4: 9.0.0 returns to the array"
+r4_commit=$(git rev-parse v4.0.0^{commit})
+[ -f computed-semver/evidence/9.0.0.json ] || fail "release 4: 9.0.0's real evidence from release 1 is gone"
+echo "ok  one real gated release (9.0.0, real evidence), plus three real array-level releases (unchanged, retired, returned), real tags v2.0.0/v2.1.0/v3.0.0/v4.0.0"
+
+say "Scenario A: real PASS -- the pin moves (v2.0.0 -> v2.1.0) and the array does not, so this bump adds and retires nothing and composes 'none' (eco-system ticket 99)"
 cat > "$scratch/old-pin-a.yaml" <<YAML
 spec: {ref: {tag: v2.0.0, commit: "$r1_commit"}}
 YAML
@@ -487,6 +510,41 @@ set -e
 cat "$scratch/a.out"
 [ "$a_code" -eq 0 ] || fail "A: expected a real PASS (array unchanged, no retirement), got exit $a_code"
 grep -q "^declared (platform tag v2.0.0 -> v2.1.0): minor" "$scratch/a.out" || fail "A: expected declared=minor from the tag jump (v2.0.0->v2.1.0)"
+# Eco-system ticket 99. This scenario used to assert that composition
+# re-read 9.0.0's evidence here and composed its rank-0 bump. 9.0.0 stands in
+# the array at BOTH ends of this bump, so it is not something this bump moves
+# and it is no longer folded: the composed answer is 'none' and no evidence
+# is read at all. Scenario A2 below is where "re-read, never recompute" is
+# now proved, against the same real evidence document, on a version that this
+# bump genuinely adds.
+grep -q "NOTE: composed bump ('none') is weaker than the publisher's tag ('minor')" "$scratch/a.out" \
+  || fail "A: expected the weaker-than-declared note for 'none', informational only, nothing lowered"
+python3 -c "
+import json
+d = json.load(open('$scratch/a-summary.json'))
+assert d['retired'] == [], d['retired']
+assert d['added'] == [], d['added']
+assert d['composed'] == 'none', d['composed']
+assert d['elements'] == [], d['elements']
+print('ok  A: a bump that adds and retires nothing composes none and passes, folding no standing version')
+"
+
+say "Scenario A2: real PASS -- 9.0.0 ARRIVES in the array (v3.0.0 -> v4.0.0), and the arrival's bump is RE-READ out of the publisher's own real committed evidence, never recomputed"
+cat > "$scratch/old-pin-a2.yaml" <<YAML
+spec: {ref: {tag: v3.0.0, commit: "$r3_commit"}}
+YAML
+cat > "$scratch/new-pin-a2.yaml" <<YAML
+spec: {ref: {tag: v4.0.0, commit: "$r4_commit"}}
+YAML
+set +e
+gate --platform-dir "$clone" --new-pin-yaml "$scratch/new-pin-a2.yaml" --old-pin-yaml "$scratch/old-pin-a2.yaml" \
+     --identity-regexp 'unused' --issuer 'unused' --skip-cosign-verify \
+     --out "$scratch/a2-summary.json" > "$scratch/a2.out" 2>&1
+a2_code=$?
+set -e
+cat "$scratch/a2.out"
+[ "$a2_code" -eq 0 ] || fail "A2: expected a real PASS (a rank-0 arrival, no retirement), got exit $a2_code"
+grep -q "^declared (platform tag v3.0.0 -> v4.0.0): major" "$scratch/a2.out" || fail "A2: expected declared=major from the tag jump (v3.0.0->v4.0.0)"
 # The rank-0 bump the REAL gate recorded for 9.0.0, read back out of the
 # evidence it signed rather than named here: "no predecessor" when the array
 # gave the gate nothing to compare against, "none" when the tag-history
@@ -494,26 +552,36 @@ grep -q "^declared (platform tag v2.0.0 -> v2.1.0): minor" "$scratch/a.out" || f
 # weaker-than-declared note fires either way, and asserting the value the gate
 # actually recorded keeps the claim exact rather than accepting either.
 a_zero=$(python3 "${here}/scripts/rank-zero-bump.py" "$clone/computed-semver/evidence/9.0.0.json") \
-  || fail "A: 9.0.0's evidence does not carry a rank-0 computed bump"
-grep -q "NOTE: composed bump ('$a_zero') is weaker than the publisher's tag ('minor')" "$scratch/a.out" \
-  || fail "A: expected the weaker-than-declared note for '$a_zero', informational only, nothing lowered"
+  || fail "A2: 9.0.0's evidence does not carry a rank-0 computed bump"
+grep -q "NOTE: composed bump ('$a_zero') is weaker than the publisher's tag ('major')" "$scratch/a2.out" \
+  || fail "A2: expected the weaker-than-declared note for '$a_zero', informational only, nothing lowered"
 python3 -c "
 import json
-d = json.load(open('$scratch/a-summary.json'))
+d = json.load(open('$scratch/a2-summary.json'))
 assert d['retired'] == [], d['retired']
+assert d['added'] == ['9.0.0'], d['added']
 assert d['composed'] == '$a_zero', d['composed']
 assert {e['version'] for e in d['elements']} == {'9.0.0'}, d['elements']
 assert d['elements'][0]['evidence']['bump']['computed'] == '$a_zero', d['elements']
-print('ok  A: composed by RE-READING 9.0.0\\'s real committed evidence (never recomputed), no retirement, real PASS')
+print('ok  A2: composed by RE-READING 9.0.0\\'s real committed evidence (never recomputed) on the bump that adds it, real PASS')
 "
 
-echo "  A-render: render-evidence-comment.py against this REAL summary (not the fixture its own selfcheck uses)"
+echo "  A2-render: render-evidence-comment.py against this REAL summary (not the fixture its own selfcheck uses)"
+python3 "${here}/.github/scripts/render-evidence-comment.py" "$scratch/a2-summary.json" > "$scratch/a2-comment.md"
+grep -q '`major`' "$scratch/a2-comment.md" || fail "A2-render: declared bump not rendered"
+grep -q "\`$a_zero\`" "$scratch/a2-comment.md" || fail "A2-render: composed bump not rendered"
+grep -q 'sha256:' "$scratch/a2-comment.md" || fail "A2-render: corpus checksum not rendered"
+if grep -q '%' "$scratch/a2-comment.md"; then fail "A2-render: a coverage percentage leaked into the rendered comment"; fi
+echo "ok  A2-render: rendered a real evidence summary to markdown, no percentage anywhere"
+
+echo "  A-render: the no-movement summary renders as no movement, with no empty element list left silent"
 python3 "${here}/.github/scripts/render-evidence-comment.py" "$scratch/a-summary.json" > "$scratch/a-comment.md"
 grep -q '`minor`' "$scratch/a-comment.md" || fail "A-render: declared bump not rendered"
-grep -q "\`$a_zero\`" "$scratch/a-comment.md" || fail "A-render: composed bump not rendered"
-grep -q 'sha256:' "$scratch/a-comment.md" || fail "A-render: corpus checksum not rendered"
+grep -q '`none`' "$scratch/a-comment.md" || fail "A-render: composed bump not rendered"
+grep -q 'adds and retires no policy version' "$scratch/a-comment.md" \
+  || fail "A-render: a bump that moves nothing must say so, not render an empty section"
 if grep -q '%' "$scratch/a-comment.md"; then fail "A-render: a coverage percentage leaked into the rendered comment"; fi
-echo "ok  A-render: rendered a real evidence summary to markdown, no percentage anywhere"
+echo "ok  A-render: a no-movement bump renders as no movement, no percentage anywhere"
 
 say "Scenario B: real FAIL -- 9.0.0 retires with nothing replacing it, composed forced major"
 cat > "$scratch/old-pin-b.yaml" <<YAML
@@ -549,8 +617,9 @@ echo "binary, real subprocess, real exit code -- when signed evidence is entirel
 echo "currently-tagged v1.0.0, which honestly predates cs-27), when a present bundle is malformed,"
 echo "and when a real bundle's real certificate identity is not the publisher this institution pins."
 echo "Against the REAL committed platform-pin.yaml, and against the two-document stream it forms with"
-echo "cosign really ACCEPTS platform's real committed evidence: the gate passes unskipped. On real"
-echo "committed evidence it composes across real multi-version content with no"
-echo "retirement to a real PASS (printing, never downgrading, when composed is weaker than the"
-echo "publisher's own tag), and forces a real non-zero-exit FAIL, naming the version, when a composed"
-echo "bump goes major on a real retirement."
+echo "cosign really ACCEPTS platform's real committed evidence: the gate passes unskipped. It grades"
+echo "what the bump MOVES (eco-system ticket 99): a bump that adds and retires no policy version"
+echo "composes 'none' and passes without reading a standing version's evidence at all, an arrival"
+echo "composes by RE-READING that version's own real committed evidence (never recomputed), and a"
+echo "retirement still forces a real non-zero-exit FAIL naming the version. The weaker-than-declared"
+echo "note prints and never downgrades."
