@@ -17,11 +17,13 @@ publisher's signed evidence -- cosign verify-blob, offline, identity-pinned
 to a constant THIS repo holds (`--identity-regexp` / `--issuer`, wired from
 shift-left.yml's own env block, never read from anything platform supplies)
 -- then reads that evidence's own `bump.computed` field for every policy
-version distribution/versions.yaml's array currently supports. Composition,
-for tuppence's single pinned party (platform), is exactly this: the
-strictest of
+version this pull request ADDS to the composed window. Composition, for
+tuppence's single pinned party (platform), is exactly this: the strictest of
 
-  * every currently-supported array element's own verified `bump.computed`,
+  * every ADDED version's own verified `bump.computed` -- present in the NEW
+    composed window and absent from the OLD one (eco-system ticket 99,
+    2026-09-05: the fold's subject is what the pull request moves, never the
+    window it leaves standing -- see compose()'s own docstring),
   * MAJOR for every version present in the OLD array (as pinned before this
     PR) and absent from the NEW array -- a retirement, forced major with no
     special case, exactly comparison_window.py's own rule one level up
@@ -75,20 +77,45 @@ the same day, on the same platform tag, against the same evidence. Three
 adopters, two readings of ADR-0011's "the composed bump is computed after
 composition", and only one of them can be the estate's.
 
-NOTHING HERE WAS EDITED. Ticket 64's brief is explicit: do not loosen the
-gate to make it green and do not invent a human review. Narrowing this fold
-to the added set would be loosening this institution's gate, and choosing
-between the two readings is an architectural call about what an adopter gate
-grades -- it belongs in an ADR and a ticket of its own, not in a comment
-added by a build that came here to author a twin overlay. The refusal
-standing in the meantime is at least honest about its subject: policy 4.0.0
-IS a major, platform's own signed evidence says so, and no human review of
-it is recorded anywhere in this repository.
+Ticket 64 left this file unedited on purpose -- choosing between the two
+readings is an architectural call and did not belong in a build that came
+here to author a twin overlay.
 
-What unblocks it is one of two owner acts, both named in ticket 64's
-`## Waits on the owner`: record a review of platform policy version 4.0.0's
-major for this institution, or rule on which of the two readings ADR-0011
-means and let a ticket change the losing adopters to match.
+2026-09-05, eco-system ticket 99: THE CALL WAS MADE, AND THIS FILE IS THE
+ONE THAT CHANGED. The delta fold is the estate's reading (decided under
+ADR-0025, recorded in the ticket). ADR-0011 scopes this gate to "the
+Renovate bump pull request" and to "that institution's own composed bump" --
+a bump is a movement, and this gate was reporting major for a pull request
+whose declared bump is none. The refusal it raised named a remedy the gate
+cannot accept: there is no input by which a review can be recorded here and
+no other path past line `if composed == "major"`, so it was not strict, it
+was non-terminating. And a check that fails on every pull request has
+stopped discriminating: twelve consecutive failures carry as much
+information as none.
+
+So `compose()` now folds added-and-retired, exactly as driftwood and ludlow
+already did, and this file's own `--selfcheck` holds the three cases
+(standing, added, retired) against it.
+
+WHAT WAS NOT LOOSENED. A composed major still refuses. A retirement is still
+a forced major. An added version's own signed evidence is still verified
+against this institution's own identity constant and re-read, never
+recomputed. Nothing is exempted for any named subject, so this is not the
+override ADR-0011's "No override" section bans: the gate is pointed at the
+question ADR-0011 asks it, and the question it had been answering instead is
+moved somewhere that answers it continuously.
+
+WHERE THE OTHER QUESTION WENT. "This institution should not quietly carry a
+major nobody reviewed" is a real property, and it does not depend on anyone
+opening a pull request -- which is why a gate that only speaks on a pull
+request was the wrong place for it. The hub's truth surface now carries it
+on every run:
+verify/unreviewed-major/verify-unreviewed-major-in-window.sh reads each
+adopter's own composed/evidence.json member set and platform's signed
+evidence at the tag that adopter's own pin names, and names every major
+standing in a composed window. It records no review and invents none:
+whether platform policy 4.0.0's major is accepted for tuppence is the
+owner's authorisation under ADR-0025 and stays open.
 ---------------------------------------------------------------------------
 
 Usage:
@@ -315,6 +342,47 @@ RANK = {"none": 0, "no predecessor": 0, "patch": 1, "minor": 2, "major": 3}
 
 def compose(platform_dir: Path, new_array: dict[str, dict], old_array: dict[str, dict],
             identity_regexp: str, issuer: str, skip_cosign_verify: bool = False) -> dict:
+    """The DELTA fold (eco-system ticket 99, 2026-09-05). The subject is what
+    this pull request MOVES in the composed window -- the versions it adds and
+    the versions it retires -- never the whole window it leaves standing.
+
+    Until this ticket the loop below ran over every version in `new_array`, so
+    a major already sitting in the window composed major on every pull
+    request, whatever the pull request changed: this gate's last green
+    shift-left run was 2026-08-28 and it then failed twelve consecutive times
+    with `declared: none` beside `composed: major`. ADR-0011 scopes this gate
+    to "the Renovate bump pull request" and to "that institution's own
+    composed bump" -- a bump is a movement -- and driftwood
+    (`compose(added, retired, ...)`) and ludlow (`compose(retired, changed,
+    ...)`) already read it that way and are green on the same platform tag
+    and the same signed evidence.
+
+    Nothing is exempted and no refusal is weakened for a subject, so this is
+    not the override ADR-0011 bans: a composed major still refuses, an added
+    version's own verified evidence is still re-read rather than recomputed,
+    and a retirement is still a forced major. The property the window fold was
+    protecting -- an institution should not quietly carry a major nobody
+    reviewed -- does not depend on anyone opening a pull request, so it is
+    reported continuously instead, by the hub's
+    verify/unreviewed-major/verify-unreviewed-major-in-window.sh, which names
+    the version on every truth-surface run.
+
+    WHAT THIS GIVES UP, NAMED. A version standing at BOTH ends of a pull
+    request is not folded, so on that pull request nothing here re-verifies
+    its signature. Measured on a throwaway clone, not argued: with platform's
+    4.0.0.json.bundle corrupted at a fresh tag and both folds run over
+    identical inputs, the window fold refused ("cosign verify-blob failed for
+    policy version 4.0.0 ... bundle does not contain cert for verification")
+    and this fold adopts, exit 0. driftwood and ludlow have always behaved
+    this way; this institution now matches them. The class is not dropped, it
+    is moved off the pull request and onto the clock: the hub check named
+    above verifies EVERY version in this institution's composed window, with
+    real cosign, at the tag this repository pins, on every truth-surface run,
+    and reports one that does not verify as observed false -- proved on that
+    same corrupted artefact. A window checked only when somebody opens a pull
+    request is checked less often than one checked daily.
+    """
+    added = sorted(set(new_array) - set(old_array))
     retired = sorted(set(old_array) - set(new_array))
     elements = []
     worst = "none"
@@ -323,7 +391,7 @@ def compose(platform_dir: Path, new_array: dict[str, dict], old_array: dict[str,
     # comparison seeded at "none" would silently swallow a genuine "no
     # predecessor" first element (same rank 0 as the placeholder, so `>`
     # never fires and the placeholder string wins over the real one).
-    for version in sorted(new_array):
+    for version in added:
         doc = verify_evidence(platform_dir, version, identity_regexp, issuer,
                                skip_cosign_verify=skip_cosign_verify)
         computed = doc["bump"]["computed"]
@@ -335,7 +403,7 @@ def compose(platform_dir: Path, new_array: dict[str, dict], old_array: dict[str,
         elements.append({"version": version, "verified": None, "bump_computed": "major",
                           "evidence": None, "retired": True})
         worst = "major"
-    return {"composed": worst, "retired": retired, "elements": elements}
+    return {"composed": worst, "added": added, "retired": retired, "elements": elements}
 
 
 PARTY = "tuppence"
@@ -576,13 +644,19 @@ def main(argv: list[str]) -> int:
     summary = {
         "old_tag": old_tag, "new_tag": new_tag, "new_commit": new_commit,
         "declared": declared, "composed": composed,
-        "retired": result["retired"], "elements": result["elements"],
+        "added": result["added"], "retired": result["retired"], "elements": result["elements"],
     }
     if args.out:
         args.out.write_text(json.dumps(summary, indent=2))
 
     print(f"declared (platform tag {old_tag or '(none)'} -> {new_tag}): {declared}")
-    print(f"composed (this institution, across {sorted(new_array)} and retired {result['retired']}): {composed}")
+    print(f"composed (this institution, over what this pull request moves -- added "
+          f"{result['added']}, retired {result['retired']}; window at the head is "
+          f"{sorted(new_array)}): {composed}")
+    if not result["added"] and not result["retired"]:
+        print("this pull request adds and retires no policy version, so it composes 'none' -- "
+              "whether a major already stands in the window is reported continuously by the hub's "
+              "verify-unreviewed-major-in-window.sh, not by this gate (eco-system ticket 99)")
     if result["retired"]:
         print(f"RETIRED, reaching this institution as major: {', '.join(result['retired'])}")
     if RANK.get(composed, 0) < RANK.get(declared, 0):
@@ -674,11 +748,12 @@ def selfcheck() -> None:
         assert set(old_from_evidence) == {"2.0.0", "3.0.0"}, old_from_evidence
         assert set(new_from_evidence) == {"3.0.0"}, new_from_evidence
 
-        # compose() still verifies every SURVIVING version's evidence (not
-        # just what was added) -- a minimal fixture evidence file for the
-        # one version that survives (3.0.0), skip_cosign_verify=True so the
-        # cosign subprocess itself is never reached (same TEST-ONLY flag
-        # verify_evidence's own docstring names).
+        # 3.0.0 stands at both ends, so ticket 99's delta fold reads no
+        # evidence for it at all; the fixture evidence file below is written
+        # anyway, so that this case would still pass if it ever were read,
+        # and so the refusal asserted here can only come from the retirement.
+        # skip_cosign_verify=True keeps the cosign subprocess out of it (the
+        # same TEST-ONLY flag verify_evidence's own docstring names).
         (adopter / "computed-semver" / "evidence").mkdir(parents=True)
         (adopter / "computed-semver" / "evidence" / "3.0.0.json").write_text(
             json.dumps({"bump": {"computed": "none"}}))
@@ -707,6 +782,45 @@ def selfcheck() -> None:
             f"expected 'no predecessor' to survive composition, got {result['composed']!r} -- "
             f"this is exactly the bug an initial worst='none' sentinel at the same RANK (0) hides"
         )
+
+    # Eco-system ticket 99: the fold's subject is the DELTA this pull request
+    # makes to the composed window, never the window it leaves standing. A
+    # version present at BOTH ends of the pull request is not something this
+    # pull request moves, so its bump is not this pull request's bump --
+    # whatever that bump happens to be. Three cases on one real on-disk
+    # fixture, with skip_cosign_verify=True (this module's own TEST-ONLY flag)
+    # so compose() runs its real code path rather than a substituted return.
+    with tempfile.TemporaryDirectory() as td:
+        tdp = Path(td)
+        (tdp / "computed-semver" / "evidence").mkdir(parents=True)
+        (tdp / "computed-semver" / "evidence" / "4.0.0.json").write_text(
+            json.dumps({"bump": {"computed": "major"}}))
+        (tdp / "computed-semver" / "evidence" / "4.0.0.json.bundle").write_text("{}")
+
+        # 1. standing: 4.0.0 sits in the window at both ends. This pull request
+        #    moves nothing, so it composes nothing -- the exact case that
+        #    refused twelve consecutive shift-left runs from 2026-08-28.
+        standing = compose(tdp, {"4.0.0": {}}, {"4.0.0": {}}, "unused", "unused",
+                            skip_cosign_verify=True)
+        assert standing["composed"] == "none", (
+            f"expected a pull request that adds and retires nothing to compose 'none', got "
+            f"{standing['composed']!r} -- the fold is reading the window, not the change"
+        )
+        assert standing["added"] == [] and standing["retired"] == [], standing
+        assert standing["elements"] == [], standing
+
+        # 2. added: the same version, arriving. Its own verified evidence is
+        #    re-read (never recomputed) and it composes major.
+        arriving = compose(tdp, {"4.0.0": {}}, {}, "unused", "unused", skip_cosign_verify=True)
+        assert arriving["composed"] == "major", arriving
+        assert arriving["added"] == ["4.0.0"], arriving
+        assert [e["version"] for e in arriving["elements"]] == ["4.0.0"], arriving
+        assert arriving["elements"][0]["bump_computed"] == "major", arriving
+
+        # 3. retired: the same version, leaving. Still a forced major, with no
+        #    evidence read at all -- unchanged by this ticket.
+        leaving = compose(tdp, {}, {"4.0.0": {}}, "unused", "unused", skip_cosign_verify=True)
+        assert leaving["composed"] == "major" and leaving["retired"] == ["4.0.0"], leaving
 
     print("OK: adopter-gate.py selfcheck (pure logic, no network; one real cosign-skipped disk fixture)")
 
