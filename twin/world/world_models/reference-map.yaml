@@ -1,0 +1,20 @@
+id: reference-map
+name: The reference map for the committed scenario classes
+credence: 0.5
+note: >-
+  One shared reference. It carries no privileged status — build ticket 16 already refuses one —
+  and sits alongside whatever rival forecast an org's own overlay adds on top of it.
+beliefs:
+  a-pinned-dependency-passes-its-published-end-of-life-date: 0.45
+  a-regulator-publishes-a-penalty-under-a-regime-in-force: 0.5
+  a-rival-reads-the-published-exposure-and-acts-on-it: 0.25
+  a-publisher-withdraws-a-feed-the-organisation-pins: 0.1
+  harvest-now-decrypt-later-breaks-current-encryption-by-2035: 0.15
+  a-bus-factor-one-holder-departs-within-the-horizon: 0.35
+  a-privileged-insider-acts-within-the-horizon: 0.08
+  a-tier-one-supplier-fails-to-deliver-within-the-horizon: 0.2
+  a-sanctions-regime-blocks-a-material-trade-lane: 0.12
+  an-adjacent-capability-becomes-acquirable-within-the-horizon: 0.3
+  memory-price-per-gb-changes-training-economics: 0.4
+  a-temporal-authorisation-standard-consolidates-before-2028: 0.1
+  a-primary-site-suffers-a-declared-climate-event: 0.18

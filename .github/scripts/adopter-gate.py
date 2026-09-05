@@ -37,6 +37,60 @@ out of scope for this whole effort (spec.md, "Out of Scope";
 platform -- so "the institution's own composed bump" here IS "platform's own
 computed bump, re-verified", never a general N-party merge.
 
+---------------------------------------------------------------------------
+2026-09-04, eco-system ticket 64. WHY THIS GATE HAS REFUSED EVERY PULL
+REQUEST SINCE 2026-08-29, AND WHY NOTHING BELOW WAS CHANGED TO STOP IT.
+
+The observation, from the real runs and not from reading this file:
+
+    FAIL: composed bump is major -- refusing to adopt v2.0.1 without human review
+    ok  platform checked out at v2.0.1, resolved commit matches the pinned commit field
+    declared (platform tag v2.0.1 -> v2.0.1): none
+    composed (this institution, across ['4.0.0'] and retired []): major
+
+That is Actions run 33915621021 (branch ticket-62-and-77) and, word for word
+with the same numbers, run 33884942977 (branch ecosystem/build-2026-09-03),
+which ran BEFORE ticket 62 pinned shift-left.yml's platform checkout to the
+declared tag. So the pin is not what made this red, and it is not what made
+it "able to fail": `checkout_tag()` below already re-checked platform out at
+the pinned tag before reading any evidence, so the `ref:` on the workflow's
+own checkout step never reached this decision. Ticket 62's landed note said
+otherwise; this comment is the correction, with the run ids to check it by.
+
+What IS true. `compose()` below folds `bump.computed` for EVERY version in
+the new array, and `main()` fills that array from
+`versions_from_composed_evidence(--head-ref)` -- this institution's whole
+current supported window, not the versions this pull request adds. That
+window has been exactly ['4.0.0'] since 2026-08-29 (commit f7b4501 retired
+2.0.0, 2.0.1 and 3.0.0; 6e9aab6 added 4.0.0), and platform's own signed
+evidence for policy 4.0.0 records bump.computed "major". So the composed
+bump is major on every pull request, forever, whatever the pull request
+changes -- the last green shift-left run in this repository is 2026-08-28.
+
+driftwood and ludlow do not behave this way. Their gates fold only the
+versions the pull request ADDS or RETIRES (driftwood: `diff_arrays` ->
+`compose(added, retired, ...)`; ludlow: `diff_versions` -> `compose(retired,
+changed, ...)`), so a no-op pin composes "none" and their runs are green on
+the same day, on the same platform tag, against the same evidence. Three
+adopters, two readings of ADR-0011's "the composed bump is computed after
+composition", and only one of them can be the estate's.
+
+NOTHING HERE WAS EDITED. Ticket 64's brief is explicit: do not loosen the
+gate to make it green and do not invent a human review. Narrowing this fold
+to the added set would be loosening this institution's gate, and choosing
+between the two readings is an architectural call about what an adopter gate
+grades -- it belongs in an ADR and a ticket of its own, not in a comment
+added by a build that came here to author a twin overlay. The refusal
+standing in the meantime is at least honest about its subject: policy 4.0.0
+IS a major, platform's own signed evidence says so, and no human review of
+it is recorded anywhere in this repository.
+
+What unblocks it is one of two owner acts, both named in ticket 64's
+`## Waits on the owner`: record a review of platform policy version 4.0.0's
+major for this institution, or rule on which of the two readings ADR-0011
+means and let a ticket change the losing adopters to match.
+---------------------------------------------------------------------------
+
 Usage:
     adopter-gate.py \
         --platform-dir DIR --new-pin-yaml tuppence/gitops/platform/platform-pin.yaml \

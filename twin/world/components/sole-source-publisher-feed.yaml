@@ -1,0 +1,8 @@
+id: sole-source-publisher-feed
+name: A publisher's feed the organisation pins
+kind: activity
+evolution: product
+visibility: 0.3
+description: >-
+  A feed inherited under the ADR-0019 envelope. Withdrawing it is the publisher's own decision;
+  the consumer finds out from a `revoked[]` entry or from a pin that stops moving.

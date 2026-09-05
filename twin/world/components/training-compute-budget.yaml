@@ -1,0 +1,5 @@
+id: training-compute-budget
+name: Training compute budget
+kind: activity
+evolution: product
+visibility: 0.25

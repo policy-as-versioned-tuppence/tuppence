@@ -1,0 +1,5 @@
+id: financial-crime-lead-owns-customer-records
+type: owns
+from: financial-crime-lead
+to: customer-account-records
+note: A role edge, for the same reason.

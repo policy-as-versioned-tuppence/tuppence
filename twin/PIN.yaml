@@ -1,0 +1,15 @@
+# The `twin` release this directory is vendored from and rendered by.
+#
+# `world/` is a verbatim copy of that release's standing-library world layer, and
+# emit-forward-intel.py refuses to render if `twin_version` is not the hub's own twin/VERSION:
+# a pin that does not describe the code beside it is not a pin, the same rule
+# gitops/platform/platform-pin.yaml already holds the cage policy line to.
+#
+# `tag_cut: false` because the tag does not exist yet. A signed tag is cut by a release workflow
+# with gitsign, never locally, so until the owner dispatches that workflow, `world_ref` in
+# orgs/<org>/meta.yaml is the only pin with bytes behind it. When the tag lands, flip this and
+# let Renovate's git-refs datasource bump twin_version and twin_tag together, exactly as
+# gitops/platform/platform-pin.yaml is bumped today.
+twin_version: 0.1.0
+twin_tag: twin/v0.1.0
+tag_cut: false

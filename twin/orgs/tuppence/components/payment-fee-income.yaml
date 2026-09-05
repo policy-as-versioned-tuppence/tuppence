@@ -1,0 +1,9 @@
+id: payment-fee-income
+name: Payment fee income
+kind: capability
+evolution: commodity
+visibility: 0.86
+description: >-
+  The declared cash flow. Money crosses here and nowhere else in this overlay, so this is the only
+  component an impact could price through (evidence-ladder path_admission_threshold). It carries no
+  amount today: see ../perspectives/tuppence.yaml.

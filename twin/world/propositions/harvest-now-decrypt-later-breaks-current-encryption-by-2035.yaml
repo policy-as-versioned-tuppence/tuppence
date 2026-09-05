@@ -1,0 +1,4 @@
+id: harvest-now-decrypt-later-breaks-current-encryption-by-2035
+text: >-
+  Cryptographically relevant quantum computing breaks currently-deployed public-key encryption
+  before 2035, exposing data harvested and stored today under a harvest-now-decrypt-later attack.

@@ -1,0 +1,9 @@
+id: cage-policy-line
+name: The pinned cage policy line
+kind: practice
+evolution: custom-built
+visibility: 0.30
+description: >-
+  The platform implementations package this repo pins (gitops/platform/platform-pin.yaml, mirrored
+  in party.yaml inherits[]). It is a practice rather than an activity: what it does is hold the
+  payments namespace at a declared tier, and it moves only by a merged pin bump.

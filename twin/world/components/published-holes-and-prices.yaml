@@ -1,0 +1,8 @@
+id: published-holes-and-prices
+name: The organisation's own published holes and prices
+kind: data
+evolution: product
+visibility: 0.7
+description: >-
+  The holes, prices and forecasts an organisation publishes about itself. Legible by design
+  (NORTH-STAR §2), which means legible to a rival on the same terms as to a regulator.

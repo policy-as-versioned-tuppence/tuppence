@@ -1,0 +1,11 @@
+id: tuppence
+unit: overlay
+org: tuppence
+name: Tuppence's own overlay
+description: >-
+  The adopter's twin overlay, living in the adopter's own repository (ticket 11 answer item 1) and
+  signed under the same gitsign tag as every other artefact this repo publishes. `world_ref` is the
+  commit of the vendored world layer in the deterministic staging mirror emit-forward-intel.py
+  builds -- content-addressed, so it is the same sha on every machine, the same sha driftwood's
+  overlay pins, and it does not move when this repository commits. See ../../VENDORED.md.
+world_ref: c2d07330a778ed547b60cfbb87217bcf9813181f

@@ -1,0 +1,34 @@
+id: customer-records-loss-cuts-payment-fee-income
+type: influences
+from: customer-account-records
+to: payment-fee-income
+sign: negative
+lag_days: 30
+elasticity: { min: 0.0640, mode: 0.0698, max: 0.0987 }
+evidence_grade: 3
+note: >-
+  An exfiltration of the account and transaction record store suppresses fee income for a quarter.
+
+  THE TRIPLE IS AN ANCHOR, NOT A MEASUREMENT, and it is graded 3 for exactly that reason. This
+  institution has no incident of its own to measure, so the three numbers are arithmetic on a
+  comparable UK challenger bank's own published regulatory record, nested from the narrowest
+  reading to the widest:
+
+    min  0.0640 = 28,959,426 / 452,800,000
+    mode 0.0698 = 28,959,426 / 414,814,000
+    max  0.0987 = 40,959,426 / 414,814,000
+
+  28,959,426 GBP is the financial penalty in the FCA's Final Notice against Starling Bank Limited
+  of 2024-09-27 (reference 730166), and 40,959,426 GBP is the same notice's figure before the 30%
+  stage-one settlement discount. 452,800,000 GBP is the revenue the same notice states at 2.1 for
+  2023; 414,814,000 GBP is Total Income for the year ended 2023-03-31 in that bank's own audited
+  Annual Report 2023, a different metric on a different reporting convention. Sources and the
+  discrepancy are recorded in the hub's .scratch/ecosystem/research/94-studied-firms.md.
+
+  What it is NOT: a conduct penalty is not a suppression of fee income, and that firm is not this
+  one. Grade 3 on the published ladder is "an established mechanism from published work, not
+  observed here", which is precisely the claim being made. Grade 3 is OUTSIDE the ladder's
+  path_admission_threshold of 2, so no impact enters this perspective's pound through this edge
+  and emit-forward-intel.py refuses to emit a priced payload while it is the only causal edge here.
+  A grade-1 or grade-2 replacement is this institution's own dated incident record, and a regrade
+  event has to record who moved it and why (twin/evidence.py).

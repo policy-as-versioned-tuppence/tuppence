@@ -1,0 +1,5 @@
+id: payments-engineer-maintains-payments-api
+type: maintains
+from: payments-engineer
+to: payments-api
+note: A role edge. People reach the graph as roles only; no causal edge starts at a person.

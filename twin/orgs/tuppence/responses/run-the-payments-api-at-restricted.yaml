@@ -1,0 +1,23 @@
+id: run-the-payments-api-at-restricted
+name: Run the payments API at cage tier 'restricted'
+addresses: payments-api
+cost: { min: 2000, mode: 2000, max: 2000 }
+mitigates:
+  component: customer-account-records
+  reduction: { min: 0.70, mode: 0.70, max: 0.70 }
+  evidence_grade: 5
+  basis: >-
+    The publisher's own figure, adopted rather than restated: platform's graded/cage.py TIERS
+    table at TABLE_VERSION 1.0.0, in the release this repository pins (platform v2.0.1), gives
+    'restricted' reduce 0.70 and cost 2000 GBP per year. Both triples are DEGENERATE -- min, mode and max
+    are the same number -- because the publisher publishes one figure per rung and no range, and
+    widening it here would be this institution inventing a spread the source does not carry.
+    Grade 5, not 3: platform's own comment beside that table says the numbers are calibration
+    knobs "evidenced by nothing but this comment", so nothing observed them, nothing published
+    evidence for them and nobody calibrated them. This institution has no incident record of its
+    own to replace them with. Grade 5 is outside the pricing threshold, so this claim earns no
+    pound credit; it is here so the rung is visible and priceable the day a measurement exists.
+note: >-
+  One rung of the cage ladder as an option this overlay can price. It is an option, never a
+  recommendation: the ladder is ordered and nothing here ranks one rung above another. The rung
+  names come from ../../ladder.yaml, which records which platform release published them.

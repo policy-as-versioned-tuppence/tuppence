@@ -1,0 +1,8 @@
+id: published-enforcement-record
+name: A regulator's published enforcement record
+kind: data
+evolution: commodity
+visibility: 0.6
+description: >-
+  A penalty a regulator has published, naming a party and a regime. Public the day it lands, and
+  read by customers and rivals as readily as by the party fined.

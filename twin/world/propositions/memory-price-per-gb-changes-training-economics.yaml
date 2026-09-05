@@ -1,0 +1,4 @@
+id: memory-price-per-gb-changes-training-economics
+text: >-
+  Memory price per gigabyte moves enough within the scenario horizon to materially change the
+  cost structure of large model training runs.
