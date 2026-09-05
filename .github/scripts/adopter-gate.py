@@ -366,6 +366,21 @@ def compose(platform_dir: Path, new_array: dict[str, dict], old_array: dict[str,
     reported continuously instead, by the hub's
     verify/unreviewed-major/verify-unreviewed-major-in-window.sh, which names
     the version on every truth-surface run.
+
+    WHAT THIS GIVES UP, NAMED. A version standing at BOTH ends of a pull
+    request is not folded, so on that pull request nothing here re-verifies
+    its signature. Measured on a throwaway clone, not argued: with platform's
+    4.0.0.json.bundle corrupted at a fresh tag and both folds run over
+    identical inputs, the window fold refused ("cosign verify-blob failed for
+    policy version 4.0.0 ... bundle does not contain cert for verification")
+    and this fold adopts, exit 0. driftwood and ludlow have always behaved
+    this way; this institution now matches them. The class is not dropped, it
+    is moved off the pull request and onto the clock: the hub check named
+    above verifies EVERY version in this institution's composed window, with
+    real cosign, at the tag this repository pins, on every truth-surface run,
+    and reports one that does not verify as observed false -- proved on that
+    same corrupted artefact. A window checked only when somebody opens a pull
+    request is checked less often than one checked daily.
     """
     added = sorted(set(new_array) - set(old_array))
     retired = sorted(set(old_array) - set(new_array))
