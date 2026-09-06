@@ -42,7 +42,7 @@
 # a GitHub Actions runner is cold on every run. Scenario G below prints that
 # exit code on every run, so the sentence cannot go stale again the way this
 # one did; pinning the trust material here, as ludlow now does, is eco-system
-# ticket 103.
+# ticket 105.
 #
 # What remains out of reach here is only signing NEW evidence, so Scenarios A
 # and B -- which invent a fresh release line in a throwaway clone -- verify
@@ -641,7 +641,7 @@ print('ok  B: real refusal -- a composed major fails the required check for real
 say "Scenario G: how offline this gate's signature check actually is -- measured on this run, not claimed"
 # A disclosed limit is an assertion and goes stale like any other; this one
 # did (see the header). So it is a number the run prints, not a sentence.
-# When eco-system ticket 103 pins the trust material here, the exit code
+# When eco-system ticket 105 pins the trust material here, the exit code
 # below becomes 0 and this scenario says so on its own.
 mkdir -p "$scratch/cold-home" "$scratch/cold-tuf"
 # The same real bundle Scenario E just verified, named by E's own output
@@ -654,8 +654,16 @@ print(next(e['version'] for e in d['elements'] if e['verified'] is True))
 ")
 [ -n "$g_version" ] || fail "G: Scenario E verified no element, so there is no real bundle to measure against"
 set +e
+# NO_PROXY is CLEARED, not just left alone (eco-system ticket 101 review, F2, 2026-09-06).
+# Measured: with an ambient `NO_PROXY=*` exported, Go bypasses the closed port entirely, cosign
+# reaches Sigstore's CDN, and this scenario prints exit 0 -- "no network needed" for a run that
+# had just used the network. A measurement that fails in the REASSURING direction is worse than
+# no measurement, because nobody looks behind a green one. The lowercase spellings are set too,
+# because Go reads those as well.
 g_out=$(HOME="$scratch/cold-home" TUF_ROOT="$scratch/cold-tuf" \
   HTTPS_PROXY="http://127.0.0.1:1" HTTP_PROXY="http://127.0.0.1:1" ALL_PROXY="socks5://127.0.0.1:1" \
+  https_proxy="http://127.0.0.1:1" http_proxy="http://127.0.0.1:1" all_proxy="socks5://127.0.0.1:1" \
+  NO_PROXY="" no_proxy="" \
   timeout 60 cosign verify-blob \
   --bundle="$e_platform/computed-semver/evidence/${g_version}.json.bundle" \
   --certificate-identity-regexp="$e_regexp" --certificate-oidc-issuer="$e_issuer" \
@@ -665,7 +673,7 @@ set -e
 echo "the same real bundle (policy ${g_version}), cold TUF cache, every proxy pointed at a closed port: exit ${g_code}"
 echo "$g_out" | tail -2
 if [ "$g_code" -eq 0 ]; then
-  echo "ok  G: this gate's own cosign invocation verifies platform's real published bundle with NO network (exit 0 on a cold cache with egress blocked) -- ticket 103 has landed, or was never needed"
+  echo "ok  G: this gate's own cosign invocation verifies platform's real published bundle with NO network (exit 0 on a cold cache with egress blocked) -- ticket 105 has landed, or was never needed"
 else
   echo "$g_out" | grep -qiE "tuf|dial tcp|connection refused" \
     || fail "G: the cold-cache run failed for a reason that is not the network, so this measurement no longer measures what it says: $(echo "$g_out" | tail -1)"

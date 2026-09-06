@@ -318,7 +318,7 @@ def verify_evidence(platform_dir: Path, version: str, identity_regexp: str, issu
     Actions runner is cold on every run. The word "offline" used to sit in
     this docstring and in the harness header, and it was true of a laptop
     and not of CI. ludlow pins its trust material and does not have this
-    dependency; extending that pin here is eco-system ticket 103.
+    dependency; extending that pin here is eco-system ticket 105.
     verify-adopter-gate.sh Scenario G prints the exit code on every run, so
     this cannot go stale silently again. The
     identity-regexp STRING itself (anchoring, escaping, and "a platform
