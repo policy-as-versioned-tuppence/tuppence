@@ -1,0 +1,63 @@
+# tuppence's `ledger` workload — the SERVED artefact of eco-system ticket 33's lift.
+#
+# This is the file Flux reconciles. `gitops/flux-system/gotk-sync.yaml`'s Kustomization has
+# `path: ./apps`, and kustomize renders `gitops/apps/kustomization.yaml`'s `resources[]` and
+# nothing else, so this manifest is served only because that list names it. A workload file
+# sitting in this directory unlisted is served to nobody; the hub's verify/lifted-apps/ check
+# grades the list, not the directory, for exactly that reason.
+#
+# It supersedes `policy-as-versioned-flux/ledger`'s own `k8s/deployment.yaml`, and differs from
+# it in four ways, each of which is what a lift means:
+#
+#   1. RE-LABELLED. `mycompany.com/policy-version: "1.0.0"` becomes
+#      `policy-as-versioned.dev/policy-version: "4.0.0"`. The incumbent org's `department:
+#      finance` label goes with it: it was read by that org's `require-department-label` policy,
+#      which no version in tuppence's composed set carries.
+#   2. RE-PINNED to tuppence's own composed artefact. 4.0.0 is not a number chosen here -- it is
+#      the only version `composed/orphan-guard.yaml`'s allowed array admits, and
+#      `composed/policies/v4.0.0/` is the set that grades this pod. A claim outside that array is
+#      an orphan that reaches no cage at all (ticket 89).
+#   3. RE-NAMESPACED into tuppence's governed Namespace, where the cage tier is declared
+#      (`gitops/apps/namespace.yaml`, `posture.acme.io/tier: isolated`). This manifest carries no
+#      tier label of its own: under 4.0.0 the tier is declared on the Namespace and `cage-tier`
+#      writes the pod label as an OUTPUT (ADR-0022). One declared here would be clobbered.
+#   4. A POD, not a Deployment. Every policy in the composed set matches `pods`; the cage ladder's
+#      held round is pod-only (ticket 09). A Deployment would be graded by nothing this repository
+#      composes, which is the shape of lift this ticket exists to avoid.
+#
+# securityContext: `require-nonroot-4-0-0` validates `runAsNonRoot` on the pod and
+# `readOnlyRootFilesystem` on every container. The image (`eclipse-temurin:11-jre-alpine`) sets
+# no USER, so `runAsNonRoot: true` alone would leave the kubelet refusing to start the container
+# -- the defect driftwood's own pod.yaml hit for real on 2026-08-31 -- hence an explicit numeric
+# `runAsUser`. 1000 is a plain unprivileged uid: the jar is world-readable and the JVM needs no
+# entry in /etc/passwd. /tmp is an emptyDir because a read-only root filesystem otherwise denies
+# the JVM its `hsperfdata` directory.
+#
+# NOT OBSERVED: whether this pod actually starts. No citable run of this estate has had a
+# persistent cluster, and the reasoning above is reasoning, not an observation. The hub's
+# verify/lifted-apps/ check prints that as a blind spot on every run rather than implying
+# otherwise; the live half is this repository's own drift-sample lane.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ledger
+  namespace: tuppence
+  labels:
+    app: ledger
+    app.kubernetes.io/part-of: tuppence
+    policy-as-versioned.dev/policy-version: "4.0.0"
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+  containers:
+    - name: ledger
+      image: ghcr.io/policy-as-versioned-flux/ledger@sha256:9709e1075a503fe59ca85deae2b748fcbbfd80b464e56d2e1f82ec8182268111
+      ports:
+        - containerPort: 8080
+      securityContext:
+        readOnlyRootFilesystem: true
+      volumeMounts:
+        - { name: tmp, mountPath: /tmp }
+  volumes:
+    - { name: tmp, emptyDir: {} }

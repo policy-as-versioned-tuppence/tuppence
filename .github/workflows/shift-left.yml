@@ -241,8 +241,27 @@ jobs:
             current-body.md evidence-section.md new-body.md
           gh pr edit "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --body-file new-body.md
 
-      - name: version cross-check gate
-        run: python3 platform/shift-left/ci-check.py --resource tuppence/deploy/pod.yaml
+      - name: version cross-check gate -- deploy/pod.yaml AND every workload this repo serves
+        # Eco-system ticket 33. This step used to name one file. It now also grades every
+        # workload manifest `gitops/apps/kustomization.yaml` actually renders, discovered by
+        # `.github/scripts/served-workloads.py` -- the same discovery the hub's
+        # verify/lifted-apps check runs, so the gate and the grader read one list. A lifted
+        # application whose manifest sits unlisted in gitops/apps/ is served to nobody, and a
+        # gate that globbed the directory would say otherwise.
+        #
+        # deploy/pod.yaml stays named explicitly: it is not in the served set (it is this
+        # repository's declared workload, mirrored into gitops/apps/ where a mirror exists), and
+        # dropping it would quietly stop grading the resource this job was built around.
+        run: |
+          set -euo pipefail
+          python3 platform/shift-left/ci-check.py --resource tuppence/deploy/pod.yaml
+          python3 tuppence/.github/scripts/served-workloads.py --root tuppence --prefix tuppence \
+            > "${RUNNER_TEMP}/served.txt"
+          echo "served workloads this run grades:"; cat "${RUNNER_TEMP}/served.txt"
+          while read -r manifest; do
+            [ -n "${manifest}" ] || continue
+            python3 platform/shift-left/ci-check.py --resource "${manifest}"
+          done < "${RUNNER_TEMP}/served.txt"
 
       - name: build the shift-left attestation
         # Only reached if the gate step above exited 0 -- the attestation
