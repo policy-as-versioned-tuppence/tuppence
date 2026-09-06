@@ -13,7 +13,7 @@ Fixes the two live bugs spec.md names (Further Notes, "Two live bugs"):
 
 It does not recompute the publisher's bump ("a second answer to the same
 question has no tie-breaker" -- spec.md, Solution). It verifies the
-publisher's signed evidence -- cosign verify-blob, offline, identity-pinned
+publisher's signed evidence -- cosign verify-blob, identity-pinned
 to a constant THIS repo holds (`--identity-regexp` / `--issuer`, wired from
 shift-left.yml's own env block, never read from anything platform supplies)
 -- then reads that evidence's own `bump.computed` field for every policy
@@ -287,7 +287,7 @@ def classify_tag_bump(old_tag: str | None, new_tag: str) -> str:
 
 def verify_evidence(platform_dir: Path, version: str, identity_regexp: str, issuer: str,
                      skip_cosign_verify: bool = False) -> dict:
-    """cosign verify-blob, offline, identity-pinned to THIS institution's own
+    """cosign verify-blob, identity-pinned to THIS institution's own
     constant -- never discovered from anything platform supplies. Returns
     the parsed evidence document on success; raises SystemExit (refusal) on
     any missing file or failed verification.
@@ -306,8 +306,21 @@ def verify_evidence(platform_dir: Path, version: str, identity_regexp: str, issu
     DOES run for real here and DOES correctly refuse (proved in
     verify-adopter-gate.sh's Scenarios C and D, against a real missing-file
     case and a real malformed-bundle case, each with the real binary) --
-    it is only the SIGN side, needed to build a fixture with a genuinely
-    ACCEPTED signature, that this sandbox cannot produce. The
+    it is only the SIGN side that this sandbox cannot produce, and a
+    genuinely ACCEPTED signature no longer needs it: Scenario E verifies
+    platform's own real published bundles, which platform's cut-release.yml
+    signed in a real Actions run.
+
+    HOW OFFLINE, measured 2026-09-06 rather than claimed (eco-system ticket
+    101). This call passes cosign no trust root, so it verifies without the
+    network only where the Sigstore TUF cache is already warm; on a cold
+    cache with egress blocked it exits 1 fetching a TUF root, and a GitHub
+    Actions runner is cold on every run. The word "offline" used to sit in
+    this docstring and in the harness header, and it was true of a laptop
+    and not of CI. ludlow pins its trust material and does not have this
+    dependency; extending that pin here is eco-system ticket 103.
+    verify-adopter-gate.sh Scenario G prints the exit code on every run, so
+    this cannot go stale silently again. The
     identity-regexp STRING itself (anchoring, escaping, and "a platform
     workflow rename breaks verification") is proved separately and
     deterministically in verify-identity-regexp.sh, with no cosign process

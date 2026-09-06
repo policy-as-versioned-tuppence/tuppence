@@ -31,9 +31,18 @@
 # Scenario E proves a real ACCEPT: platform's own cut-release.yml has since
 # committed real evidence bundles (computed-semver/evidence/*.json.bundle,
 # Fulcio certs from that real Actions run, logged to Rekor), and VERIFYING
-# them needs no ambient credential and no network at all -- only signing ever
-# did -- so the whole gate runs unskipped, with the real identity constants,
-# against the real committed pin, in about a second.
+# them needs no ambient credential -- only signing ever did -- so the whole
+# gate runs unskipped, with the real identity constants, against the real
+# committed pin, in about a second.
+#
+# It DOES need the network, which this file used to deny. Measured 2026-09-06
+# (eco-system ticket 101): "no network at all" was true only because the
+# machine's Sigstore TUF cache was already warm. This gate passes cosign no
+# trust root, so on a cold cache it fetches one from Sigstore's TUF CDN, and
+# a GitHub Actions runner is cold on every run. Scenario G below prints that
+# exit code on every run, so the sentence cannot go stale again the way this
+# one did; pinning the trust material here, as ludlow now does, is eco-system
+# ticket 103.
 #
 # What remains out of reach here is only signing NEW evidence, so Scenarios A
 # and B -- which invent a fresh release line in a throwaway clone -- verify
@@ -236,7 +245,18 @@ unverified = [e['version'] for e in d['elements'] if e['verified'] is not True]
 assert not unverified, f'cosign did not verify: {unverified}'
 print('ok  E: real cosign verify-blob ACCEPTED platform\\'s real committed evidence for ' + ', '.join(e['version'] for e in d['elements']))
 "
-echo "ok  E: the gate PASSES against the real, currently-committed platform-pin.yaml -- real checkout at ${e_tag}, commit verification, real identity constants, real cosign signature verification"
+# What this line said until 2026-09-06 -- "ok E: the gate PASSES against the
+# real, currently-committed platform-pin.yaml" -- was printed two lines after
+# the gate returned exit 1, and was therefore false on every run since
+# 2026-08-31, when the estate began composing a major (eco-system ticket 101,
+# finding 3). A harness that claims a pass over a refusal is worse than no
+# harness: it is a check reporting the opposite of what it observed. It now
+# says which of the two happened.
+if [ "$e_code" -eq 0 ]; then
+  echo "ok  E: against the real, currently-committed platform-pin.yaml the gate ADOPTED, exit 0 -- real checkout at ${e_tag}, commit verification, real identity constants read out of shift-left.yml, and every composed element's real signature verified by real cosign"
+else
+  echo "ok  E: against the real, currently-committed platform-pin.yaml the gate reached its DESIGNED composed-major refusal, exit ${e_code} -- and everything ahead of that refusal succeeded for real: the checkout at ${e_tag}, the commit match, the identity constants read out of shift-left.yml, and every composed element's real signature verified by real cosign. That is what this scenario observed; it is not a pass, and it is not reported as one"
+fi
 
 # E-multi: the same gate, over the REAL two-document stream the two committed
 # files form together. This is the parse_pin() ComposerError regression, kept
@@ -610,14 +630,49 @@ assert d['elements'] == [{'version': '9.0.0', 'verified': None, 'bump_computed':
 print('ok  B: real refusal -- a composed major fails the required check for real (non-zero exit), retirement named, nothing silent')
 "
 
+say "Scenario G: how offline this gate's signature check actually is -- measured on this run, not claimed"
+# A disclosed limit is an assertion and goes stale like any other; this one
+# did (see the header). So it is a number the run prints, not a sentence.
+# When eco-system ticket 103 pins the trust material here, the exit code
+# below becomes 0 and this scenario says so on its own.
+mkdir -p "$scratch/cold-home" "$scratch/cold-tuf"
+# The same real bundle Scenario E just verified, named by E's own output
+# rather than hard-coded, so this measures the served artefact and not a
+# version that has since left the window.
+g_version=$(python3 -c "
+import json
+d = json.load(open('$scratch/e-summary.json'))
+print(next(e['version'] for e in d['elements'] if e['verified'] is True))
+")
+[ -n "$g_version" ] || fail "G: Scenario E verified no element, so there is no real bundle to measure against"
+set +e
+g_out=$(HOME="$scratch/cold-home" TUF_ROOT="$scratch/cold-tuf" \
+  HTTPS_PROXY="http://127.0.0.1:1" HTTP_PROXY="http://127.0.0.1:1" ALL_PROXY="socks5://127.0.0.1:1" \
+  timeout 60 cosign verify-blob \
+  --bundle="$e_platform/computed-semver/evidence/${g_version}.json.bundle" \
+  --certificate-identity-regexp="$e_regexp" --certificate-oidc-issuer="$e_issuer" \
+  "$e_platform/computed-semver/evidence/${g_version}.json" 2>&1)
+g_code=$?
+set -e
+echo "the same real bundle (policy ${g_version}), cold TUF cache, every proxy pointed at a closed port: exit ${g_code}"
+echo "$g_out" | tail -2
+if [ "$g_code" -eq 0 ]; then
+  echo "ok  G: this gate's own cosign invocation verifies platform's real published bundle with NO network (exit 0 on a cold cache with egress blocked) -- ticket 103 has landed, or was never needed"
+else
+  echo "$g_out" | grep -qiE "tuf|dial tcp|connection refused" \
+    || fail "G: the cold-cache run failed for a reason that is not the network, so this measurement no longer measures what it says: $(echo "$g_out" | tail -1)"
+  echo "ok  G: measured, not claimed -- with a cold TUF cache and egress blocked this gate's own cosign invocation cannot verify platform's real bundle (exit ${g_code}, a TUF fetch). Scenario E therefore ran with the network available, exactly as a real shift-left run does"
+fi
+
 echo
 echo "PASS: adopter-gate.py checks out the tag under review (never the default branch), refuses a"
 echo "resolved-commit disagreement with the pinned commit field, and refuses -- with the real cosign"
 echo "binary, real subprocess, real exit code -- when signed evidence is entirely missing (the real,"
 echo "currently-tagged v1.0.0, which honestly predates cs-27), when a present bundle is malformed,"
 echo "and when a real bundle's real certificate identity is not the publisher this institution pins."
-echo "Against the REAL committed platform-pin.yaml, and against the two-document stream it forms with"
-echo "cosign really ACCEPTS platform's real committed evidence: the gate passes unskipped. It grades"
+echo "Against the REAL committed platform-pin.yaml, and against the two-document stream it forms,"
+echo "real cosign really ACCEPTS platform's real committed evidence -- and the refusal that follows on"
+echo "an estate carrying a major is reported as the designed refusal it is, never as a pass. It grades"
 echo "what the bump MOVES (eco-system ticket 99): a bump that adds and retires no policy version"
 echo "composes 'none' and passes without reading a standing version's evidence at all, an arrival"
 echo "composes by RE-READING that version's own real committed evidence (never recomputed), and a"
