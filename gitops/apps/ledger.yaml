@@ -1,10 +1,17 @@
 # tuppence's `ledger` workload — the SERVED artefact of eco-system ticket 33's lift.
 #
-# This is the file Flux reconciles. `gitops/flux-system/gotk-sync.yaml`'s Kustomization has
-# `path: ./apps`, and kustomize renders `gitops/apps/kustomization.yaml`'s `resources[]` and
-# nothing else, so this manifest is served only because that list names it. A workload file
-# sitting in this directory unlisted is served to nobody; the hub's verify/lifted-apps/ check
-# grades the list, not the directory, for exactly that reason.
+# This is the file Flux renders once the self-pin moves. `gitops/flux-system/gotk-sync.yaml`'s
+# Kustomization has `path: ./gitops/apps`, and kustomize renders
+# `gitops/apps/kustomization.yaml`'s `resources[]` and nothing else, so this manifest is served
+# only because that list names it. A workload file sitting in this directory unlisted is served
+# to nobody; the hub's verify/lifted-apps/ check reads the path and the list, not the directory.
+#
+# NOT YET SERVED FROM THE PIN. The same file's GitRepository pins `ref: {tag: v1.0.0, commit:
+# ...}`, and that tree's kustomization does not list this file, so a cluster reconciling the pin
+# today is served nothing from here until tuppence cuts a tag and moves its own pin -- which no
+# renovate customManager bumps (they cover the parents only). The hub check counts that on every
+# run (`N of 3 lifts are listed at main and not in the tree the GitRepository pins`) rather than
+# saying "served" (review 2026-09-08, F1).
 #
 # It supersedes `policy-as-versioned-flux/ledger`'s own `k8s/deployment.yaml`, and differs from
 # it in four ways, each of which is what a lift means:
@@ -32,6 +39,16 @@
 # `runAsUser`. 1000 is a plain unprivileged uid: the jar is world-readable and the JVM needs no
 # entry in /etc/passwd. /tmp is an emptyDir because a read-only root filesystem otherwise denies
 # the JVM its `hsperfdata` directory.
+#
+# The cage this pod would actually get: `cage-tier-4-0-0` reads the tier from the governed
+# Namespace (`gitops/apps/namespace.yaml`, `isolated`) and writes resources.limits of cpu 100m /
+# memory 64Mi and capabilities.drop ALL onto the container. A JVM under 64Mi: nothing here sets
+# `-XX:MaxRAMPercentage`, so a container-aware JDK 11 takes a quarter of the cgroup limit (16Mi)
+# as heap, plus metaspace, code cache and thread stacks; a plain `HttpServer` on one class
+# fits, but that is reasoning about a start-up nobody has observed. `kyverno apply` (the hub's
+# verify/lifted-apps check and this repository's own shift-left job) evaluates the same policy
+# with `namespaceObject` null and so applies the BASELINE dial (500m / 256Mi, no drop): the cage
+# graded offline is not the cage the cluster would write (review 2026-09-08, F2).
 #
 # NOT OBSERVED: whether this pod actually starts. No citable run of this estate has had a
 # persistent cluster, and the reasoning above is reasoning, not an observation. The hub's

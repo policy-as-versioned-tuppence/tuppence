@@ -10,11 +10,15 @@ this repository's Flux Kustomization reconciles), it is graded by tuppence's own
 job against tuppence's own composed policy set, and its dependency tree is bumped by tuppence's
 own `renovate.json`. Nothing outside this repository reads it.
 
-The tree below is the incumbent repository's tree, unchanged except for the three things a lift
-removes: its `k8s/` manifest (superseded by the served manifest above, re-labelled and
-re-namespaced), its own `renovate.json` stub (superseded by this repository's), and its release
-workflow (see the residual below). It is left byte-identical otherwise so that a reader can `git
-diff` it against `policy-as-versioned-flux/ledger` at that commit and see the whole of the move.
+The tree below is the incumbent repository's tree, unchanged except for the four things a lift
+changes: its `k8s/` manifest is removed (superseded by the served manifest above, re-labelled
+and re-namespaced), its own `renovate.json` stub is removed (superseded by this repository's),
+its release workflow is removed (see the residual below), and this README is rewritten -- the
+incumbent's described a repository, this one describes a lift. Every other file is
+byte-identical, so that a reader can `git diff` the tree against
+`policy-as-versioned-flux/ledger` at that commit and see the whole of the move: `diff -rq`
+against the incumbent reports `Only in incumbent: .github, k8s, renovate.json` and
+`README.md differ`, and nothing else.
 That is also why the Java package is still `com.mycompany.ledger` and the groupId still
 `com.mycompany`: renaming them means rebuilding, and a rebuilt jar is not the image the served
 manifest pins.

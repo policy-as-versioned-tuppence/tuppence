@@ -2,7 +2,7 @@
 """The workload manifests this repository SERVES, one path per line.
 
 Eco-system ticket 33. `gitops/flux-system/gotk-sync.yaml`'s Kustomization reconciles
-`path: ./apps`, and kustomize accumulates exactly the entries of `gitops/apps/kustomization.yaml`'s
+`path: ./gitops/apps`, and kustomize accumulates exactly the entries of `gitops/apps/kustomization.yaml`'s
 `resources[]` -- so the served set is that list, not a listing of the directory. A manifest sitting
 in `gitops/apps/` that the kustomization does not name is served to nobody, and a shift-left gate
 that globbed the directory would grade a file the cluster never sees while missing one it does.
