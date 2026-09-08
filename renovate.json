@@ -4,9 +4,10 @@
     "config:recommended"
   ],
   "automerge": false,
-  "dependencyDashboard": false,
+  "dependencyDashboard": true,
   "enabledManagers": [
-    "custom.regex"
+    "custom.regex",
+    "maven"
   ],
   "customManagers": [
     {
@@ -70,7 +71,20 @@
         "git-refs"
       ],
       "rangeStrategy": "pin"
+    },
+    {
+      "description": "The dependencies of ledger land on the dependency dashboard and wait to be ticked, rather than opening a branch each on the first run. The whole point of this application is that its tree is deliberately stale (log4j-core 2.14.1, CVE-2021-44228), so the manager above would otherwise open a wall of pull requests the moment it is enabled. The dashboard is where the staleness is meant to be visible; ticking a row there is the reviewed decision to move one.",
+      "matchManagers": [
+        "maven"
+      ],
+      "dependencyDashboardApproval": true
     }
   ],
-  "platformCommit": "enabled"
+  "platformCommit": "enabled",
+  "maven": {
+    "description": "Eco-system ticket 33: ledger was lifted into this repository from policy-as-versioned-flux/ledger, so this repository now versions it and this repository's Renovate is what bumps it. managerFilePatterns is pinned to the one lifted stack manifest rather than left to the manager's default glob: the lift is of one application, and a manager that wandered onto a file nobody lifted would be bumping something this repository never took ownership of.",
+    "managerFilePatterns": [
+      "/^apps/ledger/pom\\.xml$/"
+    ]
+  }
 }

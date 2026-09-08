@@ -5,3 +5,4 @@ resources:
   - version-configmap.yaml
   - nist-pin-configmap.yaml
   - risk-appetite-configmap.yaml
+  - ledger.yaml
