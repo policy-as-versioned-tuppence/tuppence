@@ -35,14 +35,17 @@
 # gate runs unskipped, with the real identity constants, against the real
 # committed pin, in about a second.
 #
-# It DOES need the network, which this file used to deny. Measured 2026-09-06
-# (eco-system ticket 101): "no network at all" was true only because the
-# machine's Sigstore TUF cache was already warm. This gate passes cosign no
-# trust root, so on a cold cache it fetches one from Sigstore's TUF CDN, and
-# a GitHub Actions runner is cold on every run. Scenario G below prints that
-# exit code on every run, so the sentence cannot go stale again the way this
-# one did; pinning the trust material here, as ludlow now does, is eco-system
-# ticket 105.
+# It needed the network until eco-system ticket 105 (2026-09-09), which this
+# file used to deny. Measured 2026-09-06 (ticket 101): "no network at all"
+# was true only because the machine's Sigstore TUF cache was already warm;
+# the gate passed cosign no trust root, so on a cold cache it fetched one
+# from Sigstore's TUF CDN, and a GitHub Actions runner is cold on every run.
+# The gate now pins its root (.github/scripts/trusted_root.json). Scenario G
+# below re-runs the gate with a cold cache and every proxy pointed at a
+# closed port and GRADES exit 0, and scenario H doctors the committed root
+# one field at a time and grades a refusal on the trust material, cold and
+# warm -- numbers the run prints, so the sentence cannot go stale again the
+# way this one did.
 #
 # What remains out of reach here is only signing NEW evidence, so Scenarios A
 # and B -- which invent a fresh release line in a throwaway clone -- verify
@@ -139,7 +142,7 @@ grep -q "tag actually resolves to ${real_commit}" "$scratch/c.out" \
   || fail "C: expected the resolved-commit disagreement named, got: $(cat "$scratch/c.out")"
 echo "ok  C: a pin naming the wrong commit for its own tag is refused, naming the real resolved commit"
 
-say "Scenario D2: a REAL cosign verify-blob rejection of a present-but-malformed bundle (the real binary reaches the trust check itself, not just the file-existence check)"
+say "Scenario D2: a present-but-malformed bundle is refused BY NAME, before cosign is called (eco-system ticket 105 -- handing cosign a bundle it cannot place is the live TUF fetch the pinned root exists to prevent; the real binary's own refusals are Scenarios E2 and H)"
 d2_platform="$scratch/platform-d2"
 git clone --local --quiet "$platform_repo" "$d2_platform"
 git -C "$d2_platform" checkout --quiet v1.0.0
@@ -160,10 +163,12 @@ gate --platform-dir "$d2_platform" --new-pin-yaml "$scratch/new-pin-d2.yaml" \
 d2_code=$?
 set -e
 cat "$scratch/d2.out"
-[ "$d2_code" -ne 0 ] || fail "D2: expected a real cosign refusal against a malformed bundle"
-grep -q "cosign verify-blob failed for policy version 2.0.0" "$scratch/d2.out" \
-  || fail "D2: expected the real cosign failure reason, got: $(cat "$scratch/d2.out")"
-echo "ok  D2: real cosign verify-blob genuinely rejects a present-but-malformed bundle (not just a missing-file check)"
+[ "$d2_code" -ne 0 ] || fail "D2: expected a refusal against a malformed bundle"
+grep -q "the committed bundle for policy version 2.0.0 at 2.0.0.json.bundle is neither a legacy cosign bundle" "$scratch/d2.out" \
+  || fail "D2: expected the refusal to name the bundle's shape, got: $(cat "$scratch/d2.out")"
+grep -q "refusing rather than handing cosign no trust root" "$scratch/d2.out" \
+  || fail "D2: expected the refusal to say why it stops before cosign, got: $(cat "$scratch/d2.out")"
+echo "ok  D2: a present-but-malformed bundle is refused by name before cosign, and the refusal says why it stops there"
 
 say "Scenario E: the REAL, unmodified, currently-committed platform-pin.yaml -- a genuine two-document YAML stream (GitRepository + Kustomization) -- verified end to end with REAL cosign against platform's REAL committed evidence bundles"
 # Two things at once, both against real objects, with no fixture rewriting
@@ -305,7 +310,7 @@ cat "$scratch/e2.out"
 [ "$e2_code" -ne 0 ] || fail "E2: a foreign-org identity regexp must refuse platform's real evidence, got a PASS"
 grep -q "cosign verify-blob failed for policy version" "$scratch/e2.out" \
   || fail "E2: expected a real cosign identity refusal, got: $(cat "$scratch/e2.out")"
-grep -q "none of the expected identities matched" "$scratch/e2.out" \
+grep -qE "none of the expected identities matched|no matching CertificateIdentity found" "$scratch/e2.out" \
   || fail "E2: expected cosign's own identity-mismatch reason, got: $(cat "$scratch/e2.out")"
 echo "ok  E2: the same real bundle that just verified is refused by the real binary when the identity constant names a different publisher"
 
@@ -638,47 +643,179 @@ assert d['elements'] == [{'version': '9.0.0', 'verified': None, 'bump_computed':
 print('ok  B: real refusal -- a composed major fails the required check for real (non-zero exit), retirement named, nothing silent')
 "
 
-say "Scenario G: how offline this gate's signature check actually is -- measured on this run, not claimed"
+say "Scenario G: how offline this gate's signature check actually is -- measured on this run, through the gate itself"
 # A disclosed limit is an assertion and goes stale like any other; this one
-# did (see the header). So it is a number the run prints, not a sentence.
-# When eco-system ticket 105 pins the trust material here, the exit code
-# below becomes 0 and this scenario says so on its own.
+# did (see the header). Until eco-system ticket 105 this scenario hand-rolled
+# a flagless cosign, printed exit 1 and graded nothing, because the pin had
+# not been undertaken. It has now, so THE OPERATION is the gate's own CLI,
+# the way shift-left.yml runs it (--adopter-dir/--base-ref/--head-ref, the
+# ADR-0011 composed-member-set path), over a planted movement in which a
+# version whose own computed bump is below major ARRIVES -- so an accept can
+# be observed as exit 0 rather than through the designed composed-major
+# refusal Scenario E reports. The number is graded.
 mkdir -p "$scratch/cold-home" "$scratch/cold-tuf"
-# The same real bundle Scenario E just verified, named by E's own output
-# rather than hard-coded, so this measures the served artefact and not a
-# version that has since left the window.
-g_version=$(python3 -c "
-import json
-d = json.load(open('$scratch/e-summary.json'))
-print(next(e['version'] for e in d['elements'] if e['verified'] is True))
-")
-[ -n "$g_version" ] || fail "G: Scenario E verified no element, so there is no real bundle to measure against"
-set +e
+# The version that arrives, and the one that stands at both ends: chosen from
+# the pinned tag's own evidence tree on every run, never hard-coded -- a
+# version platform really published a bundle for whose own computed bump is
+# below major (so an accept is an accept), beside any other published one.
+# Scenario E cannot supply it: platform's array at the pinned tag names only
+# the versions it still supports, and every one of those composes major
+# today, which is E's designed refusal.
+g_pick=$(python3 - "$e_platform" <<'PY2'
+import json, pathlib, sys
+root = pathlib.Path(sys.argv[1]) / "computed-semver" / "evidence"
+arriving, standing = "", ""
+for doc in sorted(root.glob("*.json")):
+    if not doc.with_suffix(".json.bundle").exists():
+        continue
+    try:
+        computed = json.loads(doc.read_text())["bump"]["computed"]
+    except Exception:
+        continue
+    version = doc.name[:-5]
+    if not arriving and computed in ("none", "patch", "minor"):
+        arriving = version
+    elif not standing:
+        standing = version
+print(arriving, standing)
+PY2
+)
+g_version=${g_pick% *}; g_standing=${g_pick#* }
+[ -n "$g_version" ] || fail "G: platform at the pinned tag publishes no evidence document with a committed bundle whose own computed bump is below major, so an accept could not be observed as an accept"
+[ -n "$g_standing" ] && [ "$g_standing" != "$g_version" ] || fail "G: platform at the pinned tag publishes only one bundle, so no member can stand at both ends of the planted movement"
+git_t() { git -C "$1" -c user.email=t@example.invalid -c user.name=t -c commit.gpgsign=false -c tag.gpgsign=false "${@:2}"; }
+plant_adopter() {  # $1 dir, $2 base members (space separated), $3 head members
+  local dir="$1"
+  mkdir -p "$dir/composed" && git -C "$dir" init -q -b main
+  members() { python3 -c '
+import json, sys
+print(json.dumps({"members": [{"name": "m-" + v, "version": v} for v in sys.argv[1:]]}, indent=1))
+' $1; }
+  members "$2" > "$dir/composed/evidence.json"
+  git_t "$dir" add -A; git_t "$dir" commit -q -m "the composed member set before the pull request"
+  members "$3" > "$dir/composed/evidence.json"
+  git_t "$dir" add -A; git_t "$dir" commit -q --allow-empty -m "the composed member set this pull request proposes"
+}
+g_adopter="$scratch/tuppence-g"
+plant_adopter "$g_adopter" "$g_standing" "$g_standing $g_version"
 # NO_PROXY is CLEARED, not just left alone (eco-system ticket 101 review, F2, 2026-09-06).
 # Measured: with an ambient `NO_PROXY=*` exported, Go bypasses the closed port entirely, cosign
 # reaches Sigstore's CDN, and this scenario prints exit 0 -- "no network needed" for a run that
 # had just used the network. A measurement that fails in the REASSURING direction is worse than
 # no measurement, because nobody looks behind a green one. The lowercase spellings are set too,
 # because Go reads those as well.
-g_out=$(HOME="$scratch/cold-home" TUF_ROOT="$scratch/cold-tuf" \
-  HTTPS_PROXY="http://127.0.0.1:1" HTTP_PROXY="http://127.0.0.1:1" ALL_PROXY="socks5://127.0.0.1:1" \
-  https_proxy="http://127.0.0.1:1" http_proxy="http://127.0.0.1:1" all_proxy="socks5://127.0.0.1:1" \
-  NO_PROXY="" no_proxy="" \
-  timeout 60 cosign verify-blob \
+COLD=(HOME="$scratch/cold-home" TUF_ROOT="$scratch/cold-tuf"
+      HTTPS_PROXY="http://127.0.0.1:1" HTTP_PROXY="http://127.0.0.1:1" ALL_PROXY="socks5://127.0.0.1:1"
+      https_proxy="http://127.0.0.1:1" http_proxy="http://127.0.0.1:1" all_proxy="socks5://127.0.0.1:1"
+      NO_PROXY= no_proxy=)
+GATE_G="${here}/.github/scripts/adopter-gate.py"
+gate_cold() {  # $1 out prefix, rest: env overrides -> exit code on stdout; the gate at $GATE_G
+  local prefix="$1"; shift
+  set +e
+  env "${COLD[@]}" "$@" timeout 120 python3 "$GATE_G" --platform-dir "$e_platform" --new-pin-yaml "$e_pin" \
+    --identity-regexp "$e_regexp" --issuer "$e_issuer" \
+    --adopter-dir "$g_adopter" --base-ref HEAD~1 --head-ref HEAD \
+    --out "$scratch/$prefix.json" > "$scratch/$prefix.out" 2>&1
+  local code=$?
+  set -e
+  echo "$code"
+}
+g_code=$(gate_cold g)
+echo "this gate's own CLI, policy ${g_version} arriving beside ${g_standing}, cold TUF cache + every proxy pointed at a closed port: exit ${g_code}"
+tail -3 "$scratch/g.out"
+[ "$g_code" -eq 0 ] || fail "G: with a cold TUF cache and egress blocked this gate did not verify platform's real published bundle (exit ${g_code}) -- the pin ticket 105 put here is not doing its job: $(tail -1 "$scratch/g.out")"
+grep -qiE "tuf|dial tcp|connection refused" "$scratch/g.out" \
+  && fail "G: the run reached (or tried to reach) the network: $(grep -iE 'tuf|dial tcp|connection refused' "$scratch/g.out" | head -1)"
+python3 -c "
+import json
+d = json.load(open('$scratch/g.json'))
+assert d['added'] == ['$g_version'] and all(e['verified'] is True for e in d['elements']), d
+" || fail "G: the cold run did not verify exactly the arriving version"
+# The contrast, measured on this run rather than remembered: the same real bundle through cosign
+# with NO trust root, cold, blocked -- which is what this gate did until ticket 105.
+set +e
+g_unpinned=$(env "${COLD[@]}" timeout 60 cosign verify-blob \
   --bundle="$e_platform/computed-semver/evidence/${g_version}.json.bundle" \
   --certificate-identity-regexp="$e_regexp" --certificate-oidc-issuer="$e_issuer" \
   "$e_platform/computed-semver/evidence/${g_version}.json" 2>&1)
-g_code=$?
+g_unpinned_code=$?
 set -e
-echo "the same real bundle (policy ${g_version}), cold TUF cache, every proxy pointed at a closed port: exit ${g_code}"
-echo "$g_out" | tail -2
-if [ "$g_code" -eq 0 ]; then
-  echo "ok  G: this gate's own cosign invocation verifies platform's real published bundle with NO network (exit 0 on a cold cache with egress blocked) -- ticket 105 has landed, or was never needed"
-else
-  echo "$g_out" | grep -qiE "tuf|dial tcp|connection refused" \
-    || fail "G: the cold-cache run failed for a reason that is not the network, so this measurement no longer measures what it says: $(echo "$g_out" | tail -1)"
-  echo "ok  G: measured, not claimed -- with a cold TUF cache and egress blocked this gate's own cosign invocation cannot verify platform's real bundle (exit ${g_code}, a TUF fetch). Scenario E therefore ran with the network available, exactly as a real shift-left run does"
-fi
+echo "the same real bundle (policy ${g_version}) WITHOUT the committed trust material, cold TUF cache, every proxy pointed at a closed port: exit ${g_unpinned_code}"
+[ "$g_unpinned_code" -ne 0 ] || fail "G: an unpinned verification succeeded with a cold TUF cache and blocked egress -- the cold environment is not cold, so the exit 0 above proves nothing"
+echo "$g_unpinned" | grep -qiE "tuf|dial tcp|connection refused" \
+  || fail "G: the unpinned contrast failed for a reason that is not the network: $(echo "$g_unpinned" | tail -1)"
+echo "ok  G: this gate verifies platform's real published bundle with NO network (exit 0, cold cache, egress blocked, through its own CLI), and the identical bytes without the committed root cannot be verified offline at all (exit ${g_unpinned_code}, a TUF fetch) -- the pin is what makes it offline, measured on this run"
+
+say "Scenario H: the pin is load-bearing -- a wrong, corrupt, retired or absent trust root REFUSES, cold and warm"
+# The pin is load-bearing (eco-system ticket 105). Each case copies this repository's own gate
+# beside a DOCTORED copy of its committed trusted_root.json -- one field changed, named -- and
+# runs it against platform's REAL, untampered bundle with a cold TUF cache and every proxy
+# pointed at a closed port. Every case must REFUSE, and refuse on the trust material, never on
+# the network: a refusal that mentions a TUF fetch would mean the gate went looking for a root
+# it was not given, which is the fallback the pin exists to rule out. `genuine` runs the same
+# copied gate with the real root and must ACCEPT, so that a broken copy cannot make every other
+# case a vacuous refusal.
+doctor_root() {  # $1 case, $2 source trusted_root.json, $3 destination
+  python3 - "$1" "$2" "$3" <<'PY'
+import json, sys
+case, src, dst = sys.argv[1:]
+root = json.load(open(src))
+ct_current = next(log for log in root["ctlogs"] if "end" not in log["publicKey"]["validFor"])
+if case == "genuine":
+    pass
+elif case == "wrong-rekor-key":            # the Rekor log id stays; its key is the CT log's (same key type, so the root loads and the SET check is what refuses)
+    for log in root["tlogs"]:
+        if log["publicKey"].get("keyDetails") == ct_current["publicKey"].get("keyDetails"):
+            log["publicKey"]["rawBytes"] = ct_current["publicKey"]["rawBytes"]
+elif case == "corrupt-rekor-key":          # not a key at all
+    for log in root["tlogs"]:
+        log["publicKey"]["rawBytes"] = "AAAA"
+elif case == "wrong-ct-key":               # the CT log id stays; its key is Rekor's
+    for log in root["ctlogs"]:
+        log["publicKey"]["rawBytes"] = root["tlogs"][0]["publicKey"]["rawBytes"]
+elif case == "wrong-fulcio-root":          # every CA chain replaced by the timestamp authority's
+    tsa = root["timestampAuthorities"][0]["certChain"]
+    root["certificateAuthorities"] = [dict(ca, certChain=tsa) for ca in root["certificateAuthorities"]]
+elif case == "ct-window-closed":           # the current CT key retired before the artefact was signed
+    ct_current["publicKey"]["validFor"]["end"] = "2026-01-01T00:00:00Z"
+else:
+    raise SystemExit(f"unknown case {case}")
+json.dump(root, open(dst, "w"))
+PY
+}
+
+h_root="${here}/.github/scripts/trusted_root.json"
+[ -s "$h_root" ] || fail "H: this repository commits no .github/scripts/trusted_root.json -- there is no pin to attack"
+attack() {  # $1 case, $2 "cold"|"warm" -> exit code on stdout, output in $scratch/h-<case>-<home>.out
+  local dir="$scratch/gate-$1"; mkdir -p "$dir"; cp "${here}/.github/scripts/adopter-gate.py" "$dir/adopter-gate.py"
+  [ "$1" = absent-root ] || doctor_root "$1" "$h_root" "$dir/trusted_root.json"
+  if [ "$2" = warm ]; then
+    GATE_G="$dir/adopter-gate.py" gate_cold "h-$1-$2" HOME="$HOME"
+  else
+    GATE_G="$dir/adopter-gate.py" gate_cold "h-$1-$2"
+  fi
+}
+h_ok=$(attack genuine cold)
+[ "$h_ok" -eq 0 ] || fail "H: the copied gate with the GENUINE root did not accept (exit $h_ok), so nothing below would mean anything: $(tail -1 "$scratch/h-genuine-cold.out")"
+echo "ok  H[genuine]: the copied gate with the real committed root ACCEPTS, cold (exit 0) -- the copy mechanism is sound"
+for case in absent-root wrong-rekor-key corrupt-rekor-key wrong-ct-key wrong-fulcio-root ct-window-closed; do
+  for home in cold warm; do
+    code=$(attack "$case" "$home")
+    tail_line=$(grep -m1 '^REFUSED' "$scratch/h-$case-$home.out" || tail -1 "$scratch/h-$case-$home.out")
+    [ "$code" -ne 0 ] || fail "H[$case,$home]: the gate ACCEPTED platform's bundle with a doctored trust root -- the pin is not load-bearing"
+    if [ "$case" = absent-root ]; then
+      grep -q "no committed Sigstore trust root" "$scratch/h-$case-$home.out" \
+        || fail "H[$case,$home]: the refusal does not name the absent root: $tail_line"
+    else
+      grep -q "cosign verify-blob failed for policy version ${g_version}" "$scratch/h-$case-$home.out" \
+        || fail "H[$case,$home]: the refusal is not cosign's own: $tail_line"
+    fi
+    grep -qiE "tuf: |dial tcp|connection refused" "$scratch/h-$case-$home.out" \
+      && fail "H[$case,$home]: the refusal mentions the network -- the gate went looking for a root it was not given: $tail_line"
+    echo "ok  H[$case,$home]: REFUSED, exit ${code}, on the trust material and not the network -- $(echo "$tail_line" | cut -c1-150)"
+  done
+done
+echo "    (warm = this machine's own HOME, whose ~/.sigstore is warm on a laptop that has ever run cosign online and cold on a CI runner; either way the doctored root, not a cached one, is what refused)"
 
 echo
 echo "PASS: adopter-gate.py checks out the tag under review (never the default branch), refuses a"
@@ -693,4 +830,6 @@ echo "what the bump MOVES (eco-system ticket 99): a bump that adds and retires n
 echo "composes 'none' and passes without reading a standing version's evidence at all, an arrival"
 echo "composes by RE-READING that version's own real committed evidence (never recomputed), and a"
 echo "retirement still forces a real non-zero-exit FAIL naming the version. The weaker-than-declared"
-echo "note prints and never downgrades."
+echo "note prints and never downgrades. Eco-system ticket 105: the gate verifies platform's real bundle"
+echo "with a cold TUF cache and egress blocked, exit 0, through its own CLI (G), and a wrong, corrupt,"
+echo "retired or absent trust root refuses on the trust material and never on the network, cold and warm (H)."
