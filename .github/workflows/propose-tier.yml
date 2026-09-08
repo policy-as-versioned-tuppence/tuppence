@@ -162,7 +162,8 @@ jobs:
       # there), so "today's date" is the date this run happens on and the
       # `published_at` the envelopes it reads carry. The moment a converter takes
       # an explicit --as-of, pass $AS_OF straight through; the run already
-      # computes it and stamps it on the pull request.
+      # computes it and stamps it on the pull request. (Done, ticket 84: the
+      # recompose step below passes it wherever the pinned composer takes it.)
       - name: read the pins the composition resolves against (platform + nist)
         id: pins
         run: |
@@ -233,7 +234,19 @@ jobs:
           echo "as_of=${as_of}" >> "$GITHUB_OUTPUT"
           out="${RUNNER_TEMP}/recomposed"
           mkdir -p "${out}"
-          python3 platform/compose/composition.py compose tuppence --estate-clone . --out "${out}" \
+          # Ticket 84: the composer takes --as-of, so today's date reaches the eol
+          # converter and the supersede ramp (the line that prices being behind
+          # GROWS on this clock and nowhere else: the composition an adopter signs
+          # passes no --as-of and is frozen at its newest signed input). Passed only
+          # where the pinned composer knows the flag -- platform v2.0.1 does not,
+          # and a flag it would reject must not stop the clock until the pin moves.
+          as_of_flag=()
+          if grep -q -- '"--as-of"' platform/compose/composition.py; then
+            as_of_flag=(--as-of "${as_of}")
+          else
+            echo "note: the pinned platform composer takes no --as-of; re-composing at its own newest signed input date"
+          fi
+          python3 platform/compose/composition.py compose tuppence --estate-clone . --out "${out}" "${as_of_flag[@]}" \
             2>&1 | tee "${RUNNER_TEMP}/compose.json"
           status=${PIPESTATUS[0]}
           {
