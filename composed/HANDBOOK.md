@@ -6,7 +6,7 @@ It is **not** a summary of anybody's reasoning, and nothing here was written by 
 
 ## 1. Whose rules these are
 
-Source: `composed/HEADER.yaml` → `parents[]`. Each row is a publisher this artefact records as a parent, at the commit the file records for it. Whether that commit is the tree the composition actually read is what `composition.py verify` proves (run by compose-check and by `cut-release.yml` before a tag is cut); this page only restates the record.
+Source: `composed/HEADER.yaml` → `parents[]`. Each row is a publisher this artefact records as a parent, at the commit the file records for it. Whether that commit is the tree the composition actually read is what `composition.py verify` proves (`cut-release.yml` runs it before a tag is cut; `shift-left.yml` recomposes and diffs); this page only restates the record.
 
 | publisher | kind | feed name | version | commit |
 | --- | --- | --- | --- | --- |
