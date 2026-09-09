@@ -129,12 +129,16 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
+import hashlib
 import importlib.util
 import json
+import os
 import re
-import tempfile
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import yaml
@@ -285,6 +289,134 @@ def classify_tag_bump(old_tag: str | None, new_tag: str) -> str:
     return ("major", "minor", "patch")[leftmost]
 
 
+# --------------------------------------------------------------------------
+# Eco-system ticket 105 (2026-09-09): the Sigstore trust root is PINNED, and
+# every bundle takes the one door that reads the whole of it.
+#
+# Until this ticket verify_evidence() passed cosign no trust root, so on a
+# cold TUF cache it fetched one from Sigstore's CDN before it could look at a
+# signature -- and a GitHub Actions runner is cold on every run (measured in
+# ticket 101 with egress blocked: exit 1, `tuf: failed to download
+# 13.root.json`). Now the root is the committed trusted_root.json next to
+# this script, handed to cosign whole through --trusted-root, and TUF_ROOT is
+# pointed at an empty directory this run owns so a warm ~/.sigstore can never
+# stand in for the pin. Refreshing it is a deliberate, reviewed commit
+# (`cosign initialize`, then copy $HOME/.sigstore/root/*/targets/
+# trusted_root.json over this file); the hub's verify/trust-root/ check
+# prints its age and every key's validity window on every run, so a stale
+# pin arrives as a schedule, not a surprise. A root that is absent, or a
+# bundle whose shape this gate cannot read, is refused BY NAME before cosign
+# is called: calling cosign without a root is exactly the live fetch the pin
+# exists to prevent.
+#
+# THE DOOR. cosign v3.1.3 (the version shift-left.yml installs by checksum)
+# takes --trusted-root only with --new-bundle-format=true and refuses it
+# outright for the LEGACY bundle shape platform publishes (base64Signature/
+# cert/rekorBundle) -- ticket 101's finding. ludlow's first pin fed the legacy
+# path's own env vars instead (one key per role, selected by log id); ticket
+# 105 measured what that costs -- cosign demands a key for EVERY embedded
+# SCT and the env file yields one, so a two-log certificate is unverifiable;
+# no validFor window is honoured; a non-ECDSA Rekor key is refused on a
+# key-type ground -- and took the other door: a legacy bundle is RE-ENCODED,
+# locally, as the v0.1 Sigstore bundle the new path reads. Nothing is signed
+# and nothing is trusted that the served bundle does not carry: the
+# certificate, the signature, the Rekor entry body and its signed entry
+# timestamp are copied byte for byte, and the only computed field is the
+# artefact's own sha256, which cosign checks against the artefact it is
+# handed anyway. A re-encoding that is wrong is a refusal, never an
+# acceptance. sigstore-go v1.2.2 (vendored by that cosign) then verifies the
+# chain to the pinned Fulcio CA, the SCTs against the pinned CT logs inside
+# their validFor windows (skipping logs the root does not carry, threshold
+# one), the Rekor entry's signed timestamp against the pinned Rekor key, the
+# entry's own content against the bundle's signature and certificate, and
+# the certificate's validity at the integrated time -- everything the legacy
+# path checked, plus the three things the env-var pin could not.
+# --------------------------------------------------------------------------
+TRUSTED_ROOT_PATH = Path(__file__).resolve().parent / "trusted_root.json"
+SIGSTORE_BUNDLE_V01 = "application/vnd.dev.sigstore.bundle+json;version=0.1"
+
+
+def bundle_shape(bundle_text: str) -> str | None:
+    """'new', 'legacy', or None for anything this gate cannot read. None is
+    a refusal, never a reason to guess: choosing how to verify means reading
+    the bundle, and handing cosign a bundle it cannot place is the live TUF
+    fetch the committed root exists to prevent."""
+    try:
+        doc = json.loads(bundle_text)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    if not isinstance(doc, dict):
+        return None
+    if "mediaType" in doc and "verificationMaterial" in doc:
+        return "new"
+    if "base64Signature" in doc and "cert" in doc:
+        return "legacy"
+    return None
+
+
+def sigstore_bundle(legacy_text: str, artefact: bytes) -> str:
+    """The v0.1 Sigstore bundle equivalent of a legacy cosign bundle,
+    re-encoded from the served bytes and nothing else. Raises ValueError
+    naming what it could not read; the caller turns that into a refusal."""
+    doc = json.loads(legacy_text)
+    try:
+        cert = base64.b64decode(doc["cert"])
+        if cert.lstrip().startswith(b"-----BEGIN"):
+            cert = base64.b64decode(
+                "".join(line for line in cert.decode().splitlines() if "-----" not in line))
+        rekor = doc["rekorBundle"]
+        payload = rekor["Payload"]
+        body = json.loads(base64.b64decode(payload["body"]))
+        entry = {
+            "logIndex": str(payload["logIndex"]),
+            "logId": {"keyId": base64.b64encode(bytes.fromhex(payload["logID"])).decode()},
+            "kindVersion": {"kind": body["kind"], "version": body["apiVersion"]},
+            "integratedTime": str(payload["integratedTime"]),
+            "inclusionPromise": {"signedEntryTimestamp": rekor["SignedEntryTimestamp"]},
+            "canonicalizedBody": payload["body"],
+        }
+        signature = doc["base64Signature"]
+    except (KeyError, TypeError, ValueError, binascii.Error, UnicodeDecodeError) as exc:
+        raise ValueError(f"a field the re-encoding needs is missing or unreadable ({exc!r})") from exc
+    if not signature or not cert:
+        raise ValueError("the legacy bundle carries an empty signature or certificate")
+    return json.dumps({
+        "mediaType": SIGSTORE_BUNDLE_V01,
+        "verificationMaterial": {
+            "x509CertificateChain": {"certificates": [{"rawBytes": base64.b64encode(cert).decode()}]},
+            "tlogEntries": [entry],
+        },
+        "messageSignature": {
+            "messageDigest": {"algorithm": "SHA2_256",
+                              "digest": base64.b64encode(hashlib.sha256(artefact).digest()).decode()},
+            "signature": signature,
+        },
+    })
+
+
+def pinned_verification(bundle_text: str, artefact: bytes, workdir: Path) -> tuple[Path, list[str], dict[str, str]]:
+    """The bundle path, the extra flags and the environment a `cosign
+    verify-blob` reads its pinned trust material through. Raises ValueError,
+    naming the reason, for a bundle this gate cannot place -- never returns
+    an invocation that would let cosign fetch a live root."""
+    shape = bundle_shape(bundle_text)
+    if shape is None:
+        raise ValueError("is neither a legacy cosign bundle (base64Signature/cert) nor a new-format "
+                         "Sigstore bundle (mediaType/verificationMaterial), so this gate cannot verify "
+                         "it against the pinned trust root -- refusing rather than handing cosign no "
+                         "trust root and letting it fetch a live one")
+    if shape == "legacy":
+        bundle_path = workdir / "bundle.sigstore.json"
+        bundle_path.write_text(sigstore_bundle(bundle_text, artefact))
+    else:
+        bundle_path = workdir / "bundle.json"
+        bundle_path.write_text(bundle_text)
+    tuf_root = workdir / "empty-tuf-root"
+    tuf_root.mkdir(exist_ok=True)
+    return (bundle_path, [f"--trusted-root={TRUSTED_ROOT_PATH}", "--new-bundle-format=true"],
+            {"TUF_ROOT": str(tuf_root)})
+
+
 def verify_evidence(platform_dir: Path, version: str, identity_regexp: str, issuer: str,
                      skip_cosign_verify: bool = False) -> dict:
     """cosign verify-blob, identity-pinned to THIS institution's own
@@ -311,16 +443,20 @@ def verify_evidence(platform_dir: Path, version: str, identity_regexp: str, issu
     platform's own real published bundles, which platform's cut-release.yml
     signed in a real Actions run.
 
-    HOW OFFLINE, measured 2026-09-06 rather than claimed (eco-system ticket
-    101). This call passes cosign no trust root, so it verifies without the
-    network only where the Sigstore TUF cache is already warm; on a cold
-    cache with egress blocked it exits 1 fetching a TUF root, and a GitHub
-    Actions runner is cold on every run. The word "offline" used to sit in
-    this docstring and in the harness header, and it was true of a laptop
-    and not of CI. ludlow pins its trust material and does not have this
-    dependency; extending that pin here is eco-system ticket 105.
-    verify-adopter-gate.sh Scenario G prints the exit code on every run, so
-    this cannot go stale silently again. The
+    HOW OFFLINE, measured rather than claimed. Until eco-system ticket 105
+    (2026-09-09) this call passed cosign no trust root, so it verified
+    without the network only where the Sigstore TUF cache was already warm;
+    on a cold cache with egress blocked it exited 1 fetching a TUF root, and
+    a GitHub Actions runner is cold on every run (ticket 101 measured it).
+    The word "offline" used to sit in this docstring and in the harness
+    header, and it was true of a laptop and not of CI. Now the root is the
+    committed trusted_root.json next to this script, handed to cosign whole,
+    with TUF_ROOT pointed at an empty directory this run owns -- see the
+    ticket-105 block above this function for the door and what it costs.
+    verify-adopter-gate.sh Scenario G re-runs this gate with a cold cache
+    and every proxy pointed at a closed port and prints the exit code on
+    every run -- 0 since ticket 105 -- so this cannot go stale silently
+    again. The
     identity-regexp STRING itself (anchoring, escaping, and "a platform
     workflow rename breaks verification") is proved separately and
     deterministically in verify-identity-regexp.sh, with no cosign process
@@ -336,12 +472,26 @@ def verify_evidence(platform_dir: Path, version: str, identity_regexp: str, issu
     if not bundle.exists():
         raise SystemExit(f"REFUSED: evidence for {version} has no cosign bundle at {bundle.name}")
     if not skip_cosign_verify:
-        verify = subprocess.run(
-            ["cosign", "verify-blob", f"--bundle={bundle}",
-             f"--certificate-identity-regexp={identity_regexp}",
-             f"--certificate-oidc-issuer={issuer}", str(evidence)],
-            capture_output=True, text=True,
-        )
+        if not TRUSTED_ROOT_PATH.is_file():
+            raise SystemExit(
+                f"REFUSED: no committed Sigstore trust root at {TRUSTED_ROOT_PATH} to verify policy "
+                f"version {version} evidence against -- refusing rather than letting cosign fetch a "
+                f"live TUF root"
+            )
+        with tempfile.TemporaryDirectory() as td:
+            try:
+                verify_bundle, flags, env = pinned_verification(bundle.read_text(), evidence.read_bytes(),
+                                                                Path(td))
+            except ValueError as exc:
+                raise SystemExit(
+                    f"REFUSED: the committed bundle for policy version {version} at {bundle.name} {exc}"
+                ) from exc
+            verify = subprocess.run(
+                ["cosign", "verify-blob", f"--bundle={verify_bundle}", *flags,
+                 f"--certificate-identity-regexp={identity_regexp}",
+                 f"--certificate-oidc-issuer={issuer}", str(evidence)],
+                capture_output=True, text=True, env={**os.environ, **env},
+            )
         if verify.returncode != 0:
             raise SystemExit(
                 f"REFUSED: cosign verify-blob failed for policy version {version} evidence "
@@ -834,6 +984,48 @@ def selfcheck() -> None:
         #    evidence read at all -- unchanged by this ticket.
         leaving = compose(tdp, {}, {"4.0.0": {}}, "unused", "unused", skip_cosign_verify=True)
         assert leaving["composed"] == "major" and leaving["retired"] == ["4.0.0"], leaving
+
+    # Ticket 105: the pinned door's pure half, on bytes this test lays down itself.
+    assert bundle_shape('{"mediaType": "m", "verificationMaterial": {}, "messageSignature": {}}') == "new"
+    assert bundle_shape('{"base64Signature": "x", "cert": "y", "rekorBundle": {}}') == "legacy"
+    assert bundle_shape("not json at all") is None
+    assert bundle_shape('{"not": "a real cosign bundle"}') is None
+    planted_body = base64.b64encode(json.dumps({"apiVersion": "0.0.1", "kind": "hashedrekord", "spec": {}}).encode()).decode()
+    planted = json.dumps({
+        "base64Signature": "c2ln", "cert": base64.b64encode(b"DER").decode(),
+        "rekorBundle": {"SignedEntryTimestamp": "c2V0",
+                        "Payload": {"body": planted_body, "integratedTime": 1787675482, "logIndex": 42,
+                                    "logID": "c0" * 32}},
+    })
+    converted = json.loads(sigstore_bundle(planted, b"artefact"))
+    assert converted["mediaType"] == SIGSTORE_BUNDLE_V01, converted
+    assert converted["messageSignature"]["signature"] == "c2ln", converted
+    assert converted["messageSignature"]["messageDigest"]["digest"] == base64.b64encode(hashlib.sha256(b"artefact").digest()).decode()
+    assert converted["verificationMaterial"]["x509CertificateChain"]["certificates"] == [{"rawBytes": base64.b64encode(b"DER").decode()}]
+    entry = converted["verificationMaterial"]["tlogEntries"][0]
+    assert entry["logId"]["keyId"] == base64.b64encode(bytes.fromhex("c0" * 32)).decode(), entry
+    assert entry["kindVersion"] == {"kind": "hashedrekord", "version": "0.0.1"}, entry
+    assert entry["inclusionPromise"] == {"signedEntryTimestamp": "c2V0"} and entry["canonicalizedBody"] == planted_body
+    assert entry["integratedTime"] == "1787675482" and entry["logIndex"] == "42", entry
+    for missing in ("rekorBundle", "cert", "base64Signature"):
+        broken = json.loads(planted); del broken[missing]
+        try:
+            sigstore_bundle(json.dumps(broken), b"artefact")
+            raise AssertionError(f"a legacy bundle without {missing} must not re-encode")
+        except ValueError as exc:
+            assert missing in str(exc), exc
+    with tempfile.TemporaryDirectory() as td:
+        _path, flags, env = pinned_verification(planted, b"artefact", Path(td))
+        assert flags == [f"--trusted-root={TRUSTED_ROOT_PATH}", "--new-bundle-format=true"], flags
+        assert Path(env["TUF_ROOT"]).is_dir() and list(Path(env["TUF_ROOT"]).iterdir()) == [], env
+        try:
+            pinned_verification('{"not": "a bundle"}', b"artefact", Path(td))
+            raise AssertionError("an unplaceable bundle must not produce an invocation")
+        except ValueError as exc:
+            assert "neither a legacy" in str(exc), exc
+    print("OK: ticket 105 -- a legacy bundle re-encodes field for field into the v0.1 Sigstore bundle the pinned "
+          "--trusted-root door reads, a bundle missing any of those fields refuses by name, and TUF_ROOT is an "
+          "empty directory this run owns")
 
     print("OK: adopter-gate.py selfcheck (pure logic, no network; one real cosign-skipped disk fixture)")
 
