@@ -456,7 +456,12 @@ assert got == want, f"set_array wrote {got}, asked for {want}"
 PY
 }
 
-cut() {  # cut <tags.json>
+# Named cut_release, never `cut` (eco-system ticket 105 review, F5). A shell function called
+# `cut` shadows /usr/bin/cut for the whole file, and one `| cut -c1-150` added 300 lines below
+# ran THIS -- four real release scripts, twelve times -- printing their output as the refusal
+# text of every doctored-root case. Removing that one pipe fixed the symptom; renaming removes
+# the trap.
+cut_release() {  # cut_release <tags.json>
   python3 .github/scripts/cut-release-gate.py "$1"
   ./.github/scripts/cut-release-commit-evidence.sh "$1"
   ./.github/scripts/cut-release-update-array-commit.sh "$1"
@@ -490,7 +495,7 @@ set_array '{"version":"9.0.0","tag":"policy/v9.0.0","commit":"'"$tree_9_0_0"'"}'
 git add distribution/versions.yaml
 git commit -q -m "scratch: array = [9.0.0]"
 echo '[{"tag":"v2.0.0","message":"release 1 bare"},{"tag":"policy/v9.0.0","message":"release 1 policy"}]' > "$scratch/tags1.json"
-cut "$scratch/tags1.json"
+cut_release "$scratch/tags1.json"
 [ -f computed-semver/evidence/9.0.0.json ] || fail "release 1: no evidence for 9.0.0"
 r1_commit=$(git rev-parse v2.0.0^{commit})
 
@@ -502,7 +507,7 @@ r2_commit=$(git rev-parse v2.1.0^{commit})
 [ "$r2_commit" = "$r1_commit" ] || fail "release 2: expected v2.1.0 on the same commit as v2.0.0"
 
 # Release 3: the array-only release -- 9.0.0 retires, nothing replaces it.
-# No new policy tag in this dispatch, so cut() below is a real no-op on the
+# No new policy tag in this dispatch, so cut_release() below is a real no-op on the
 # gate/evidence/array-correction steps (same B2 path platform's own
 # verify-publisher-gate.sh already proves for a bare tag) -- the retirement
 # itself is a real, direct git commit to distribution/versions.yaml.
@@ -510,7 +515,7 @@ set_array
 git add distribution/versions.yaml
 git commit -q -m "scratch: array = [] -- 9.0.0 retired, nothing replaces it"
 echo '[{"tag":"v3.0.0","message":"release 3: retirement only"}]' > "$scratch/tags3.json"
-cut "$scratch/tags3.json"
+cut_release "$scratch/tags3.json"
 r3_commit=$(git rev-parse v3.0.0^{commit})
 
 # Release 4 (eco-system ticket 99): 9.0.0 comes BACK into the array, with its
@@ -806,10 +811,11 @@ for case in absent-root wrong-rekor-key corrupt-rekor-key wrong-ct-key wrong-ful
     [ "$code" -ne 0 ] || fail "H[$case,$home]: the gate ACCEPTED platform's bundle with a doctored trust root -- the pin is not load-bearing"
     # The line PRINTED below is the line GRADED here: `needle` is what this case exists to prove,
     # and the echo quotes the matching line rather than whatever happened to be last. Truncation
-    # is a parameter expansion, never `cut`: this file defines its own `cut` (the release helper,
-    # line ~459), and `| cut -c1-150` here ran THAT -- four real release scripts, twelve times,
-    # printing "no evidence changes to commit" as every case's refusal text. The grading was
-    # right and every printed reason was another command's output. Found 2026-09-09.
+    # is a parameter expansion, not a pipe: this file used to define its own `cut` (the release
+    # helper, now cut_release), so `| cut -c1-150` here ran THAT -- four real release scripts,
+    # twelve times, printing "no evidence changes to commit" as every case's refusal text. The
+    # grading was right and every printed reason was another command's output. Found 2026-09-09;
+    # the helper was renamed at review (F5) so the trap cannot be re-laid by the next pipe.
     if [ "$case" = absent-root ]; then
       needle="no committed Sigstore trust root"
     else
