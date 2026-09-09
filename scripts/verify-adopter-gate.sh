@@ -801,18 +801,26 @@ echo "ok  H[genuine]: the copied gate with the real committed root ACCEPTS, cold
 for case in absent-root wrong-rekor-key corrupt-rekor-key wrong-ct-key wrong-fulcio-root ct-window-closed; do
   for home in cold warm; do
     code=$(attack "$case" "$home")
-    tail_line=$(grep -m1 '^REFUSED' "$scratch/h-$case-$home.out" || tail -1 "$scratch/h-$case-$home.out")
+    out="$scratch/h-$case-$home.out"
+    tail_line=$(grep -m1 '^REFUSED' "$out" || tail -1 "$out")
     [ "$code" -ne 0 ] || fail "H[$case,$home]: the gate ACCEPTED platform's bundle with a doctored trust root -- the pin is not load-bearing"
+    # The line PRINTED below is the line GRADED here: `needle` is what this case exists to prove,
+    # and the echo quotes the matching line rather than whatever happened to be last. Truncation
+    # is a parameter expansion, never `cut`: this file defines its own `cut` (the release helper,
+    # line ~459), and `| cut -c1-150` here ran THAT -- four real release scripts, twelve times,
+    # printing "no evidence changes to commit" as every case's refusal text. The grading was
+    # right and every printed reason was another command's output. Found 2026-09-09.
     if [ "$case" = absent-root ]; then
-      grep -q "no committed Sigstore trust root" "$scratch/h-$case-$home.out" \
-        || fail "H[$case,$home]: the refusal does not name the absent root: $tail_line"
+      needle="no committed Sigstore trust root"
     else
-      grep -q "cosign verify-blob failed for policy version ${g_version}" "$scratch/h-$case-$home.out" \
-        || fail "H[$case,$home]: the refusal is not cosign's own: $tail_line"
+      needle="cosign verify-blob failed for policy version ${g_version}"
     fi
-    grep -qiE "tuf: |dial tcp|connection refused" "$scratch/h-$case-$home.out" \
+    refusal=$(grep -m1 -F "$needle" "$out" || true)
+    [ -n "$refusal" ] || fail "H[$case,$home]: the refusal is not the one this case exists to prove ($needle): $tail_line"
+    grep -qiE "tuf: |dial tcp|connection refused" "$out" \
       && fail "H[$case,$home]: the refusal mentions the network -- the gate went looking for a root it was not given: $tail_line"
-    echo "ok  H[$case,$home]: REFUSED, exit ${code}, on the trust material and not the network -- $(echo "$tail_line" | cut -c1-150)"
+    reason=$(grep -m1 -F 'error during command execution' "$out" || true)
+    echo "ok  H[$case,$home]: REFUSED, exit ${code}, on the trust material and not the network -- ${refusal:0:80}${reason:+ :: ${reason:0:170}}"
   done
 done
 echo "    (warm = this machine's own HOME, whose ~/.sigstore is warm on a laptop that has ever run cosign online and cold on a CI runner; either way the doctored root, not a cached one, is what refused)"
