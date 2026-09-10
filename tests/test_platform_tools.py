@@ -152,8 +152,13 @@ class WorkflowToolScope(unittest.TestCase):
                 installed = checked_out = False
                 for step in job.get('steps', []):
                     action = step.get('uses', '')
-                    if action.endswith('/.github/actions/install-gitsign'):
+                    body = step.get('run', '')
+                    if action.endswith('/.github/actions/install-gitsign') or (
+                            '.github/actions/install-gitsign' in body and 'subprocess.run' in body):
                         installed = True
+                    if action.startswith('actions/checkout@') and step.get('with', {}).get('path') == 'platform-tools':
+                        self.assertTrue(installed, f'{file.name}/{job_name}: tools checkout before installer')
+                        checked_out = True
                     if action.endswith('/.github/actions/platform-tools'):
                         self.assertTrue(installed, f'{file.name}/{job_name}: verifies tools without installer')
                         checked_out = True
