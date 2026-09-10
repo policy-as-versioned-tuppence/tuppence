@@ -31,8 +31,8 @@ spec:
   interval: 5m
   url: https://github.com/policy-as-versioned-feeds/feeds
   ref:
-    tag: threat-register/v1.0.0
-    commit: 69c89b0732a0c9e4e6013d2656d755c5d916a815
+    tag: threat-register/v3.0.0
+    commit: ca40396525a51be4aad728cb9825bb78bd74343d
     # The commit this tag resolved to when the pin was written (2026-09-04),
     # read off the publisher's real remote. Bumped as a PAIR by the Renovate
     # customManager in renovate.json -- never by hand, never a moving branch.
