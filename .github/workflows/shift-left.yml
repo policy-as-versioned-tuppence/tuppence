@@ -330,8 +330,10 @@ jobs:
     permissions:
       contents: read
     steps:
+      # Composition derives ungoverned `since` from this adopter's signed tags.
+      # Full publisher history alone cannot supply that input.
       - uses: actions/checkout@v4
-        with: { path: tuppence }
+        with: { path: tuppence, fetch-depth: 0 }
 
       - name: Install pinned identity verifier
         uses: ./tuppence/.github/actions/install-gitsign

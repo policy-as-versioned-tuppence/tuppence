@@ -131,6 +131,18 @@ class ToolBoundary(unittest.TestCase):
 
 
 class WorkflowToolScope(unittest.TestCase):
+    def test_composition_job_fetches_adopter_history_needed_to_price_since(self):
+        # The compiler reads the first signed adopter tag naming an ungoverned
+        # namespace. A depth-one PR checkout loses that input while keeping
+        # identical source files, silently changing the computed ramp.
+        import yaml
+        workflow = yaml.safe_load((ROOT / '.github/workflows/shift-left.yml').read_text())
+        steps = workflow['jobs']['compose-check']['steps']
+        own = next(step for step in steps if step.get('uses', '').startswith('actions/checkout@')
+                   and step.get('with', {}).get('path') == 'tuppence')
+        self.assertEqual(own['with'].get('fetch-depth', 1), 0,
+                         'composition requires adopter history and tags, not only publisher history')
+
     def test_every_tool_caller_provisions_inside_its_own_job(self):
         # Jobs run on separate machines: a checkout or PATH export in another
         # job cannot satisfy the commands this job actually executes.
