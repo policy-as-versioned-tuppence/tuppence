@@ -601,6 +601,25 @@ selected-controls:
 - sr-8
 ungoverned-namespaces:
 - tuppence-reset
+vendored-feeds:
+- party: ico
+  name: penalty-schema
+  version: v3
+  path: composed/feeds/ico/v3
+  sha: e1fb8eb5663e50088b13d872a4e44112476f516e
+  files:
+    party.yaml: 6f7e82a9616ee49ba2bbe1f2824b43458f8f72fd859216e2d5ba32577364ac72
+    penalty-schema/to_fair_scenario.py: 560a38c04397e8e98d56a279ca5b88cb2b2707a8a22a5c8d71a9be74946bb982
+    penalty-schema/v3/feed.json: e23318cb9b580b5e9bde3621720197af08aaceb7510e27b3c20d10b6fe783cda
+- party: feeds
+  name: threat-register
+  version: v1
+  path: composed/feeds/feeds/v1
+  sha: 50a0b330a730f4f9ee9520561b0c05c8be4c9268
+  files:
+    party.yaml: 204f41b1138803ed5a43f7a7f910627d428d9f3ead7232c48b926da62f427e48
+    threat-register/to_fair_scenario.py: 10e2f5b412b09a16ff8bff2e1fe108938c79b25ac20b95b4047b4e17631bcbe7
+    threat-register/v1/feed.json: 50af335e60b247d2a202fa747fd3a2b80c485fc587896dc0ab4841f0e54a8b60
 exposure:
   perspective: tuppence
   currency: GBP
@@ -608,6 +627,26 @@ exposure:
     amount: 15000.0
     currency: GBP
   total: 9262365.331667097
+  ordinal: an ordinal, auditable comparison under one perspective; not an expected annual loss
+  ordinal_basis: 'Every figure under this section is derived from published feeds through published converters, and is reproducible from the signed inputs named beside it -- that is what AUDITABLE means here. What it is NOT: the loss-event frequencies and several loss magnitudes it rests on are editorial bands carrying a named could-not-look rather than counted rates (ico penalty-schema major 4, feeds threat-register major 3), so the total is usable for COMPARING one version, one pin or one control set against another under this one perspective, and not as a number to reserve against. Totals under two different perspectives are two balance sheets and are never added (ADR-0021). Ticket 75 Q4 (a), eco-system ticket 79 item 10.'
+  aggregate:
+    perspective: tuppence
+    currency: GBP
+    selected_tier_residual_total: 185247.30663334212
+    tolerance: 15000.0
+    tolerance_currency: GBP
+    tolerance_in_reporting_currency: null
+    breaches_band: true
+    could_not_look: null
+    lines:
+    - name: penalty-schema
+      tier: isolated
+      residual: 180795.82039528535
+    - name: threat-register
+      tier: isolated
+      residual: 4451.486238056754
+    not_tiered: []
+    basis: 'The sum of what each priced line''s OWN selected tier leaves, through fair.sum_prices, against the ONE annual-aggregate quantity appetite.tolerance declares (ticket 75 Q4). The ladder picks a tier per line against that number, so lines that each fit can breach it together; this is where that shows. Not a refusal: there is no gate (ADR-0020), a breach is priced and shown. Every priced line carries a selected tier.'
   regimes:
   - name: uk-gdpr
     source: ico

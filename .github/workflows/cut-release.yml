@@ -32,10 +32,6 @@ permissions:
   contents: write
   id-token: write
 
-env:
-  GITSIGN_VERSION: 0.17.1
-  GITSIGN_SHA256: 69213a8a0813a151e5a47d0060862952ff833a845d57309dff76f7ba6600abae
-
 jobs:
   cut:
     runs-on: ubuntu-latest
@@ -44,12 +40,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: install pinned gitsign (binary + checksum, no marketplace action)
-        run: |
-          set -euo pipefail
-          curl -sSL -o gitsign "https://github.com/sigstore/gitsign/releases/download/v${GITSIGN_VERSION}/gitsign_${GITSIGN_VERSION}_linux_amd64"
-          echo "${GITSIGN_SHA256}  gitsign" | sha256sum -c -
-          chmod +x gitsign && sudo mv gitsign /usr/local/bin/gitsign
+
+      - name: Install pinned identity verifier
+        uses: ./.github/actions/install-gitsign
+
+      - name: Independently pinned compiler tools
+        uses: ./.github/actions/platform-tools
+        with:
+          adopter-dir: .
 
       - name: read tuppence's own pinned platform and nist tags
         id: pins
@@ -120,7 +118,7 @@ jobs:
         # platform/nist/ico as siblings via --estate-clone . directly.
         run: |
           set -euo pipefail
-          python3 platform/compose/composition.py verify . --estate-clone .
+          python3 .github/scripts/platform-tools.py --tools-dir platform-tools verify . --estate-clone .
 
       - name: reject a tag that already exists (no force-move, ever)
         run: |

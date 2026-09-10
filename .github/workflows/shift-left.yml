@@ -333,6 +333,14 @@ jobs:
       - uses: actions/checkout@v4
         with: { path: tuppence }
 
+      - name: Install pinned identity verifier
+        uses: ./tuppence/.github/actions/install-gitsign
+
+      - name: Independently pinned compiler tools
+        uses: ./tuppence/.github/actions/platform-tools
+        with:
+          adopter-dir: tuppence
+
       - name: read tuppence's own pinned platform and nist tags
         # Self-contained -- each adopter's own adopter-gate.py CLI has
         # evolved independently (ticket cs-28's own module docstring: built
@@ -406,11 +414,16 @@ jobs:
             tuppence/gitops/flux-system/gotk-sync-ico.yaml ico \
             tuppence/gitops/flux-system/gotk-sync-feeds.yaml feeds
 
+      - name: Compiler boundary and real checkout-layout regression
+        env:
+          PAVF_REAL_ESTATE: ${{ github.workspace }}
+        run: python3 -m unittest discover -s tuppence/tests -p test_platform_tools.py
+
       - name: recompose tuppence's party artefact; fail on refusal or drift; print the document as the job summary
         run: |
           set -uo pipefail
           pip install --quiet pyyaml
-          python3 platform/compose/composition.py compose tuppence --estate-clone . --out tuppence \
+          python3 tuppence/.github/scripts/platform-tools.py --adopter-dir tuppence --tools-dir platform-tools compose tuppence --estate-clone . --out tuppence \
             2>&1 | tee compose-output.json
           status=${PIPESTATUS[0]}
           {
@@ -442,40 +455,21 @@ jobs:
       # copy, reads `posture.acme.io/tier` off the GOVERNED Namespace manifest
       # (found by its label, never by a path), and refuses a declaration looser
       # than the strictest priced line clamped to this party's own overlay.floor.
-      # It runs THROUGH the pinned platform checkout, like every other check in
-      # this job: the rule is platform's to publish and tuppence's to pin.
+      # Compiler tools have their own signed pin. The accepted implementation
+      # remains independent while this gate uses the published binding rule.
+      # Missing tooling fails closed; there is no legacy skip.
       #
-      # ORDERING, named 2026-09-04. That pinned checkout is at THIS repo's own
-      # platform tag, and the tag pinned today (v2.0.1) predates
-      # shift-left/tier_binding.py -- so on the first pull request after this
-      # workflow lands there is no module here to run. Two things have to happen
-      # before this step can be green, in this order: platform cuts a release tag
-      # carrying the module, and this repo bumps its platform pin to that tag.
-      # Both are in ticket 78's `## Waits on the owner`. Until then the step says
-      # SKIP, with the reason, in the log and in the job summary: a check that
-      # cannot look says so (ADR-0020) -- it does not fail the pull request for a
-      # rule its pin does not carry, and it does not pass silently as though it
-      # had looked.
-      #
-      # Once the module IS here, exit 3 is could-not-look (no evidence, no
+      # Exit 3 is could-not-look (no evidence, no
       # governed Namespace, or two of them) and this job treats it as a failure,
       # because on a pull request in this repository all three of those are
       # present.
       - name: the enacted tier is bound to the priced tier (ticket 78)
-        env:
-          PLATFORM_TAG: ${{ steps.pins.outputs.platform_tag }}
         run: |
           set -uo pipefail
-          rule="platform/shift-left/tier_binding.py"
+          rule="platform-tools/shift-left/tier_binding.py"
           if [ ! -f "$rule" ]; then
-            reason="the pinned platform checkout ${PLATFORM_TAG} does not carry shift-left/tier_binding.py -- platform must cut a tag publishing the binding rule and this repo must bump its platform pin to it before this check can look (ticket 78)"
-            echo "SKIP: ${reason}"
-            {
-              echo "## tier binding"
-              echo
-              echo "SKIP: ${reason}"
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 0
+            echo "::error::pinned tools lack the required tier binding rule"
+            exit 1
           fi
           # `set +e` around the check, and nothing else lifts it. GitHub runs this
           # step as `bash -e {0}`, and `set -uo pipefail` does not turn -e off --
@@ -483,7 +477,7 @@ jobs:
           # and the summary and the ::error:: annotations below would be dead code.
           # driftwood's own twin-sweep.yml documents this from ticket 72.
           set +e
-          python3 "$rule" check \
+          python3 tuppence/.github/scripts/platform-tools.py --adopter-dir tuppence --tools-dir platform-tools tier-check \
             --evidence tuppence/composed/evidence.json \
             --adopter-dir tuppence | tee "${RUNNER_TEMP}/tier-binding.txt"
           status=${PIPESTATUS[0]}
