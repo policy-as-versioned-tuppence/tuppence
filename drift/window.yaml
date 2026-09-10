@@ -149,3 +149,187 @@ five_fact_sample:
       asking to be trusted: the newest sample's `run` must be a GitHub Actions run id AND the
       commit that put the line in this file must be the lane's own signed commit, or the grade is
       could-not-look.
+
+# =============================================================================
+# ADDENDUM, added 2026-09-10. A THIRD instrument in this file, and the second one that shares
+# `samples.jsonl`.
+#
+# Nothing above is changed. The window, its subjects, its drift definition, its cadence and its
+# falsifiers are exactly as pre-registered, the five-fact section above is untouched, and the
+# guard `drift_window_was_declared_before_it_was_measured`, which reads this file's FIRST commit
+# against the samples, is unmoved by a later commit.
+#
+# What is declared here is the pre-registration for ecosystem ticket 86, under ticket 75 Q8 (the
+# owner's answer, delegated: the lane branch): TWO MORE FACTS, taken in the same sample, on the
+# same scheduled run, as the five.
+#
+# WHY THIS EXISTS. The estate's most distinctive claim is that nothing is denied -- a workload
+# that does not fit its cage runs on a tighter rung, and the bottom rung runs and REACHES NOTHING.
+# That claim has never been graded PASS on a citable run. The instrument that observes it,
+# platform's `graded/verify-graded.sh` live tail, needs a persistent KinD cluster the scheduled
+# truth runner has never created; it has exited 3 (could not look) on every run since run 15. The
+# only evidence that the cage holds comes from presenter runs on a laptop, and NORTH-STAR §5
+# forbids any document from citing those. This lane already brings up a real cluster per run, with
+# checksum-pinned tools, reconciled from the real remotes -- so the claim is graded where a
+# cluster exists.
+#
+# IT IS WRITTEN HERE, AND COMMITTED, BEFORE THE FIRST SAMPLE THAT SCORES IT. That is not a promise
+# to take on trust: `drift/five-facts.py` reads the commit that introduced `cage_behaviour_sample`'s
+# fact ids into this file, from git, on the SERVED ref (`refs/remotes/origin/main`, first-parent),
+# and refuses to score either fact against a sample taken earlier. A branch commit registers
+# nothing, because a branch run records nothing (ticket 100). Rewriting either fact's wording after
+# it lands re-registers it on the day of the rewrite, and every score taken against the old wording
+# stops counting -- ticket 93's rule, applied one level down. So this section is written once.
+cage_behaviour_sample:
+  schema: drift.cage-behaviour/v1
+  declared_on: '2026-09-10'
+  ticket: ecosystem 86, from ticket 75 Q8 (owner-delegated, the lane branch)
+  # Advisory only. The date the instrument actually uses is the one it reads out of git; this line
+  # is here so a human reader knows what to expect to find there, and a disagreement between the
+  # two is visible rather than hidden.
+  question: >-
+    Is the bottom rung of the cage in force a RUNNING cage rather than a refusal, and does it
+    reach nothing? "Runs" is not "was admitted": a pod that is admitted and then never starts is a
+    refusal with extra steps. "Reaches nothing" is not "a NetworkPolicy with an empty rule list
+    exists": that is a YAML read, and this estate has already shipped a green of exactly that
+    shape while a host-network pod walked out of the cage (platform/graded/verify-graded.sh,
+    2026-08-28).
+
+  measures: >-
+    ADMISSION and REACH, live, on the ephemeral cluster this lane brings up. Two pods, two TCP
+    connects each. It does not measure STATE continuity and does not touch the drift window above,
+    whose subjects are not sampled by this run at all.
+
+  # The experiment, declared before any of it is run.
+  experiment:
+    the_rung_is_the_cage_s_answer: >-
+      Two namespaces are created by the sampler, and NEITHER names a rung. One carries
+      `policy-as-versioned.dev/governed: "true"` and no tier, so the cage's own fall-closed rule
+      decides where its pod lands -- that landing place IS the bottom rung, by the cage's
+      declaration and not by a name typed into the instrument. The other carries no governed label
+      at all, so the cage puts its pod on the loosest rung. What the cage stamped on each pod is
+      read back off the pod and recorded.
+    the_workload: >-
+      One pod per namespace, claiming the policy version whose `cage-tier` MutatingPolicy is
+      newest ON THE CLUSTER -- read off the cluster, never typed, so an adopter whose composed
+      array declares a different set gets its own answer with no edit here. Each pod declares
+      `runAsNonRoot`, a numeric `runAsUser` and `readOnlyRootFilesystem` on its own container, so
+      what the hardened rungs write is observed to have LEFT THEM ALONE rather than supplied them.
+    the_probe_image: >-
+      The cage injects a WAF sidecar at every hardened rung, whose image
+      (`ghcr.io/acme/coraza-waf:cage`) exists in no registry: it is a placeholder for a real
+      Coraza sidecar the estate does not have. Without a stand-in, every pod the cage hardens sits
+      in ErrImagePull for ever and this measurement would be a measurement of a registry rather
+      than of the cage. The lane therefore builds PLATFORM'S OWN stand-in --
+      `graded/waf-placeholder/Dockerfile`, from platform's tree at the tag this repository pins --
+      under the placeholder's own name and loads it into the node, and the same image is the
+      probe's own container. Recorded on every fact that rests on it. A sidecar that sleeps is not
+      a WAF: this proves the caged workload RUNS with what the cage added, never that anything
+      inspected traffic.
+    the_comparison: >-
+      The control is a second pod, in the same cluster, from the same image, running the same two
+      connects, that the cage left on its loosest rung. It cannot be the same pod twice: in this
+      cage the rung is a property of the NAMESPACE (ADR-0022) and never of the pod, because a pod
+      that could name its own rung could exempt itself. That is the comparison's ceiling and it is
+      recorded on the fact.
+    the_targets: >-
+      The API server's own ClusterIP on 443, read live from the `kubernetes` Service, and
+      1.1.1.1:80 as an address outside the cluster. Two ports are not a proof that nothing at all
+      is reachable, and the fact says so.
+
+  # `null` is could-not-look and is NEVER a pass, here as in the five.
+  facts:
+    - id: fact_6_the_bottom_rung_is_admitted_and_runs
+      per: the cage in force
+      claim: >-
+        The workload the cage places on its own bottom rung is ADMITTED by the API server -- not
+        denied, not refused by a consequence of what the cage wrote onto it -- and reaches Running
+        and Ready. Observed FALSE when the create is refused (the API server's message is quoted
+        verbatim, never summarised) or when the pod is admitted and never runs; observed null only
+        when the cluster did not answer, when no cage is installed, or when the cluster could not
+        SCHEDULE the pod, which is the runner's capacity and not the cage's doing.
+    - id: fact_7_the_bottom_rung_reaches_nothing_while_the_control_reaches
+      per: the cage in force
+      claim: >-
+        That workload completes NEITHER a TCP connection to the API server NOR one to an address
+        outside the cluster, while the control workload completes both. A connection, not a read
+        of the NetworkPolicy's own YAML. Observed FALSE the moment the bottom-rung pod completes
+        either connection. Observed null -- never true -- when the control reached nothing either,
+        when the cage put both pods on the same rung, when a connect could not be RUN at all, when
+        no workload was running to measure from, or when nothing in the cage selects the
+        bottom-rung pod and so nothing observed explains its silence.
+      ceiling: >-
+        A NetworkPolicy selecting the pod is recorded as CORROBORATION and is not what the fact is
+        graded on. The grading is the four connection results and the control.
+
+  # Declared before sample one. Each is a way this measurement comes out against the claim, or
+  # comes out unmeasured. None of them is a way it comes out quietly.
+  falsifiers:
+    - id: the_cage_refuses_or_never_runs_the_workload_it_caged
+      fires_when: >-
+        Fact 6 is observed false: the API server refuses the bottom-rung pod, or admits it and it
+        never runs.
+      means_if_it_fires: >-
+        The estate's central claim is false as delivered on the version in force. NORTH-STAR §4
+        step 4 says the workload keeps running; the owner's own words for ticket 75 Q5 are that
+        something can find itself unable to run only because it does not fit the cage, never
+        because it is deliberately denied. A refusal here is a denial by another name, and it is
+        the composed set that produced it.
+    - id: the_bottom_rung_completes_a_connection
+      fires_when: >-
+        The bottom-rung pod completes a TCP connection to the API server or to the address outside
+        the cluster, at any point in the bounded poll.
+      means_if_it_fires: >-
+        The bottom rung is not a cage. "Reaches nothing" is then a statement about a YAML document
+        and not about the cluster.
+    - id: the_control_reaches_nothing_either_recorded_unmeasured
+      fires_when: >-
+        The control workload cannot reach the API server, or the address outside the cluster,
+        either.
+      means_if_it_fires: >-
+        The comparison is void and the result is UNMEASURED. It is not a null result, it is not a
+        pass, and it may not be quoted as either. A pod that reaches nothing because the cluster
+        is broken must not read the same as a pod that reaches nothing because the cage holds --
+        the same rule the probe above follows when it cannot reach its cluster.
+    - id: the_cage_puts_the_control_and_the_fall_closed_workload_on_the_same_rung
+      fires_when: >-
+        The cage stamps the same tier on the fall-closed pod and on the control.
+      means_if_it_fires: >-
+        The cage in force has no bottom rung distinct from its loosest one, so there is no bottom
+        rung to look at and fact 7 is unmeasured. KNOWN TO BE THE STATE ON THE DAY THIS IS
+        DECLARED, and declared anyway rather than papered over: the version this lane's cluster
+        reconciles today has a three-rung ladder that stops at `quarantine`, and the `isolated`
+        rung lives in a composed version the ResourceSet array does not yet declare. What closes
+        it is a reviewed pull request that adds that element and moves the composed pin to a tag
+        whose tree carries it -- named in `gitops/composed/composed-set.yaml`'s own comment, and
+        not this ticket's to cut.
+
+  # Ticket 86 item 2, recorded here as well as in the hub's ADR, because a road not taken that
+  # lives only in a document nobody reads beside the instrument is a road not recorded.
+  road_not_taken: >-
+    The alternative to this lane was an ephemeral KinD cluster on the HUB's own clock
+    (.github/workflows/truth.yml), so the eleven platform live tails -- verify-graded.sh among
+    them -- could run against it under a name they already look for. Ticket 75 Q8 did not take it.
+    The reason is recorded in the hub's ADR: this lane already brings up exactly that cluster with
+    exactly those pinned tools, and a second one would grade the same behaviour a second way while
+    doubling the surface that can break; the eleven tails would also then be observing a cluster
+    the hub built for them, which is a weaker claim than an adopter's own clock observing its own
+    composed set. The cost of not taking it is named there too: the other ten live tails stay
+    could-not-looks, and the cage is graded through the adopters and not through platform's own
+    instrument.
+
+  operation:
+    owner: Chris Nesbitt-Smith
+    runner: >-
+      .github/workflows/drift-sample.yml in this repository, the same scheduled job that takes the
+      five-fact sample -- one cluster, one sample, one record per source, all seven facts.
+    cage: >-
+      The workflow's OBSERVATION_LANE is `drift/samples.jsonl` and nothing else (ADR-0023, D1).
+      This measurement creates two namespaces and two pods ON THE EPHEMERAL CLUSTER and deletes
+      them again; it declares nothing in git, and the observation cage step fails the run on
+      anything else in the index or the tree.
+    presenter_runs: >-
+      A sample taken by hand is a REHEARSAL (ADR-0023, D4). It is not appended to this log and it
+      is never cited. That applies to these two facts exactly as it applies to the five, and it is
+      the whole reason this section exists: the cage HAS been observed holding, many times, on a
+      laptop, and none of it may be cited.
