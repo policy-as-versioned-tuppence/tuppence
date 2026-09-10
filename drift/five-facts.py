@@ -654,6 +654,18 @@ def _cage_reach_fact(cluster: Cluster, fallclosed: dict, control: dict, running:
                          "measure reach from; a pod that never ran reaches nothing for a reason "
                          "that is not the cage (fact 6 carries what happened to it)")
 
+    # Asked FIRST, before a single connect: it needs no network, it is the most diagnostic answer
+    # this fact can give, and where it holds the connects below would measure a rung that is not a
+    # bottom rung. Both pods locked down alike would otherwise come back as "the control reached
+    # nothing either", which is true and says less.
+    if control and fallclosed.get("tier") == control.get("tier"):
+        return could_not(
+            f"the cage in force put the fall-closed workload and the control on the SAME rung "
+            f"({fallclosed.get('tier') or 'no tier stamped'}), so it has no bottom rung distinct "
+            f"from its loosest one and there was no bottom rung to look at",
+            falsifier=CAGE_FALSIFIER_IDS[3],
+            fall_closed_tier=fallclosed.get("tier", ""), control_tier=control.get("tier", ""))
+
     api = cluster.get("-n", "default", "get", "svc", "kubernetes")
     api_ip = str(((api or {}).get("spec") or {}).get("clusterIP", ""))
     if not api_ip:
@@ -734,12 +746,6 @@ def _cage_reach_fact(cluster: Cluster, fallclosed: dict, control: dict, running:
               "nothing because the cluster is broken must not read the same as a pod that reaches "
               "nothing because the cage holds. Recorded UNMEASURED, which is not a pass",
             falsifier=CAGE_FALSIFIER_IDS[2], **evidence)
-    if fallclosed.get("tier") == control.get("tier"):
-        return could_not(
-            f"the cage in force put the fall-closed workload and the control on the SAME rung "
-            f"({fallclosed.get('tier') or 'no tier stamped'}), so it has no bottom rung distinct "
-            f"from its loosest one and there was no bottom rung to look at",
-            falsifier=CAGE_FALSIFIER_IDS[3], **evidence)
     if not evidence["networkpolicies_selecting_the_fall_closed_pod"]:
         return could_not(
             "the workload on the bottom rung reached nothing, and NOTHING IN THE CAGE SELECTS IT: "
