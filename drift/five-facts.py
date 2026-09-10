@@ -1090,38 +1090,81 @@ def cage_section() -> dict:
     return section if isinstance(section, dict) else {}
 
 
+SECTION_START = re.compile(r"^cage_behaviour_sample:", re.M)
+SECTION_NEXT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*:", re.M)
+
+
+def cage_section_text(text: str) -> str:
+    """The raw `cage_behaviour_sample:` block out of a window.yaml, comments and all. "" if absent.
+
+    RAW TEXT and not the parsed mapping, deliberately: a comment inside this section carries the
+    reasoning a reader trusts, and a rule that re-registers on a changed claim but not on a
+    rewritten reason would let the reason be quietly weakened under a fact already being scored.
+    """
+    start = SECTION_START.search(text)
+    if not start:
+        return ""
+    rest = text[start.end():]
+    end = SECTION_NEXT.search(rest)
+    return text[start.start():start.end() + (end.start() if end else len(rest))]
+
+
+def _git_at(ref_or_sha: str, *args: str) -> str | None:
+    try:
+        done = subprocess.run(["git", "-C", REPO, *args], capture_output=True, text=True,
+                              timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return done.stdout if done.returncode == 0 else None
+
+
 def cage_registration(ref: str = "refs/remotes/origin/main") -> tuple[dt.datetime | None, str]:
-    """(when the cage facts arrived in window.yaml on the served ref, how it is known).
+    """(when the cage facts were last registered on the served ref, how it is known).
 
-    Ticket 93's rule, applied one level down. A fact scored before it was registered is worthless
-    and a question rewritten after it landed moves every score taken against it, so the date is
-    not typed anywhere -- it is READ OUT OF GIT, from the first commit on the SERVED ref whose
-    diff against its own first parent introduces the fact's id into `drift/window.yaml`. Merged
-    through a pull request that is the merge commit, dated by whoever merged it.
+    Ticket 93's rule, applied one level down, and applied in the direction that costs something.
+    A fact scored before it was registered is worthless, and **a question rewritten after it
+    landed moves every score taken against it** -- so this does not stop at the commit that first
+    introduced the fact id. It walks the first-parent history of `drift/window.yaml` on the SERVED
+    ref, reads the `cage_behaviour_sample` block out of the blob at each commit, and returns the
+    NEWEST commit at which that block changed. Edit the question, a claim, a falsifier or a
+    ceiling after it lands and the registration moves to that day, and every sample taken before
+    it stops being scored on these facts.
 
-    `--first-parent`, so a branch commit that never reached the served ref does not register
-    anything: a branch run records nothing (ticket 100), and neither does a branch commit.
+    `--first-parent`, so a branch commit that never reached the served ref registers nothing: a
+    branch run records nothing (ticket 100), and neither does a branch commit.
+
+    WHERE THIS IS NARROWER THAN TICKET 93, said rather than left to be discovered. Ticket 93's
+    `first_reached` keys on the last write of the whole FILE, so an unrelated edit anywhere in it
+    re-registers. This window file carries three instruments (the drift probe's window, the
+    five-fact sample and this), and an addendum to one of the others is not a rewrite of this
+    question. So the unit is the SECTION -- its whole raw text, comments included, so a reason
+    cannot be weakened under a fact already being scored.
 
     The one thing this cannot do is score a sample it cannot date, so an unreadable git history is
     a could-not-look on the cage facts and never a pass.
     """
     rel = os.path.relpath(WINDOW, REPO)
-    try:
-        done = subprocess.run(
-            ["git", "-C", REPO, "log", "--first-parent", "--reverse", "--format=%cI %H",
-             "-S", CAGE_FACT_IDS[0], ref, "--", rel],
-            capture_output=True, text=True, timeout=60)
-    except (OSError, subprocess.SubprocessError) as e:
-        return None, f"git could not be run here to date the registration ({e})"
-    if done.returncode != 0:
-        tail = (done.stderr or "").strip().splitlines()[-1:] or [""]
+    log = _git_at(ref, "log", "--first-parent", "--reverse", "--format=%cI %H", ref, "--", rel)
+    if log is None:
         return None, (f"the served ref {ref} is not readable in this checkout, so when the cage "
-                      f"facts were registered cannot be established here: {tail[0]}")
-    first = (done.stdout or "").strip().splitlines()[:1]
-    if not first:
-        return None, (f"no commit on {ref} introduces {CAGE_FACT_IDS[0]} into {rel}, so the cage "
-                      f"facts have not been registered on the served ref")
-    stamp, sha = first[0].split(" ", 1)
+                      f"facts were registered cannot be established here")
+    previous, stamp, sha = "", "", ""
+    for line in (log or "").strip().splitlines():
+        if " " not in line:
+            continue
+        at, commit = line.split(" ", 1)
+        blob = _git_at(ref, "show", f"{commit}:{rel}")
+        if blob is None:
+            return None, (f"the blob {commit[:12]}:{rel} could not be read, so the registration "
+                          f"history of the cage facts has a hole in it and cannot be established")
+        section = cage_section_text(blob)
+        if section != previous:
+            if section:
+                stamp, sha = at, commit
+            previous = section
+    if not sha:
+        return None, (f"no commit on {ref} carries a cage_behaviour_sample block in {rel}, so the "
+                      f"cage facts have not been registered on the served ref")
     when = dt.datetime.fromisoformat(stamp.replace("Z", "+00:00"))
     return when.astimezone(dt.timezone.utc), f"registered by {sha[:12]} at {stamp} on {ref}"
 
@@ -1485,6 +1528,21 @@ def selfcheck() -> int:
             "a workload that never ran reaches nothing for a reason that is not the cage"
     finally:
         time.sleep = _slept
+
+    # The registration moves when the QUESTION moves, and the section is the unit.
+    _win = open(WINDOW).read()
+    assert cage_section_text(_win).startswith("cage_behaviour_sample:") \
+        and CAGE_FACT_IDS[1] in cage_section_text(_win), \
+        "the section reader must find this repository's own pre-registration"
+    assert cage_section_text("five_fact_sample:\n  a: 1\n") == "", \
+        "a window with no cage section registers nothing"
+    assert cage_section_text(
+        "cage_behaviour_sample:\n  q: one\nlater_key:\n  x: 2\n") \
+        == "cage_behaviour_sample:\n  q: one\n", \
+        "the section ends at the next top-level key, so a later addendum is not part of it"
+    assert cage_section_text("cage_behaviour_sample:\n  # a reason\n  q: one\n") \
+        != cage_section_text("cage_behaviour_sample:\n  # another reason\n  q: one\n"), \
+        "a rewritten reason is a rewritten question: comments are inside the unit"
 
     # A registration that cannot be read is a could-not-look, and says which ref it looked at.
     _when, _how = cage_registration("refs/remotes/origin/no-such-ref-for-a-selfcheck")
