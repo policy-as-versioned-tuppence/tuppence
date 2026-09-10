@@ -178,13 +178,98 @@ jobs:
           kubectl --context "${CTX}" -n flux-system rollout status deploy/flux-operator --timeout=180s || true
           kubectl --context "${CTX}" apply -k gitops/composed/
 
-          # Bounded, best-effort. Whatever has or has not converged when this returns is the state
-          # the sample records.
-          for k in $(kubectl --context "${CTX}" -n flux-system get kustomizations.kustomize.toolkit.fluxcd.io -o name 2>/dev/null); do
-            kubectl --context "${CTX}" -n flux-system wait "${k}" --for=condition=Ready --timeout=180s || true
-          done
+          # ROUND 4 OF THE WAIT ORDER (ticket 107). Rounds 2 and 3 were wrong in the same way:
+          # each asked a question before the answer could exist and took the silence for a yes.
+          # Round 3 ran the Kustomization enumeration FIRST, so `get kustomizations -o name` ran
+          # while composed-v2-0-0, composed-v2-0-1 and composed-v3-0-0 did not exist yet -- the
+          # apply above creates exactly two objects, a GitRepository and a ResourceSet, and it is
+          # the ResourceSet that generates those three. The enumeration found only this repo's own
+          # already-Ready Kustomization and returned in ~0.3s, so the sample was taken the instant
+          # the composed Kustomizations were created: fifteen policies live and byte-equal for
+          # fact 4, in no inventory for fact 5, on every scheduled sample from 2026-09-05 to
+          # 2026-09-08 (ticket 81, "Recorded 2026-09-08"; ticket 107).
+          #
+          # AN ENUMERATION THAT FINDS NOTHING IS NOT A WAIT. So the order is: the ResourceSet
+          # first, then the Kustomizations THE RESOURCESET ITSELF NAMES -- by name, read off its
+          # own status inventory, retried while it names none -- and only then the general
+          # enumeration, which by that point can see them. Every wait stays bounded and
+          # best-effort: whatever has or has not converged when this returns is still the state
+          # the sample records, and a hole here is reported as a fact observed false, never as a
+          # failed job and never as a green.
           for r in $(kubectl --context "${CTX}" -n flux-system get resourcesets.fluxcd.controlplane.io -o name 2>/dev/null); do
             kubectl --context "${CTX}" -n flux-system wait "${r}" --for=condition=Ready --timeout=180s || true
+          done
+
+          # Ready on a ResourceSet means it has APPLIED what it renders, not that those objects
+          # have reconciled -- 0.13s after `resourceset/composed-set condition met`, composed-v*
+          # was aged 0s with no status. Its status inventory carries their ids in Flux's
+          # `<ns>_<name>_<group>_<Kind>` form, so the names below are DERIVED from the object that
+          # created them rather than re-spelled here from the version array (one slugify rule,
+          # owned by the ResourceSet template). `-o json` into python3 and not `-o jsonpath`: a
+          # ResourceSet with no status yet has no .status.inventory at all, and what jsonpath does
+          # with a missing key is a kubectl flag's default rather than something this file states.
+          #
+          # WHAT THIS IS AND IS NOT. It is a PROXY for fact 5, not the same set of ids.
+          # drift/five-facts.py reads the union of the Kustomization AND ResourceSet inventories,
+          # and the ids that decide fact 5 are the FIFTEEN POLICY ids that live in the composed
+          # Kustomizations' own inventories -- which this step never reads. What it reads is the
+          # ResourceSet's inventory filtered to Kind Kustomization: the objects whose reconcile
+          # populates those fifteen. Sound as a thing to wait for; not the thing fact 5 counts.
+          #
+          # `flux-system` ONLY, and the refusal is printed. The id's first field is the namespace
+          # and the wait below is `-n flux-system`, so an entry from another namespace would be
+          # waited for under the wrong one: measured against a fake ResourceSet naming
+          # `tenant-a/composed-v3-0-0`, the step printed that it was waiting for it and then
+          # `error: no matching resources found`, swallowed by `|| true`, in milliseconds. A
+          # claimed wait that never happened, in the log the ticket's own Done line reads its
+          # evidence from. Unreachable while everything is in flux-system, and refused anyway.
+          # Refusals come back on STDOUT with a marker the shell splits off, not on stderr, and the
+          # `2>/dev/null` below stays. Sending them to stderr worked, and cost this: a python that
+          # cannot answer prints a traceback per attempt, so thirty attempts flood the step log --
+          # the same log the ticket's Done clause reads its evidence from. Suppressing stderr
+          # hides nothing that matters, because a derivation that never produces names still ends
+          # at the spoken-silence line below.
+          composed_names='import json,sys; ids=[str(e.get("id","")).split("_") for i in (json.load(sys.stdin).get("items") or []) for e in (((i.get("status") or {}).get("inventory") or {}).get("entries") or [])]; ks=[p for p in ids if len(p) == 4 and p[3] == "Kustomization"]; print("\n".join(["wait-order: REFUSING %s/%s -- a ResourceSet names a Kustomization outside flux-system and the wait below is -n flux-system, so it cannot be waited for here" % (p[0] or "<no namespace>", p[1]) for p in ks if p[0] != "flux-system"] + sorted({"kustomization.kustomize.toolkit.fluxcd.io/"+p[1] for p in ks if p[0] == "flux-system"})))'
+          composed=""
+          refused=""
+          for _ in $(seq 1 30); do
+            # `|| raw=""`, and not a bare assignment: the default shell for a `run:` step is
+            # `bash -e {0}`, which `set -uo pipefail` above does not undo, and under `-e` an
+            # assignment from a failing pipeline ABORTS THE STEP. A kubectl that cannot answer for
+            # a moment must leave a fact observed false, never a failed job.
+            raw="$(kubectl --context "${CTX}" -n flux-system get resourcesets.fluxcd.controlplane.io -o json 2>/dev/null | python3 -c "${composed_names}" 2>/dev/null)" || raw=""
+            # `|| true` on both greps: no match is exit 1, which `-e` would take for a failure.
+            refused="$(printf '%s\n' "${raw}" | grep '^wait-order: REFUSING' || true)"
+            composed="$(printf '%s\n' "${raw}" | grep -v '^wait-order: REFUSING' | sed '/^$/d' || true)"
+            [ -n "${composed}" ] && break
+            sleep 2
+          done
+          # Printed ONCE, after the loop, not once per attempt: two persistent out-of-namespace
+          # entries used to print sixty lines into the log the sample's evidence is read from.
+          [ -n "${refused}" ] && printf '%s\n' "${refused}"
+          if [ -z "${composed}" ]; then
+            # Said out loud, because this is the silence round 3 read as a yes.
+            echo "wait-order: 60s after the ResourceSets went Ready no ResourceSet inventory names a Kustomization; nothing composed was waited for and the sample below records what that leaves"
+          else
+            # A statement of INTENT, not of an accomplished wait: each `kubectl wait` below prints
+            # its own verdict (`condition met`, or an error), and that is what the log records.
+            echo "wait-order: about to wait, by name, for the Kustomizations the ResourceSet names in flux-system; each wait below prints its own verdict:" ${composed}
+          fi
+
+          # The union: the composed Kustomizations by name, plus whatever else Flux is reconciling
+          # here (this repo's own). What removes driftwood's dependence on a timeout is that
+          # `composed-v*` is IN THIS LIST AT ALL -- not the sort. This job sets no
+          # `timeout-minutes`, so the default is 360 and every member is waited for whatever the
+          # order; `sort -u` is here to dedupe the derived names against the enumeration, and it
+          # changes wall-clock time (worst case ~12 minutes) and nothing else. Rounds 2 and 3 read
+          # facts 4 and 5 true on driftwood only because its own Kustomization did not reach Ready
+          # and the loop's ~3-minute stall happened to give composed-v* time to apply (runs
+          # 33961154234, 34028943241, 34122734820). On 2026-09-09 that stall stopped happening --
+          # run 34345475988's `kustomization/driftwood condition met` came 0.34s after the apply,
+          # with no timeout at all -- and driftwood recorded fact 5 FALSE for the first time. A
+          # green that rested on a timeout has now stopped resting on it.
+          for k in $( { printf '%s\n' ${composed}; kubectl --context "${CTX}" -n flux-system get kustomizations.kustomize.toolkit.fluxcd.io -o name 2>/dev/null; } | sed '/^$/d' | sort -u); do
+            kubectl --context "${CTX}" -n flux-system wait "${k}" --for=condition=Ready --timeout=180s || true
           done
           kubectl --context "${CTX}" -n flux-system get gitrepositories,kustomizations,resourcesets -o wide || true
 
