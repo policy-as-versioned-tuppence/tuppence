@@ -64,6 +64,17 @@ env:
   # taken from the tree AT this ref, not from the working checkout, so the comparison is against
   # what the cluster was actually told to install.
   COMPOSED_REF: v1.1.0
+  # The image facts 6 and 7 place at a rung (ecosystem ticket 86), and the image the cage itself
+  # injects as a WAF sidecar at every hardened rung. ONE name, deliberately: loading it once
+  # covers both the sidecar the cage adds and the container the probe connects from.
+  #
+  # `ghcr.io/acme/coraza-waf:cage` exists in NO registry -- it is the placeholder for a real
+  # Coraza sidecar the estate does not have. Left unresolved, every pod the cage hardens sits in
+  # ErrImagePull for ever and the measurement would be a measurement of a registry rather than of
+  # the cage. So the stand-in is built from PLATFORM'S OWN graded/waf-placeholder, out of the tree
+  # already checked out at the tag this repository pins, and loaded into the node. Not invented
+  # here, not vendored here: the publisher's own file, at the pin.
+  CAGE_PROBE_IMAGE: ghcr.io/acme/coraza-waf:cage
 
 jobs:
   sample:
@@ -128,6 +139,25 @@ jobs:
           echo "name=${name}" >> "$GITHUB_OUTPUT"
           echo "context=kind-${name}" >> "$GITHUB_OUTPUT"
           kind create cluster --name "${name}" --wait 120s
+
+      - name: build the cage's own stand-in sidecar and load it into the node (ticket 86)
+        id: cageprobe
+        env:
+          NAME: ${{ steps.cluster.outputs.name }}
+        run: |
+          set -uo pipefail
+          # A hole in the observation, never a failed job -- the same rule the gitsign-verifier
+          # apply above follows. Without this image facts 6 and 7 record could-not-look with a
+          # reason that names it, which is honest; failing the run here would cost the five facts
+          # their sample as well, for want of a placeholder.
+          if docker build -q -t "${CAGE_PROBE_IMAGE}" .platform-src/graded/waf-placeholder \
+             && kind load docker-image "${CAGE_PROBE_IMAGE}" --name "${NAME}"; then
+            echo "image=${CAGE_PROBE_IMAGE}" >> "$GITHUB_OUTPUT"
+            echo "ok  ${CAGE_PROBE_IMAGE} built from platform's own graded/waf-placeholder at the pinned tag, and loaded"
+          else
+            echo "image=" >> "$GITHUB_OUTPUT"
+            echo "::warning::the cage probe stand-in could not be built or loaded from .platform-src/graded/waf-placeholder; facts 6 and 7 will record could-not-look and say so"
+          fi
 
       - name: install the engine, then reconcile from the REAL remotes
         env:
@@ -282,8 +312,11 @@ jobs:
           # `--ref` renders composed/ from the tree at the tag the ResourceSet pins, so fact 4
           # compares the cluster against what the cluster was told to install rather than against
           # whatever the default branch happens to hold today.
+          # `--cage-probe-image` empty is not an error: the sample records facts 6 and 7 as
+          # could-not-look with the reason, rather than placing a pod that cannot pull.
           python3 drift/five-facts.py sample \
-            --context "${CTX}" --cluster "${CLUSTER}" --ref "${COMPOSED_REF}"
+            --context "${CTX}" --cluster "${CLUSTER}" --ref "${COMPOSED_REF}" \
+            --cage-probe-image "${{ steps.cageprobe.outputs.image }}"
           tail -3 drift/samples.jsonl
           # Report the grade in the log for a reader of the run, and never fail on it: the grade
           # belongs to verify-reconcile.sh under the gate, and a red measurement is a measurement.
