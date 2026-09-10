@@ -521,6 +521,34 @@ def _cage_connect(cluster: Cluster, namespace: str, host: str, port: str) -> tup
                      f"from {namespace}")
 
 
+def _cage_admission_verdict(state: dict, applied_ok: bool) -> bool | None:
+    """Fact 6's verdict for one probe pod. True admitted and running; False the cage's own doing
+    stopped it; None could-not-look.
+
+    Two states are NOT verdicts the cage reached, and calling either FALSE would assert a failure
+    nobody observed: a pod the cluster never SCHEDULED (the runner's capacity), and a pod still
+    coming up when the bounded wait ran out (this instrument's bound -- `ContainerCreating` is not
+    an answer, which is the lesson of ticket 107 one level down). An apply that reported success
+    with no pod behind it is the same shape: nothing was observed to have refused anything.
+
+    Everything else that leaves a caged workload not running IS the cage's doing, because the only
+    thing between an ordinary pod and this one is what the cage wrote onto it -- the sidecar it
+    injected, the hardening it applied, the class it named. A cage that admits a workload and then
+    prevents it from running is a refusal with extra steps, and NORTH-STAR 4 step 4 says the
+    workload keeps running.
+    """
+    if not state:
+        return False if not applied_ok else None
+    if state.get("phase") == "Running" and state.get("ready"):
+        return True
+    if state.get("scheduled") == "False":
+        return None
+    waits = state.get("waiting_reasons") or []
+    if waits and all(r in CAGE_TRANSIENT_WAITS for r in waits):
+        return None
+    return False
+
+
 def cage_facts(cluster: Cluster, image: str) -> tuple[dict, dict]:
     """Facts 6 and 7: the bottom rung runs, and it reaches nothing while the control reaches.
 
@@ -581,8 +609,9 @@ def cage_facts(cluster: Cluster, image: str) -> tuple[dict, dict]:
               "fall_closed_namespace": CAGE_FALLCLOSED_NS, "control_namespace": CAGE_CONTROL_NS}
 
     # ---- fact 6: admitted, and running -------------------------------------
-    running = bool(fallclosed) and fallclosed.get("phase") == "Running" and fallclosed.get("ready")
-    if not fallclosed:
+    verdict = _cage_admission_verdict(fallclosed, applied_code == 0)
+    running = verdict is True
+    if not fallclosed and verdict is False:
         six = fact(False,
                    f"the cage REFUSED the workload: "
                    f"{refusal or 'no pod exists and the apply reported nothing'}",
@@ -597,19 +626,28 @@ def cage_facts(cluster: Cluster, image: str) -> tuple[dict, dict]:
                    f"carrying {len(fallclosed['containers'])} container(s)"
                    + (f" including {', '.join(injected)} injected by the cage" if injected else ""),
                    scope=CAGE_SCOPE, pod=fallclosed, **common)
+    elif not fallclosed:
+        six = fact(None,
+                   "the apply reported success and no pod exists in the fall-closed namespace, so "
+                   "nothing was observed to have refused anything",
+                   scope=CAGE_SCOPE, apply_output=applied[:4000], **common)
     elif fallclosed.get("scheduled") == "False":
         six = fact(None,
                    f"the workload was admitted but the cluster never scheduled it "
                    f"({fallclosed.get('scheduling_reason') or 'no reason given'}), which is the "
                    f"runner's capacity and not the cage's doing",
                    scope=CAGE_SCOPE, pod=fallclosed, **common)
+    elif verdict is None:
+        six = fact(None,
+                   "the workload was admitted onto the bottom rung "
+                   f"({fallclosed.get('tier') or 'no tier stamped'}) and was STILL COMING UP when "
+                   f"the bounded wait ran out ("
+                   + "; ".join(fallclosed.get("containers_waiting") or ["no container status"])
+                   + "). That is this instrument's bound, not a verdict the cage reached",
+                   scope=CAGE_SCOPE, pod=fallclosed, **common)
     else:
         stuck = "; ".join(fallclosed.get("containers_waiting") or []) or \
             f"phase {fallclosed.get('phase') or 'unknown'}, Ready={fallclosed.get('ready')}"
-        if all(r in CAGE_TRANSIENT_WAITS for r in (fallclosed.get("waiting_reasons") or [])) \
-                and fallclosed.get("waiting_reasons"):
-            stuck += (" -- still coming up when the bounded wait ran out, which is this "
-                      "instrument's bound and not a verdict the cage reached")
         six = fact(False,
                    f"the workload was admitted onto the bottom rung "
                    f"({fallclosed.get('tier') or 'no tier stamped'}) and never ran: {stuck}",
@@ -1362,6 +1400,21 @@ def selfcheck() -> int:
         "the probe must not name a rung: a tier this file typed would be an assertion, not a " \
         "measurement of where the cage puts an unlabelled workload"
     assert CAGE_TIER_NAME.match("cage-tier-4-0-0") and not CAGE_TIER_NAME.match("cage-tier")
+
+    # Fact 6's verdict: the two states that are the instrument's or the runner's, not the cage's.
+    assert _cage_admission_verdict({"phase": "Running", "ready": True}, True) is True
+    assert _cage_admission_verdict({}, False) is False, \
+        "a pod the API server refused is the cage observed as a gate"
+    assert _cage_admission_verdict({}, True) is None, \
+        "an apply that succeeded with no pod behind it observed no refusal"
+    assert _cage_admission_verdict({"scheduled": "False"}, True) is None, \
+        "a pod the cluster never scheduled is the runner's capacity, not the cage's doing"
+    assert _cage_admission_verdict({"waiting_reasons": ["ContainerCreating"]}, True) is None, \
+        "a pod still coming up when the bound ran out is this instrument's bound, not a verdict"
+    assert _cage_admission_verdict({"waiting_reasons": ["ImagePullBackOff"]}, True) is False, \
+        "a pod stuck on the image the cage injected is the cage preventing the workload running"
+    assert _cage_admission_verdict(
+        {"waiting_reasons": ["ContainerCreating", "ImagePullBackOff"]}, True) is False
 
     class _CageFixture(Cluster):
         """A cluster that answers only what fact 7 asks, from a table. No kubectl, no network.
