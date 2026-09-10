@@ -62,6 +62,19 @@
       "depNameTemplate": "https://github.com/policy-as-versioned-feeds/feeds",
       "extractVersionTemplate": "^threat-register/(?<version>v[0-9.]+)$",
       "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Compiler software is independently pinned; this does not change implementation inheritance.",
+      "managerFilePatterns": [
+        "/^\\.github/platform-tools-pin\\.yaml$/"
+      ],
+      "matchStrings": [
+        "tag: (?<currentValue>v[0-9.]+)\\s*\\n\\s*commit: (?<currentDigest>[a-f0-9]{40})"
+      ],
+      "datasourceTemplate": "git-refs",
+      "depNameTemplate": "https://github.com/policy-as-versioned-platform/platform",
+      "versioningTemplate": "semver"
     }
   ],
   "packageRules": [
@@ -86,5 +99,14 @@
     "managerFilePatterns": [
       "/^apps/ledger/pom\\.xml$/"
     ]
+  },
+  "postUpgradeTasks": {
+    "commands": [
+      "bash .github/scripts/complete-feed-bump.sh"
+    ],
+    "fileFilters": [
+      "composed/**"
+    ],
+    "executionMode": "branch"
   }
 }

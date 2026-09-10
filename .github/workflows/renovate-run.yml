@@ -56,10 +56,14 @@ jobs:
         with:
           node-version: "24"
 
+      - name: Install verifier for Renovate post-upgrade composition
+        uses: ./.github/actions/install-gitsign
+
       - name: run self-hosted renovate against this repo
         env:
           RENOVATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RENOVATE_PLATFORM: github
+          RENOVATE_ALLOWED_COMMANDS: '["bash .github/scripts/complete-feed-bump.sh"]'
           RENOVATE_REPOSITORIES: policy-as-versioned-tuppence/tuppence
           LOG_LEVEL: debug
         run: npx --yes renovate@44.37.1

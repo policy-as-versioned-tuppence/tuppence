@@ -42,21 +42,35 @@ Source: `composed/HEADER.yaml` → `governed-namespaces`, `ungoverned-namespaces
 
 ## 4. What this costs, and to whom
 
-Source: `composed/evidence.json` → `prices[]`, and `composed/HEADER.yaml` → `exposure`. Amounts are rounded to two decimals from the field named in each row; every one carries the perspective it is booked under and the currency it is booked in. An entry the composition could not price carries its reason instead of a number, and is named in section 6. In the *proposed tier* column, `—` means the entry's kind (`premium`, `switching`) proposes no tier by construction; a feed entry with no `proposed_tier` is named absent.
+Source: `composed/evidence.json` → `prices[]`, and `composed/HEADER.yaml` → `exposure`. Amounts are rounded to two decimals from the field named in each row; every one carries the perspective it is booked under and the currency it is booked in. An entry the composition could not price carries its reason instead of a number, and is named in section 6. In the *proposed tier* column, `—` means the entry's kind (`premium`, `switching`, `supersede`) proposes no tier by construction; a feed entry with no `proposed_tier` is named absent.
 
 | priced by | kind | name | perspective | currency | amount | moved | proposed tier |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | ico | feed | penalty-schema | tuppence | GBP | GBP 9,039,791.02 | no | isolated |
 | feeds | feed | threat-register | tuppence | GBP | GBP 222,574.31 | no | isolated |
+| feeds | supersede | threat-register | tuppence | GBP | GBP 0.00 | no | — |
+| ico | switching | penalty-schema | tuppence | GBP | GBP 9,039,791.02 | no | — |
+| feeds | switching | threat-register | tuppence | GBP | GBP 222,574.31 | no | — |
 
+- **ico/penalty-schema** — Publisher tags were observed when this artefact was composed; the recorded observation is replayed offline and during verification. It does not establish the publisher's current newest major. A fresh composition with the publisher present refreshes it.
 - **ico/penalty-schema** — basis: lm sourced from ICO (Information Commissioner's Office) real public fines (UK GDPR / Data Protection Act 2018 s157). warn/deny lef are editorial (schema doesn't carry frequency). Not sized to any subscriber: priced at the statutory cap.
-- **feeds/threat-register** — basis: payment-fraud / account-takeover via API abuse (fintech, FCA/PCI, availability+fraud flavour). lef sourced from DBIR financial-sector base rate + card-scheme fraud-loss reporting, editorial midpoint.
+- **feeds/threat-register** — Publisher tags were observed when this artefact was composed; the recorded observation is replayed offline and during verification. It does not establish the publisher's current newest major. A fresh composition with the publisher present refreshes it.
+- **feeds/threat-register** — basis: payment-fraud / account-takeover via API abuse (fintech, FCA/PCI, availability+fraud flavour). lef sourced from DBIR financial-sector base rate + card-scheme fraud-loss reporting, editorial midpoint. MAGNITUDE UNSOURCED: the impact per event (5000.0, 25000.0, 90000.0) GBP is not in payload version v1, which predates the publisher's `lm_gbp` field; it is this converter's frozen copy of the adopter-keyed table that used to live in the SUBSCRIBER's own code (platform/feeds/to_fair_scenario.py THREAT_LM_GBP). From major 3 the number and its basis are in the payload. A named could-not-look (eco-system ticket 79 item 4), never a bare number.
+- **feeds/threat-register supersede** — clock starts 2026-09-01; priced as of 2026-08-28. zero (as_of 2026-08-28 precedes the tag day 2026-09-01): the signed artefact's as-of is its newest signed input; only a re-composition --as-of a later day (the scheduled proposer's) grows this line
+- **feeds/threat-register** (supersede) — basis: the pinned line's own amount x (eol_ramp(since, as_of) - 1): the surcharge the feeds module's EOL ramp puts on a version its publisher has superseded, +1x per year behind and capped at +4x, where `since` is the day the newer major's signing tag was cut; zero on that day, printed with both dates, and never summed into the exposure the line itself is already in
+- **ico/penalty-schema** (switching) — basis: re-composed with this publisher's feed edges dropped
+- **feeds/threat-register** (switching) — basis: re-composed with this publisher's feed edges dropped
 
 - **ico/penalty-schema** carries 4 priced hole(s) inside that amount: `nist/pl-2` GBP 2,711,937.31, `nist/ra-3` GBP 2,711,937.31, `nist/ca-2` GBP 1,807,958.20, `nist/ir-8` GBP 1,807,958.20
 
 **Exposure** — booked under perspective `tuppence` in `GBP`.
 
 - Total: GBP 9,262,365.33
+  - What this number is: an ordinal, auditable comparison under one perspective; not an expected annual loss.
+  - Every figure under this section is derived from published feeds through published converters, and is reproducible from the signed inputs named beside it -- that is what AUDITABLE means here. What it is NOT: the loss-event frequencies and several loss magnitudes it rests on are editorial bands carrying a named could-not-look rather than counted rates (ico penalty-schema major 4, feeds threat-register major 3), so the total is usable for COMPARING one version, one pin or one control set against another under this one perspective, and not as a number to reserve against. Totals under two different perspectives are two balance sheets and are never added (ADR-0021). Ticket 75 Q4 (a), eco-system ticket 79 item 10.
+- Aggregate of the selected-tier residuals: GBP 185,247.31 against a tolerance of GBP 15,000.00 -- BREACHES the declared aggregate.
+  - `penalty-schema` at tier `isolated`: GBP 180,795.82
+  - `threat-register` at tier `isolated`: GBP 4,451.49
 - Attachment: GBP 15,000.00
 - Regimes (2):
   - `uk-gdpr` from ico feed `penalty-schema` v3: GBP 9,039,791.02, 4 control(s) named
@@ -72,6 +86,7 @@ Source: `composed/HEADER.yaml` → `baseline`, `selected-controls`, `holes`; `co
 - So 2 of 287 selected controls have an implementation in this artefact. A hole is priced, never refused (ADR-0020).
 - `refusals[]`: 0
 - `restatements[]`: 0
+- `deltas[]`: 0
 - `ungoverned[]`: 1
 
 ## 6. What this handbook cannot say
@@ -87,13 +102,12 @@ Source: `composed/evidence.json` → `limits[]`, plus every field this render lo
 
 One recorded limit is deliberately not stated above: `publisher-clone-absent` records which publisher clones the run that re-derived this artefact could read, which is a fact about that run and not about the artefact; a page that stated it could not re-render byte-identically with a publisher absent, and re-rendering with a publisher absent is what `composition.py verify` holds this page to (ticket 45). `composed/evidence.json` records it in full.
 
-**2 field(s) this render looked for in the artefact and did not find.** Where a field is absent this page states nothing in its place — no default prose, no zero (ADR-0020: a missing instrument refuses; it is never invented).
+**1 field(s) this render looked for in the artefact and did not find.** Where a field is absent this page states nothing in its place — no default prose, no zero (ADR-0020: a missing instrument refuses; it is never invented).
 
 - `selection-policy` (in `composed/HEADER.yaml`) — no versioned rule is recorded as having chosen the tier, so this page names none
-- `deltas` (in `composed/evidence.json`) — this artefact records no `deltas` list, so this page counts none
 
 Two things this page can never tell you, by construction, and neither is a field of the artefact: whether the rules above are the **right** rules, and whether a human read and accepted the change that produced them. The first is the editorial review ([ADR-0007](https://github.com/policy-as-versioned-flux/policy-as-versioned-flux/blob/main/docs/adr/0007-agent-assisted-editorial-governance.md)); the second is the pull request this artefact arrived in.
 
 ---
 
-Counted from the artefact: 4 publisher(s), 7 installed object(s), 7 recorded member(s), 2 price(s), 287 selected control(s), 285 hole(s), 2 recorded limit(s), 2 named absence(s).
+Counted from the artefact: 4 publisher(s), 7 installed object(s), 7 recorded member(s), 5 price(s), 287 selected control(s), 285 hole(s), 2 recorded limit(s), 1 named absence(s).

@@ -1,0 +1,31 @@
+name: Verified platform tools
+description: Checkout and verify compiler software independently of implementation inheritance (install-gitsign runs first)
+inputs:
+  adopter-dir:
+    description: Adopter checkout relative to the workspace
+    required: true
+runs:
+  using: composite
+  steps:
+    - id: pin
+      shell: bash
+      env:
+        ADOPTER_DIR: ${{ inputs.adopter-dir }}
+      run: |
+        set -euo pipefail
+        pip install --quiet pyyaml
+        python3 "$ADOPTER_DIR/.github/scripts/read-pins.py" \
+          "$ADOPTER_DIR/.github/platform-tools-pin.yaml" tools >> "$GITHUB_OUTPUT"
+    - uses: actions/checkout@v4
+      with:
+        repository: policy-as-versioned-platform/platform
+        path: platform-tools
+        ref: ${{ steps.pin.outputs.tools_tag }}
+        fetch-depth: 0
+    - name: Verify tool release before execution
+      shell: bash
+      env:
+        ADOPTER_DIR: ${{ inputs.adopter-dir }}
+      run: |
+        python3 "$ADOPTER_DIR/.github/scripts/platform-tools.py" \
+          --adopter-dir "$ADOPTER_DIR" --tools-dir platform-tools check

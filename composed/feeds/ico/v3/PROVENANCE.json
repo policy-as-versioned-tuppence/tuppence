@@ -1,0 +1,41 @@
+{
+  "converter": "penalty-schema/to_fair_scenario.py",
+  "converter_from": "ico",
+  "feed_path": "penalty-schema/v3/feed.json",
+  "files": {
+    "party.yaml": "6f7e82a9616ee49ba2bbe1f2824b43458f8f72fd859216e2d5ba32577364ac72",
+    "penalty-schema/to_fair_scenario.py": "560a38c04397e8e98d56a279ca5b88cb2b2707a8a22a5c8d71a9be74946bb982",
+    "penalty-schema/v3/feed.json": "e23318cb9b580b5e9bde3621720197af08aaceb7510e27b3c20d10b6fe783cda"
+  },
+  "invocation": [
+    "build",
+    "uk-gdpr",
+    "lower-tier"
+  ],
+  "kind": "feed",
+  "name": "penalty-schema",
+  "party": "ico",
+  "party_artefact": "party.yaml",
+  "payload_version_key": "schema_version",
+  "published_at": "2026-08-28",
+  "publisher_observation": {
+    "name": "penalty-schema",
+    "newer": null,
+    "party": "ico",
+    "pin_signature": {
+      "detail": "tag v3.0.0 on the ico checkout carries a signature block",
+      "state": "signed",
+      "tag": "v3.0.0"
+    },
+    "schema": 1,
+    "sha": "e1fb8eb5663e50088b13d872a4e44112476f516e",
+    "superseded": {
+      "detail": "v4.0.0 sign(s) penalty-schema majors ahead of the pinned v3, but this checkout carries no directory for any of them to price against",
+      "state": "unobserved"
+    },
+    "version": "v3"
+  },
+  "scenario_sha256": "3382ab9371d2040558594909c6301f771b5c6f6c452e675fb5adbb42399aa1b4",
+  "sha": "e1fb8eb5663e50088b13d872a4e44112476f516e",
+  "version": "v3"
+}

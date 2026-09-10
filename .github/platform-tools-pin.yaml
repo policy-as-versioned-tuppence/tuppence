@@ -1,0 +1,12 @@
+# Build tools only; never applied to a cluster or inherited as policy.
+# ADR-0025 delegated: compiler updates must not silently accept a policy major.
+# GitRepository shape reuses the existing tag/SHA readers; this file is outside GitOps.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: platform-tools
+spec:
+  url: https://github.com/policy-as-versioned-platform/platform
+  ref:
+    tag: v3.0.0
+    commit: 3602142e5adb26945705c3dc3f86c1ab4ad66721

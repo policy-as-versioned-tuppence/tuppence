@@ -44,6 +44,7 @@ on:
   pull_request:
     types: [closed]
     paths:
+      - .github/platform-tools-pin.yaml
       - party.yaml
       - gitops/platform/platform-pin.yaml
       - gitops/flux-system/gotk-sync-nist.yaml
@@ -71,8 +72,6 @@ permissions:
 # are the only paths any scheduled job in this repository may ever commit.
 env:
   OBSERVATION_LANE: "drift/samples.jsonl"
-  GITSIGN_VERSION: 0.17.1
-  GITSIGN_SHA256: 69213a8a0813a151e5a47d0060862952ff833a845d57309dff76f7ba6600abae
   # What a proposal commit's certificate must say -- anchored to THIS workflow,
   # on this repo, on main. Deliberately a SECOND constant, not an alternation
   # widened into release.yml's EXPECTED_IDENTITY_REGEXP: a release tag must keep
@@ -105,6 +104,14 @@ jobs:
       # -- the same two-document-YAML parser --new-pin-yaml's own run and
       # its selfcheck already exercise against this exact file -- instead of
       # a second, hand-rolled parser or a subcommand this script never had.
+      - name: Install pinned identity verifier
+        uses: ./tuppence/.github/actions/install-gitsign
+
+      - name: Independently pinned compiler tools
+        uses: ./tuppence/.github/actions/platform-tools
+        with:
+          adopter-dir: tuppence
+
       - name: read the platform pin -- the tier proposer runs THROUGH the pinned platform dependency
         id: pin
         run: |
@@ -233,7 +240,7 @@ jobs:
           echo "as_of=${as_of}" >> "$GITHUB_OUTPUT"
           out="${RUNNER_TEMP}/recomposed"
           mkdir -p "${out}"
-          python3 platform/compose/composition.py compose tuppence --estate-clone . --out "${out}" \
+          python3 tuppence/.github/scripts/platform-tools.py --adopter-dir tuppence --tools-dir platform-tools compose tuppence --estate-clone . --out "${out}" --as-of "${as_of}" \
             2>&1 | tee "${RUNNER_TEMP}/compose.json"
           status=${PIPESTATUS[0]}
           {
@@ -249,13 +256,6 @@ jobs:
           fi
           test -f "${out}/composed/evidence.json"
 
-      - name: install pinned gitsign (binary + checksum, no marketplace action)
-        run: |
-          set -euo pipefail
-          curl -sSL -o gitsign "https://github.com/sigstore/gitsign/releases/download/v${GITSIGN_VERSION}/gitsign_${GITSIGN_VERSION}_linux_amd64"
-          echo "${GITSIGN_SHA256}  gitsign" | sha256sum -c -
-          chmod +x gitsign && sudo mv gitsign /usr/local/bin/gitsign
-          rm -f gitsign
 
       - name: run the proposer -- re-composed evidence in, one PR on the governed Namespace out
         env:
@@ -278,7 +278,7 @@ jobs:
           # more, and no adopter reads platform's fixture as its own. When
           # GitHub cannot be reached the ledger is EMPTY and tier_pr.py prints
           # "ledger UNAVAILABLE" -- it never suppresses in silence.
-          python3 platform/wargamer/tier_pr.py run \
+          python3 tuppence/.github/scripts/platform-tools.py --adopter-dir tuppence --tools-dir platform-tools tier-propose \
             --adopter-dir tuppence \
             --evidence "${RUNNER_TEMP}/recomposed/composed/evidence.json" \
             --org tuppence \
