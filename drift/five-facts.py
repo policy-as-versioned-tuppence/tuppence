@@ -970,6 +970,23 @@ def _falsifier_state(src, live, identity, unhealed, kustomizations) -> dict:
     return {FALSIFIER_IDS[0]: f1, FALSIFIER_IDS[1]: f2}
 
 
+def _worse(verdict: int, observed: bool | None) -> int:
+    """The verify contract's verdict after one more fact. 1 beats 3, and both beat 0.
+
+    `max(verdict, 1)` had it exactly backwards, and it mattered. Once any fact had been recorded
+    as a could-not-look the verdict was 3, and `max(3, 1)` is 3, so every fact observed FALSE
+    after it was laundered into a skip. Measured on origin/main, 2026-09-10: `grade` returned 3
+    on a sample whose own output carried three `FALSE fact_5_...` lines, and had done so on every
+    citable run since fact 5 first went false. A fail is the strongest verdict a fact can produce
+    and nothing later may soften it; a could-not-look only ever upgrades a pass.
+    """
+    if observed is False:
+        return 1
+    if observed is None and verdict == 0:
+        return 3
+    return verdict
+
+
 def _verdict(facts: dict) -> str:
     # `if f in facts`: a record taken before the cage facts were registered carries five, and its
     # verdict is the verdict of the five it actually holds. Scoring an absent fact either way
@@ -1193,10 +1210,7 @@ def grade(path: str, max_age_hours: float) -> tuple[int, list[str]]:
                        "registered -- the sampler that took it did not look"}
             mark = {True: "true ", False: "FALSE", None: "?    "}[got["observed"]]
             lines.append(f"  {record['source']:<20} {mark} {name}: {got['why']}")
-            if got["observed"] is False:
-                verdict = max(verdict, 1)
-            elif got["observed"] is None and verdict == 0:
-                verdict = 3
+            verdict = _worse(verdict, got["observed"])
 
     # The cage's own falsifiers. Each is set by the branch of `cage_facts` that reaches it, so a
     # firing is DERIVED from the observation rather than read back out of its sentence.
@@ -1282,6 +1296,11 @@ def selfcheck() -> int:
         "a could-not-look fact must never grade PASS"
     assert _verdict({**{f: {"observed": True} for f in FACT_IDS},
                      FACT_IDS[0]: {"observed": False}}) == "FAIL"
+    # 1 beats 3: a fact observed FALSE after a could-not-look is a FAIL, never a skip.
+    assert _worse(3, False) == 1, \
+        "a fact observed false after an earlier could-not-look must FAIL, not skip"
+    assert _worse(1, None) == 1 and _worse(0, None) == 3 and _worse(0, True) == 0 \
+        and _worse(1, True) == 1 and _worse(3, True) == 3
     assert _minutes("5m") == 5 and _minutes("1h") == 60 and _minutes("") == 0
     assert inventory_id({"apiVersion": "policies.kyverno.io/v1alpha1", "kind": "MutatingPolicy",
                          "metadata": {"name": "cage-tier-3-0-0"}}) \
