@@ -31,8 +31,8 @@ spec:
   interval: 5m
   url: https://github.com/policy-as-versioned-ico/ico
   ref:
-    tag: v3.0.0
-    commit: 9d09222117dde1257e5b43401caa43342f47bae3
+    tag: v4.0.0
+    commit: 9653fd9f58a5b732d8e2f30f2f7ab56783b77ab7
     # The commit this tag resolved to when the pin was written (2026-09-04),
     # read off the publisher's real remote. Bumped as a PAIR by the Renovate
     # customManager in renovate.json -- never by hand, never a moving branch.
