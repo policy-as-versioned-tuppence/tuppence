@@ -490,6 +490,11 @@ def _cage_networkpolicies(cluster: Cluster, namespace: str, labels: dict) -> lis
     deny-all that is present and a pod that cannot connect are two observations, and this estate
     has already shipped the failure where reading the policy's own YAML passed while a
     host-network pod walked out of the cage (platform/graded/verify-graded.sh, 2026-08-28).
+
+    LIMIT, named rather than left to be found: `labels` carries the two labels the cage stamps,
+    so a NetworkPolicy selecting a pod on some OTHER label is not counted here. That direction of
+    error makes fact 7 a could-not-look on a cage that really is holding -- a false red, never a
+    false green -- which is the direction to be wrong in.
     """
     listing = cluster.get("-n", namespace, "get", "networkpolicies.networking.k8s.io")
     out = []
@@ -673,11 +678,16 @@ def _cage_reach_fact(cluster: Cluster, fallclosed: dict, control: dict, running:
                      common: dict) -> dict:
     """Fact 7. Every branch that is not an observed reach or an observed cage is a could-not-look.
 
-    The order of the branches is the whole design. A pod that REACHED falsifies the cage whatever
-    else is true, so that is asked first. After it, every remaining path to `true` has to survive
-    the control -- a pod in the same cluster, from the same image, running the same two connects,
-    that the cage left loose. A cluster whose network is broken silences both, and silencing both
-    is unmeasured here, never a cage that held.
+    The order of the branches is the whole design, and it is:
+
+      1. no workload running -- nothing to measure reach from, and fact 6 says why;
+      2. both workloads on the SAME rung -- there is no bottom rung to look at. Asked before any
+         connect because it needs none, and because the connects would otherwise measure a rung
+         that is not a bottom rung;
+      3. the bottom-rung workload REACHED -- that falsifies the cage whatever else is true;
+      4. everything after it has to survive the control: a pod in the same cluster, from the same
+         image, running the same two connects, that the cage left loose. A cluster whose network
+         is broken silences both, and silencing both is unmeasured here, never a cage that held.
     """
     ceiling = ("two pods in two namespaces, not one pod twice: in this cage the rung is a property "
                "of the NAMESPACE (ADR-0022) and never of the pod, so the control cannot be the "
