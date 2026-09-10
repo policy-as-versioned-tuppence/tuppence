@@ -105,12 +105,40 @@ jobs:
       # its selfcheck already exercise against this exact file -- instead of
       # a second, hand-rolled parser or a subcommand this script never had.
       - name: Install pinned identity verifier
-        uses: ./tuppence/.github/actions/install-gitsign
+        # Scheduled write jobs expose their steps to the containment grader.
+        # Keep one authoritative verifier pin in the reviewed shared installer.
+        env:
+          ADOPTER_DIR: tuppence
+        run: |
+          set -euo pipefail
+          pip install --quiet pyyaml
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, subprocess, yaml
+          action = Path(os.environ['ADOPTER_DIR']) / '.github/actions/install-gitsign'
+          pin = yaml.safe_load((action / 'action.yml').read_text())['runs']['steps'][0]['env']
+          subprocess.run(['bash', str(action / 'install.sh'), pin['GITSIGN_VERSION'],
+                          pin['GITSIGN_SHA256']], check=True)
+          PY
 
-      - name: Independently pinned compiler tools
-        uses: ./tuppence/.github/actions/platform-tools
+      - name: Read the independent compiler pin
+        id: tool_pin
+        run: |
+          python3 tuppence/.github/scripts/read-pins.py \
+            tuppence/.github/platform-tools-pin.yaml tools >> "$GITHUB_OUTPUT"
+
+      - name: Checkout independently pinned compiler tools
+        uses: actions/checkout@v4
         with:
-          adopter-dir: tuppence
+          repository: policy-as-versioned-platform/platform
+          path: platform-tools
+          ref: ${{ steps.tool_pin.outputs.tools_tag }}
+          fetch-depth: 0
+
+      - name: Verify compiler release before executing it
+        run: |
+          python3 tuppence/.github/scripts/platform-tools.py \
+            --adopter-dir tuppence --tools-dir platform-tools check
 
       - name: read the platform pin -- the tier proposer runs THROUGH the pinned platform dependency
         id: pin

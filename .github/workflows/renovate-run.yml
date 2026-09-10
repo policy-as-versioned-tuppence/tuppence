@@ -57,7 +57,21 @@ jobs:
           node-version: "24"
 
       - name: Install verifier for Renovate post-upgrade composition
-        uses: ./.github/actions/install-gitsign
+        # Scheduled write jobs expose their steps to the containment grader.
+        # Keep one authoritative verifier pin in the reviewed shared installer.
+        env:
+          ADOPTER_DIR: .
+        run: |
+          set -euo pipefail
+          pip install --quiet pyyaml
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, subprocess, yaml
+          action = Path(os.environ['ADOPTER_DIR']) / '.github/actions/install-gitsign'
+          pin = yaml.safe_load((action / 'action.yml').read_text())['runs']['steps'][0]['env']
+          subprocess.run(['bash', str(action / 'install.sh'), pin['GITSIGN_VERSION'],
+                          pin['GITSIGN_SHA256']], check=True)
+          PY
 
       - name: run self-hosted renovate against this repo
         env:
