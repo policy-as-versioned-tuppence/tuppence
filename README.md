@@ -66,3 +66,35 @@ same in local, CI, release and Renovate layouts. CI also runs the signed compile
 from both checkout layouts and compares every generated file and replay result;
 locally enable that regression with `PAVF_REAL_ESTATE="$estate_dir"` when running
 the tests above.
+
+## Twin sweep observations
+
+The daily twin sweep runs the existing emitter with `--check` and appends its
+actual result to `observations/twin-sweep.jsonl`, signed by the workflow identity.
+It records the actual hub/adopter commits and the existing twin pin. The hub
+loader remains the same compatibility-checked dependency the emitter already
+uses; a moving hub checkout is never described as a signed twin release.
+
+Exit0 means the existing render matches. Exit1 means a changed render needs
+review; this clock does not create a feed or its publishing contract. Exit3
+records the named missing instruments, then leaves the workflow non-green. Today
+those instruments are a signed size valuation and an admissible causal edge.
+The observation is signed and appended before the final result is reported.
+No amount, frequency, forecast, owner declaration or action is supplied by this
+clock. Propose-only and the Article22 floor are unchanged.
+
+The client-side observation cage stages only this instrument's JSONL file,
+rejects other changes and rejects a non-default branch. Public-repository push
+rulesets cannot enforce that path boundary server-side; the workflow cage and
+the hub's landed-commit lane audit remain the safeguards (ADR-0024, ticket70).
+A changed render requires a separate reviewed change with its publishing
+contract before any release; this instrument does not implement that path.
+
+Delegated under ADR-0025: add the missing clock using the existing overlay and
+emitter (tickets28/64), while preserving the emitter's observed limitations.
+The two new daily slots are staggered to avoid starting all adopter jobs at once.
+Run its outcome and executable-cage tests with:
+
+```bash
+python3 -m unittest discover -s tests -p test_twin_clock.py
+```

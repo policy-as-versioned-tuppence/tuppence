@@ -1,0 +1,107 @@
+name: twin-sweep
+
+# Tickets28/64, ADR-0024: observe the existing overlay, never invent the
+# instruments it lacks. A changed render needs review; this clock creates no
+# publishing contract, no feed, and no enactment (propose-only / Article22).
+# The hub loader still uses the existing twin/PIN.yaml compatibility check;
+# its actual checkout SHA is recorded rather than calling main a signed tag.
+on:
+  schedule:
+    - cron: '17 7 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  id-token: write
+
+# One observation instrument, not permission to alter other declarations.
+env:
+  OBSERVATION_LANE: observations/twin-sweep.jsonl
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hub/.estate-clone/tuppence
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-flux/policy-as-versioned-flux
+          path: hub
+          ref: main
+          fetch-depth: 1
+      - uses: actions/checkout@v4
+        with:
+          path: hub/.estate-clone/tuppence
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+      - name: Install pinned observation signer outside the checkout
+        id: install
+        # Scheduled write jobs use inline shell so the schedule grader can
+        # inspect their containment. Read the shared action's authoritative
+        # pin; do not duplicate its version/checksum here.
+        run: |
+          set -euo pipefail
+          pip install --quiet pyyaml
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess, yaml
+          action = Path('.github/actions/install-gitsign')
+          pin = yaml.safe_load((action / 'action.yml').read_text())['runs']['steps'][0]['env']
+          subprocess.run(['bash', str(action / 'install.sh'), pin['GITSIGN_VERSION'],
+                          pin['GITSIGN_SHA256']], check=True)
+          PY
+      - name: Verify the observation and containment instrument
+        run: |
+          pip install --quiet pyyaml
+          python3 -m unittest discover -s tests -p test_twin_clock.py
+      - name: Observe the emitter result, including missing instruments
+        id: observe
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/twin-sweep.py record \
+            --at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --run-id "$GITHUB_RUN_ID" \
+            --hub-ref "$(git -C "$GITHUB_WORKSPACE/hub" rev-parse HEAD)" \
+            --adopter-ref "$(git rev-parse HEAD)"
+      - name: the observation cage -- no declaration may leave the checkout
+        if: always()
+        run: |
+          set -euo pipefail
+          head="$(git rev-parse --abbrev-ref HEAD)"
+          if [ "$head" != "$GITHUB_REF_NAME" ] || [ "$head" != "main" ]; then
+            echo "::error::the observation must stay on the checked-out default branch"
+            exit 1
+          fi
+          git reset -q
+          for path in ${OBSERVATION_LANE}; do
+            if [ -e "$path" ]; then git add -Af -- "$path"; fi
+          done
+          for file in $(git diff --cached --name-only); do
+            if [ "$file" != "$OBSERVATION_LANE" ]; then
+              echo "::error::staged a declaration outside the observation lane"
+              exit 1
+            fi
+          done
+          outside="$(git status --porcelain --untracked-files=all | grep -v '^[AMD] ' || true)"
+          if [ -n "$outside" ]; then
+            echo "::error::the sweep changed something outside its observation lane"
+            echo "$outside"
+            exit 1
+          fi
+      - name: Sign and append the observation before reporting the result
+        id: sign
+        if: success() && steps.observe.outputs.recorded == 'true'
+        run: |
+          set -euo pipefail
+          git -c gpg.format=x509 -c gpg.x509.program=gitsign \
+            -c user.name="tuppence twin sweep" \
+            -c user.email="twin-sweep@policy-as-versioned-tuppence.invalid" \
+            commit -S -m "twin sweep: record the emitter observation [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+      - name: Preserve the recorded could-not-look or review-required result
+        id: result
+        if: always() && steps.observe.outputs.recorded == 'true'
+        run: |
+          python3 .github/scripts/twin-sweep.py gate --run-id "$GITHUB_RUN_ID"
