@@ -22,6 +22,11 @@ parents:
   name: threat-register
   version: v1
   sha: 50a0b330a730f4f9ee9520561b0c05c8be4c9268
+- party: feeds
+  kind: feed
+  name: cve
+  version: v2
+  sha: ddace466f0cc410f228aeff3b4c5704eeea15a30
 baseline: MODERATE
 floor-comparison:
   schema: 1
@@ -613,14 +618,14 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: 6993405ed1a8bc17fe5d8b0cff09676270a2478877ab511187428c14e9fce981
+  after: 3b8e2e923982b45a0a04e9cb81cbd265fa0e81bc9cefff02e4afb32aa0a6156c
   before:
     header:
       parents:
       - party: platform
         kind: implementations
-        version: 2.0.1
-        sha: 533dccb0a823001b396fd60ab08014bf75065a37
+        version: 3.3.0
+        sha: 38089a68769453db9ea3faf0ee637ae93f309980
       - party: nist
         kind: controls
         version: 1.1.0
@@ -1211,12 +1216,20 @@ comparison-inputs:
       - sr-6
       - sr-8
       ungoverned-namespaces:
+      - openbao
       - tuppence-reset
+      overlay-controls: []
+      withdrawn-selectable: false
     prices:
     - kind: feed
       source: ico
       name: penalty-schema
       proposed_tier: isolated
+      hole: null
+    - kind: supersede
+      source: ico
+      name: penalty-schema
+      proposed_tier: null
       hole: null
     - kind: feed
       source: feeds
@@ -1258,19 +1271,28 @@ vendored-feeds:
     party.yaml: 204f41b1138803ed5a43f7a7f910627d428d9f3ead7232c48b926da62f427e48
     threat-register/to_fair_scenario.py: 10e2f5b412b09a16ff8bff2e1fe108938c79b25ac20b95b4047b4e17631bcbe7
     threat-register/v1/feed.json: 50af335e60b247d2a202fa747fd3a2b80c485fc587896dc0ab4841f0e54a8b60
+- party: feeds
+  name: cve
+  version: v2
+  path: composed/feeds/feeds/v2
+  sha: ddace466f0cc410f228aeff3b4c5704eeea15a30
+  files:
+    cve/to_fair_scenario.py: 10e2f5b412b09a16ff8bff2e1fe108938c79b25ac20b95b4047b4e17631bcbe7
+    cve/v2/feed.json: 59cea1eb574ce459e839e37f35a1888e90669317df24890c52b008cb6a851595
+    party.yaml: 204f41b1138803ed5a43f7a7f910627d428d9f3ead7232c48b926da62f427e48
 exposure:
   perspective: tuppence
   currency: GBP
   attachment:
     amount: 15000.0
     currency: GBP
-  total: 9262365.331667097
+  total: 9503915.171854898
   ordinal: an ordinal, auditable comparison under one perspective; not an expected annual loss
   ordinal_basis: 'Every figure under this section is derived from published feeds through published converters, and is reproducible from the signed inputs named beside it -- that is what AUDITABLE means here. What it is NOT: the loss-event frequencies and several loss magnitudes it rests on are editorial bands carrying a named could-not-look rather than counted rates (ico penalty-schema major 4, feeds threat-register major 3), so the total is usable for COMPARING one version, one pin or one control set against another under this one perspective, and not as a number to reserve against. Totals under two different perspectives are two balance sheets and are never added (ADR-0021). Ticket 75 Q4 (a), eco-system ticket 79 item 10.'
   aggregate:
     perspective: tuppence
     currency: GBP
-    selected_tier_residual_total: 185247.30663334212
+    selected_tier_residual_total: 190078.30343709813
     tolerance: 15000.0
     tolerance_currency: GBP
     tolerance_in_reporting_currency: null
@@ -1283,6 +1305,9 @@ exposure:
     - name: threat-register
       tier: isolated
       residual: 4451.486238056754
+    - name: cve
+      tier: isolated
+      residual: 4830.996803756019
     not_tiered: []
     basis: 'The sum of what each priced line''s OWN selected tier leaves, through fair.sum_prices, against the ONE annual-aggregate quantity appetite.tolerance declares (ticket 75 Q4). The ladder picks a tier per line against that number, so lines that each fit can breach it together; this is where that shows. Not a refusal: there is no gate (ADR-0020), a breach is priced and shown. Every priced line carries a selected tier.'
   regimes:
@@ -1309,4 +1334,10 @@ exposure:
     feed: threat-register
     version: v1
     amount: 222574.31190283748
+    controls: []
+  - name: cve
+    source: feeds
+    feed: cve
+    version: v2
+    amount: 241549.84018780073
     controls: []
