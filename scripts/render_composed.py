@@ -12,10 +12,37 @@ platform's `render-orphan-guard.py` is the offline twin of its ResourceSet.
     render_composed.py --list                    the objects, one `kind/name` per line
     render_composed.py                           the canonical render, one JSON object per line
     render_composed.py --ref v1.1.0              render the tree at a git ref, not the worktree
+    render_composed.py reach [--ref REF]         the delivery check (ticket 130), exit 1 on a fault
+    render_composed.py selfcheck
 
-The set rendered is exactly the set the ResourceSet installs: every version in the ResourceSet's
-own array (read from gitops/composed/composed-set.yaml, so the two cannot drift apart) plus the
-orphan guard. `HEADER.yaml` and `evidence.json` are advisory and are not objects.
+## Two sources, read from where each one really comes from (ticket 130)
+
+The ResourceSet is applied from the CHECKOUT (`kubectl apply -k gitops/composed/`), so
+`gitops/composed/composed-set.yaml` is always read from the working tree. The Kustomizations it
+generates reconcile `composed/` from the TAG the ResourceSet pins, so `composed/` is read at
+`--ref`. Until ticket 130 both were read at `--ref`, and the day the pin moved to a tag cut
+before the move, the array came from the old composed-set.yaml inside that tag and named version
+directories the tag does not carry.
+
+The set rendered is exactly the set the ResourceSet installs. The ResourceSet's own template is
+expanded over its own array: every Kustomization it generates over this repository's composed
+source is a route, and every other object in the template is installed inline. A route whose
+directory holds a `kustomization.yaml` delivers exactly its `resources`; one without delivers
+every manifest under it, which is what Flux generates. `HEADER.yaml` and `evidence.json` are
+advisory and are not objects.
+
+## The delivery check (ticket 130)
+
+`reach()` refuses, naming each fault, when:
+
+  * the array is not the set of `composed/policies/v*/` directories at the pinned tag;
+  * a route names a directory the tag does not carry;
+  * an object under `composed/` is reached by no route, or by two;
+  * a route reaches a file that holds no object;
+  * one kind and name is delivered twice (a route and the template, or two routes);
+  * a machinery allow-list is not the array (a claim on a version outside the array that the
+    allow-list admits reaches no cage at all);
+  * nothing cages or refuses an orphan claim.
 
 ## The ceiling, named
 
@@ -34,6 +61,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -42,7 +70,11 @@ import yaml
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 COMPOSED = "composed"
-RESOURCESET = os.path.join(REPO, "gitops", "composed", "composed-set.yaml")
+RESOURCESET_PATH = "gitops/composed/composed-set.yaml"
+RESOURCESET = os.path.join(REPO, RESOURCESET_PATH)
+KUSTOMIZE_CONFIG = "kustomize.config.k8s.io/"
+MACHINERY_LABEL = ("policy-as-versioned.dev/policy", "platform-machinery")
+VERSION_LIST = re.compile(r"\[\s*'\d+\.\d+\.\d+'(?:\s*,\s*'\d+\.\d+\.\d+')*\s*\]")
 
 # Everything the API server owns. Stripped from a live object before any comparison, because none
 # of it was ever declared by the render and its presence is not drift.
@@ -53,50 +85,204 @@ SERVER_METADATA = (
 SERVER_ANNOTATIONS = ("kubectl.kubernetes.io/last-applied-configuration",)
 
 
-def _read(path: str, ref: str | None) -> str:
+class CouldNotLook(Exception):
+    """The install cannot be read, so nothing about it can be graded."""
+
+
+# --- reading the tree at a ref -------------------------------------------------------------------
+def _read(path: str, ref: str | None, repo: str = REPO) -> str:
     if ref is None:
-        with open(os.path.join(REPO, path)) as fh:
+        with open(os.path.join(repo, path)) as fh:
             return fh.read()
-    return subprocess.run(["git", "-C", REPO, "show", f"{ref}:{path}"],
+    return subprocess.run(["git", "-C", repo, "show", f"{ref}:{path}"],
                           capture_output=True, text=True, check=True).stdout
 
 
-def _ls(path: str, ref: str | None) -> list[str]:
-    if ref is None:
-        directory = os.path.join(REPO, path)
-        if not os.path.isdir(directory):
-            return []
-        return [f"{path}/{n}" for n in sorted(os.listdir(directory)) if n.endswith(".yaml")]
-    done = subprocess.run(["git", "-C", REPO, "ls-tree", "-r", "--name-only", ref, path + "/"],
-                          capture_output=True, text=True, check=True)
-    return sorted(n for n in done.stdout.split() if n.endswith(".yaml"))
-
-
-def versions(ref: str | None = None) -> list[str]:
-    """The version array the ResourceSet declares. Read from the ResourceSet itself so the render
-    and the install can never name different sets; a version added there is rendered here on the
-    next run with no edit to this file."""
+def _exists(path: str, ref: str | None, repo: str = REPO) -> bool:
     try:
-        docs = [d for d in yaml.safe_load_all(_read("gitops/composed/composed-set.yaml", ref))
-                if isinstance(d, dict) and d.get("kind") == "ResourceSet"]
-        doc = docs[0]
-    except (OSError, IndexError, subprocess.CalledProcessError):
-        # No ResourceSet yet (or not at that ref): fall back to what composed/ carries, so the
-        # renderer still answers rather than crashing during the build that adds the ResourceSet.
-        prefix = f"{COMPOSED}/policies/"
-        found = set()
-        for path in _ls(f"{COMPOSED}/policies", ref) or []:
-            found.add(path[len(prefix):].split("/")[0])
-        if not found:
-            done = subprocess.run(["git", "-C", REPO, "ls-tree", "--name-only",
-                                   ref or "HEAD", f"{COMPOSED}/policies/"],
-                                  capture_output=True, text=True)
-            found = {p.rstrip("/").split("/")[-1] for p in done.stdout.split() if p.strip()}
-        return sorted(v.lstrip("v") for v in found if v)
-    array = (doc.get("spec", {}).get("inputs") or [{}])[0].get("versions") or []
+        _read(path, ref, repo)
+        return True
+    except (OSError, subprocess.CalledProcessError):
+        return False
+
+
+def _tree(path: str, ref: str | None, repo: str = REPO) -> list[str]:
+    """Every file under `path`, recursively, repository-relative and sorted."""
+    path = path.rstrip("/")
+    if ref is None:
+        base = os.path.join(repo, path)
+        out = []
+        for d, _, names in os.walk(base):
+            for n in names:
+                out.append(os.path.relpath(os.path.join(d, n), repo))
+        return sorted(out)
+    done = subprocess.run(["git", "-C", repo, "ls-tree", "-r", "--name-only", ref, path + "/"],
+                          capture_output=True, text=True)
+    return sorted(done.stdout.split()) if done.returncode == 0 else []
+
+
+def _is_dir(path: str, ref: str | None, repo: str = REPO) -> bool:
+    if ref is None:
+        return os.path.isdir(os.path.join(repo, path))
+    return bool(_tree(path, ref, repo))
+
+
+def _objects(text: str) -> list[dict]:
+    return [d for d in yaml.safe_load_all(text)
+            if isinstance(d, dict) and d.get("kind")
+            and not str(d.get("apiVersion", "")).startswith(KUSTOMIZE_CONFIG)]
+
+
+# --- the install: composed-set.yaml, always from the checkout ------------------------------------
+def install(repo: str = REPO) -> tuple[dict, dict]:
+    """(the GitRepository, the ResourceSet) as the checkout declares them."""
+    try:
+        docs = [d for d in yaml.safe_load_all(_read(RESOURCESET_PATH, None, repo)) if isinstance(d, dict)]
+    except OSError as e:
+        raise CouldNotLook(f"{RESOURCESET_PATH} cannot be read: {e}") from e
+    source = next((d for d in docs if d.get("kind") == "GitRepository"), None)
+    rset = next((d for d in docs if d.get("kind") == "ResourceSet"), None)
+    if source is None or rset is None:
+        raise CouldNotLook(f"{RESOURCESET_PATH} declares no GitRepository and ResourceSet pair")
+    return source, rset
+
+
+def pinned_tag(repo: str = REPO) -> str:
+    source, _ = install(repo)
+    tag = ((source.get("spec") or {}).get("ref") or {}).get("tag")
+    if not tag:
+        raise CouldNotLook(f"{RESOURCESET_PATH} pins no tag")
+    return str(tag)
+
+
+def versions(ref: str | None = None, repo: str = REPO) -> list[str]:
+    """The version array the ResourceSet declares, read from the checkout. `ref` is accepted for
+    the callers that pass it and ignored: the ResourceSet is applied from the checkout, never from
+    the tag it pins (ticket 130)."""
+    _, rset = install(repo)
+    array = (rset.get("spec", {}).get("inputs") or [{}])[0].get("versions") or []
     return [str(v["version"]) for v in array]
 
 
+# --- expanding the ResourceSet template ----------------------------------------------------------
+_TOKEN = re.compile(r"<<\s*(.*?)\s*>>", re.S)
+_RANGE = re.compile(r'^range\s+(?:(\$\w+)\s*,\s*)?(\$\w+)\s*:=\s*\(index\s+\(inputs\)\s+"versions"\)$')
+
+
+def _slugify(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+
+
+def _parse(template: str) -> list:
+    """The subset of flux-operator's template language the adopters' ResourceSets use: a range
+    over the versions input (with or without an index), `if $i`, `end`, `$v.version` and
+    `$v.version | slugify`. Anything else is could-not-look, never a guess."""
+    root: list = []
+    stack = [root]
+    pos = 0
+    for m in _TOKEN.finditer(template):
+        stack[-1].append(template[pos:m.start()])
+        pos = m.end()
+        tok = m.group(1)
+        rng = _RANGE.match(tok)
+        if rng:
+            body: list = []
+            stack[-1].append({"range": (rng.group(1), rng.group(2)), "body": body})
+            stack.append(body)
+        elif re.fullmatch(r"if\s+\$\w+", tok):
+            body = []
+            stack[-1].append({"if": tok.split()[1], "body": body})
+            stack.append(body)
+        elif tok == "end":
+            if len(stack) == 1:
+                raise CouldNotLook("the ResourceSet template closes a block it never opened")
+            stack.pop()
+        elif re.fullmatch(r"\$\w+\.version(\s*\|\s*slugify)?", tok):
+            stack[-1].append({"var": tok.split(".")[0], "slug": "slugify" in tok})
+        else:
+            raise CouldNotLook(f"the ResourceSet template uses `<< {tok} >>`, which this render "
+                               "does not read")
+    if len(stack) != 1:
+        raise CouldNotLook("the ResourceSet template leaves a block open")
+    stack[-1].append(template[pos:])
+    return root
+
+
+def _eval(nodes: list, env: dict, array: list[str]) -> str:
+    out = []
+    for n in nodes:
+        if isinstance(n, str):
+            out.append(n)
+        elif "range" in n:
+            idx, var = n["range"]
+            for i, v in enumerate(array):
+                scope = dict(env, **{var: v})
+                if idx:
+                    scope[idx] = i
+                out.append(_eval(n["body"], scope, array))
+        elif "if" in n:
+            if n["if"] not in env:
+                raise CouldNotLook(f"the ResourceSet template tests {n['if']} outside its range")
+            if env[n["if"]]:
+                out.append(_eval(n["body"], env, array))
+        else:
+            if n["var"] not in env:
+                raise CouldNotLook(f"the ResourceSet template reads {n['var']} outside its range")
+            value = str(env[n["var"]])
+            out.append(_slugify(value) if n["slug"] else value)
+    return "".join(out)
+
+
+def expand(repo: str = REPO) -> list[dict]:
+    """Every object the ResourceSet generates, as the checkout declares it."""
+    source, rset = install(repo)
+    template = (rset.get("spec") or {}).get("resourcesTemplate") or ""
+    text = _eval(_parse(template), {}, versions(None, repo))
+    return [d for d in yaml.safe_load_all(text) if isinstance(d, dict) and d.get("kind")]
+
+
+def routes(repo: str = REPO) -> tuple[list[str], list[dict]]:
+    """(the composed paths the generated Kustomizations reconcile, the objects installed inline)."""
+    source, _ = install(repo)
+    name = source["metadata"]["name"]
+    paths, inline = [], []
+    for doc in expand(repo):
+        spec = doc.get("spec") or {}
+        ref = spec.get("sourceRef") or {}
+        if (doc["kind"] == "Kustomization" and str(doc.get("apiVersion", "")).startswith("kustomize.toolkit.fluxcd.io/")
+                and ref.get("kind") == "GitRepository" and ref.get("name") == name):
+            paths.append(os.path.normpath(str(spec.get("path") or ".")))
+        else:
+            inline.append(doc)
+    return paths, inline
+
+
+def reached_files(path: str, ref: str | None, repo: str = REPO) -> list[str]:
+    """The files one route delivers: its kustomization's `resources`, or every manifest under it."""
+    kz = f"{path}/kustomization.yaml"
+    if _exists(kz, ref, repo):
+        doc = yaml.safe_load(_read(kz, ref, repo)) or {}
+        return [os.path.normpath(f"{path}/{r}") for r in doc.get("resources") or []]
+    return [p for p in _tree(path, ref, repo) if p.endswith((".yaml", ".yml", ".json"))]
+
+
+def _holds_objects(f: str, ref: str | None, repo: str = REPO) -> bool:
+    try:
+        return bool(_objects(_read(f, ref, repo)))
+    except (OSError, subprocess.CalledProcessError, yaml.YAMLError):
+        return False
+
+
+def broken_files(path: str, ref: str | None, repo: str = REPO) -> list[str]:
+    """The files a route reaches that hold no cluster object. One is enough to fail the build:
+    measured with flux 2.9.5, `flux build kustomization --dry-run` over a composed/ tree with no
+    kustomization.yaml stops at `failed to decode Kubernetes YAML from .../composed/HEADER.yaml:
+    missing Resource metadata`, and applies nothing from that route."""
+    return [f for f in reached_files(path, ref, repo)
+            if os.path.basename(f) != "kustomization.yaml" and not _holds_objects(f, ref, repo)]
+
+
+# --- the render fact 4 compares against ----------------------------------------------------------
 def key(obj: dict) -> str:
     return f"{obj.get('apiVersion')}/{obj.get('kind')}/{obj.get('metadata', {}).get('name')}"
 
@@ -156,28 +342,145 @@ def compare(declared: dict, live: dict) -> dict:
     }
 
 
-def render(ref: str | None = None) -> dict[str, dict]:
-    """{key: object} -- the composed set as bytes, with no cluster in the loop."""
-    paths = [f"{COMPOSED}/orphan-guard.yaml"]
-    for version in versions(ref):
-        paths += _ls(f"{COMPOSED}/policies/v{version}", ref)
-    objects: dict[str, dict] = {}
+def _delivered(ref: str | None, repo: str = REPO) -> list[tuple[str, dict]]:
+    """(where it came from, object) for everything the install delivers, in delivery order."""
+    paths, inline = routes(repo)
+    out: list[tuple[str, dict]] = []
     for path in paths:
-        try:
-            text = _read(path, ref)
-        except (OSError, subprocess.CalledProcessError):
+        if broken_files(path, ref, repo):
+            continue  # kustomize refuses the whole build, so the route delivers nothing
+        for f in reached_files(path, ref, repo):
+            try:
+                text = _read(f, ref, repo)
+            except (OSError, subprocess.CalledProcessError):
+                continue
+            for doc in _objects(text):
+                out.append((f, doc))
+    for doc in inline:
+        out.append((RESOURCESET_PATH, doc))
+    return out
+
+
+def render(ref: str | None = None, repo: str = REPO) -> dict[str, dict]:
+    """{key: object} -- the composed set as bytes, with no cluster in the loop. The generated
+    Kustomizations themselves are Flux machinery, not policy, and are not rendered."""
+    objects: dict[str, dict] = {}
+    for source, doc in _delivered(ref, repo):
+        if doc["kind"] == "Kustomization" and str(doc.get("apiVersion", "")).startswith("kustomize.toolkit"):
             continue
-        for doc in yaml.safe_load_all(text):
-            if isinstance(doc, dict) and doc.get("kind"):
-                doc.setdefault("_source_path", path)
-                objects[key(doc)] = doc
+        doc = dict(doc)
+        doc.setdefault("_source_path", source)
+        objects[key(doc)] = doc
     return objects
+
+
+# --- the delivery check (ticket 130) -------------------------------------------------------------
+def _strings(node):
+    if isinstance(node, str):
+        yield node
+    elif isinstance(node, dict):
+        for v in node.values():
+            yield from _strings(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _strings(v)
+
+
+def _is_machinery(doc: dict) -> bool:
+    labels = (doc.get("metadata") or {}).get("labels") or {}
+    return labels.get(MACHINERY_LABEL[0]) == MACHINERY_LABEL[1]
+
+
+def reach(ref: str | None = None, repo: str = REPO) -> list[str]:
+    """Every fault in the delivery of `composed/` at `ref` (default: the tag the ResourceSet
+    pins). Empty means every object the composer rendered reaches the cluster once, the array is
+    the tree, and no claim falls between the machinery and the served cages."""
+    faults: list[str] = []
+    if ref is None:
+        ref = pinned_tag(repo)
+    array = versions(None, repo)
+    paths, inline = routes(repo)
+
+    tree_versions = sorted({p.split("/")[2][1:] for p in _tree(f"{COMPOSED}/policies", ref, repo)
+                            if p.count("/") >= 3})
+    if sorted(array) != tree_versions:
+        faults.append(f"array-not-tree: the ResourceSet installs {sorted(array)} and "
+                      f"{COMPOSED}/policies/ at {ref} carries {tree_versions}")
+
+    reached: dict[str, list[str]] = {}
+    for path in paths:
+        if not _is_dir(path, ref, repo):
+            faults.append(f"missing-route: a Kustomization reconciles ./{path}, which {ref} does not carry")
+            continue
+        for f in reached_files(path, ref, repo):
+            reached.setdefault(f, []).append(path)
+
+    for f, by in sorted(reached.items()):
+        if len(by) > 1:
+            faults.append(f"reached-twice: {f} is delivered by {len(by)} routes ({', '.join('./' + b for b in by)})")
+        if not _exists(f, ref, repo):
+            faults.append(f"missing-file: ./{by[0]} names {f}, which {ref} does not carry")
+        elif os.path.basename(f) != "kustomization.yaml" and not _holds_objects(f, ref, repo):
+            faults.append(f"not-an-object: ./{by[0]} reaches {f}, which holds no cluster object, "
+                          f"so that route fails to build and delivers nothing")
+
+    for f in _tree(COMPOSED, ref, repo):
+        if not f.endswith((".yaml", ".yml")):
+            continue
+        if _objects(_read(f, ref, repo)) and f not in reached:
+            faults.append(f"unreached: {f} is rendered at {ref} and no Kustomization the "
+                          f"ResourceSet generates delivers it")
+
+    delivered = _delivered(ref, repo)
+    owners: dict[str, list[str]] = {}
+    for source, doc in delivered:
+        owners.setdefault(f"{doc['kind']}/{doc['metadata']['name']}", []).append(source)
+    for name, by in sorted(owners.items()):
+        if len(by) > 1:
+            faults.append(f"two-owners: {name} is delivered by {' and '.join(by)}")
+
+    for source, doc in delivered:
+        if not _is_machinery(doc):
+            continue
+        for s in _strings(doc.get("spec")):
+            for lst in VERSION_LIST.findall(s):
+                allowed = sorted(re.findall(r"'(\d+\.\d+\.\d+)'", lst))
+                if allowed != sorted(array):
+                    faults.append(f"allow-list: {doc['kind']}/{doc['metadata']['name']} ({source}) "
+                                  f"admits {allowed} and the ResourceSet installs {sorted(array)}; "
+                                  f"a claim on a version in one and not the other reaches no cage")
+
+    caged = any(d["kind"] == "MutatingPolicy" and d["metadata"]["name"] == "policy-version-orphan-cage"
+                for _, d in delivered)
+    refused = any(d["kind"] == "ValidatingPolicy" and d["metadata"]["name"] == "policy-version-orphan-guard"
+                  and "Deny" in ((d.get("spec") or {}).get("validationActions") or [])
+                  for _, d in delivered)
+    if not caged and not refused:
+        faults.append("orphan-uncaged: nothing delivered cages or refuses a pod that claims a "
+                      "version outside the array (no policy-version-orphan-cage, no Deny "
+                      "policy-version-orphan-guard)")
+    return faults
 
 
 def main(argv: list[str]) -> int:
     ref = None
     if "--ref" in argv:
         ref = argv[argv.index("--ref") + 1]
+    if argv[:1] == ["reach"]:
+        try:
+            at = ref or pinned_tag()
+            faults = reach(at)
+        except CouldNotLook as e:
+            print(f"COULD NOT LOOK: {e}")
+            return 3
+        for f in faults:
+            print(f"FAULT {f}")
+        if faults:
+            print(f"REFUSED: {len(faults)} fault(s) in the delivery of composed/ at {at}")
+            return 1
+        print(f"OK: every object under composed/ at {at} is delivered exactly once, the array is "
+              f"the tree, and every machinery allow-list is the array")
+        return 0
     objects = render(ref)
     if "--list" in argv:
         for k in sorted(objects):
@@ -208,9 +511,18 @@ def selfcheck() -> int:
     missing = json.loads(json.dumps(declared))
     del missing["data"]
     assert not compare(declared, missing)["declared_equal"], "an absent declared field IS drift"
-    objects = render()
+    # The render that matters is the one at the tag the ResourceSet pins: that is the tree the
+    # Kustomizations reconcile. The working tree is the fallback where the tag is not fetched.
+    try:
+        at: str | None = pinned_tag()
+        subprocess.run(["git", "-C", REPO, "rev-parse", "--verify", "--quiet", f"{at}^{{commit}}"],
+                       check=True, capture_output=True)
+    except (CouldNotLook, subprocess.CalledProcessError):
+        at = None
+    objects = render(at)
     assert objects, "the composed set rendered to nothing"
-    print(f"ok  compare() bites both ways; the composed set renders {len(objects)} objects")
+    print(f"ok  compare() bites both ways; the composed set renders {len(objects)} objects "
+          f"at {at or 'the working tree'}")
     return 0
 
 

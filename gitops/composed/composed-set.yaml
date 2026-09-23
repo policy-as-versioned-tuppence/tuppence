@@ -7,9 +7,16 @@
 # the right name satisfies the weaker check and proves nothing about reconciliation.
 #
 # The shape is platform's own `distribution/versions.yaml`, one level down: ONE version array is
-# the whole contract, a ResourceSet ranges it into a Kustomization per version, and the
-# orphan-guard's CEL allow-list is ranged from the SAME array so the set of runnable versions
-# cannot drift from the set the array declares.
+# the whole contract, and a ResourceSet ranges it into a Kustomization per version. One more
+# Kustomization, `composed-machinery`, reconciles `./composed` itself, where the composition
+# renders the platform machinery (the orphan guard and cage, the governed-namespace cages, their
+# holds and report, the bottom-rung reach cage and the `cage-isolated` class they name) together
+# with the `kustomization.yaml` that lists exactly those files (eco-system ticket 130). The
+# machinery's CEL allow-lists are ranged by the composition from the platform's served array, so
+# this array must be exactly the version directories the pinned tag carries: a version composed
+# and not installed would be admitted by the orphan cage and caged by nothing.
+# `scripts/render_composed.py reach` grades that, and every other way a composed object can miss
+# the cluster, offline.
 #
 # What is different here, and deliberately so:
 #
@@ -59,7 +66,7 @@ metadata:
     # verified with somebody else's identity is observed false rather than merely 'verified'.
     policy-as-versioned.dev/gitsign-identity-regexp: ^https://github\.com/policy-as-versioned-tuppence/tuppence/\.github/workflows/cut-release\.yml@refs/heads/(main|release/[0-9]+\.[0-9]+\.x)$
     policy-as-versioned.dev/gitsign-issuer: https://token.actions.githubusercontent.com
-    policy-as-versioned.dev/gitsign-gates: flux-system/composed-v2-0-0,flux-system/composed-v2-0-1,flux-system/composed-v3-0-0
+    policy-as-versioned.dev/gitsign-gates: flux-system/composed-v2-0-0,flux-system/composed-v2-0-1,flux-system/composed-v3-0-0,flux-system/composed-machinery
   labels:
     policy-as-versioned.dev/composed-for: tuppence
 spec:
@@ -81,9 +88,11 @@ metadata:
 spec:
   inputs:
     - versions:
-        # The versions tuppence's composition rendered under composed/policies/. This array is
-        # the adopter's contract and `scripts/render_composed.py` READS IT to decide what to
-        # render offline, so the offline render and the install can never name different sets.
+        # The versions tuppence's composition rendered under composed/policies/ at the tag above. This
+        # array is the adopter's contract: `scripts/render_composed.py` READS IT to decide what to
+        # render offline, and `render_composed.py reach` refuses it unless it equals the version
+        # directories the pinned tag carries and every machinery allow-list at that tag. Move it
+        # in the same pull request that moves the tag.
         - { version: "2.0.0" }
         - { version: "2.0.1" }
         - { version: "3.0.0" }
@@ -114,46 +123,28 @@ spec:
       wait: true
     << end >>
     ---
-    # The orphan-guard: rendered ONCE, allow-list ranged from the SAME array, so a pod claiming a
-    # policy version no element declares cannot run. composed/orphan-guard.yaml is the same object
-    # rendered by tuppence's composition; fact 4 of the sample compares the live object to THAT
-    # file, so the two copies diverging is observed rather than assumed away.
-    # ponytail: the duplication exists because composed/ carries no kustomization.yaml and a Flux
-    # Kustomization cannot select single files out of a directory that also holds HEADER.yaml and
-    # evidence.json. Upgrade path: composed/ grows a kustomization.yaml and this block becomes a
-    # second `path:`.
-    apiVersion: policies.kyverno.io/v1alpha1
-    kind: ValidatingPolicy
+    # The platform machinery at the composed/ root (eco-system ticket 130). Until this route
+    # existed a policy-version-orphan-guard was written inline here, as a Deny ranged from the
+    # array, because composed/ carried no kustomization.yaml and a Flux Kustomization cannot
+    # select single files out of a directory that also holds HEADER.yaml and evidence.json. The
+    # composition now renders that kustomization.yaml, listing exactly the machinery files, so
+    # the machinery arrives as rendered and signed, not as a second hand-kept copy. The inline
+    # guard is gone: two owners of one name is what ticket 40 Q5 removed, and the composed guard
+    # is an Audit beside an orphan CAGE, where the inline one refused.
+    apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
     metadata:
-      name: policy-version-orphan-guard
+      name: composed-machinery
+      namespace: flux-system
       labels:
-        policy-as-versioned.dev/policy: platform-machinery
         policy-as-versioned.dev/composed-for: tuppence
-      annotations:
-        policy-as-versioned.dev/inherited-from: platform@1.1.1
-        policy-as-versioned.dev/source-path: distribution/versions.yaml (rendered from the array)
     spec:
-      validationActions:
-      - Deny
-      matchConstraints:
-        resourceRules:
-        - apiGroups:
-          - ''
-          apiVersions:
-          - v1
-          operations:
-          - CREATE
-          - UPDATE
-          resources:
-          - pods
-      matchConditions:
-      - name: has-policy-version-label
-        expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('') != ''
-      variables:
-      - name: allowed
-        expression: '[<< range $i, $v := (index (inputs) "versions") >><< if $i >>, << end >>''<< $v.version >>''<< end >>]'
-      - name: claimed
-        expression: object.metadata.labels['policy-as-versioned.dev/policy-version']
-      validations:
-      - expression: variables.allowed.exists(v, v == variables.claimed)
-        message: 'policy-version not in the platform-declared version array (orphan): no ResourceSet element declares it, so it cannot run.'
+      interval: 5m
+      retryInterval: 1m
+      timeout: 3m
+      sourceRef:
+        kind: GitRepository
+        name: tuppence-composed
+      path: ./composed
+      prune: true
+      wait: true
