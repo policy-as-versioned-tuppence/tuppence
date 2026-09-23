@@ -613,14 +613,14 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: 794c838a4d178bd0468df14ad62ec10c35d9af3677d18e0c1ce283dfdc04fbdd
+  after: 6993405ed1a8bc17fe5d8b0cff09676270a2478877ab511187428c14e9fce981
   before:
     header:
       parents:
       - party: platform
         kind: implementations
-        version: 2.0.1
-        sha: 533dccb0a823001b396fd60ab08014bf75065a37
+        version: 3.3.0
+        sha: 38089a68769453db9ea3faf0ee637ae93f309980
       - party: nist
         kind: controls
         version: 1.1.0
@@ -1211,12 +1211,20 @@ comparison-inputs:
       - sr-6
       - sr-8
       ungoverned-namespaces:
+      - openbao
       - tuppence-reset
+      overlay-controls: []
+      withdrawn-selectable: false
     prices:
     - kind: feed
       source: ico
       name: penalty-schema
       proposed_tier: isolated
+      hole: null
+    - kind: supersede
+      source: ico
+      name: penalty-schema
+      proposed_tier: null
       hole: null
     - kind: feed
       source: feeds
