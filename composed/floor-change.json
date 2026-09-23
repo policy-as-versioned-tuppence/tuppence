@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "before": {
+    "known": false
+  },
+  "after": {
+    "known": true,
+    "value": null
+  },
+  "changed": null,
+  "basis": "floor-only counterfactual at current publisher, scenario, appetite and selection inputs",
+  "residual_basis": "platform-cage-tiers@1.0.0",
+  "lines": [
+    {
+      "source": "ico",
+      "kind": "feed",
+      "name": "penalty-schema",
+      "perspective": "tuppence",
+      "currency": "GBP",
+      "uncaged_amount": 9039791.01976426,
+      "before_tier": null,
+      "after_tier": "isolated",
+      "before_residual": null,
+      "after_residual": 180795.82039528535,
+      "residual_delta": null
+    },
+    {
+      "source": "feeds",
+      "kind": "feed",
+      "name": "threat-register",
+      "perspective": "tuppence",
+      "currency": "GBP",
+      "uncaged_amount": 222574.31190283748,
+      "before_tier": null,
+      "after_tier": "isolated",
+      "before_residual": null,
+      "after_residual": 4451.486238056754,
+      "residual_delta": null
+    }
+  ],
+  "could_not_look": "previous floor was not recorded; absence of history is not an absent floor",
+  "limit": "selection evidence, not an enacted Namespace tier; platform reductions are self-declared calibration, not measured effectiveness"
+}
