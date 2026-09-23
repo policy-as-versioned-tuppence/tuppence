@@ -2838,7 +2838,7 @@
   "ungoverned": [
     {
       "namespace": "openbao",
-      "status": "recorded",
+      "status": "new",
       "price": {
         "perspective": "tuppence",
         "currency": "GBP",
@@ -3118,7 +3118,16 @@
       ]
     }
   ],
-  "deltas": [],
+  "deltas": [
+    {
+      "kind": "new-ungoverned-namespace",
+      "namespace": "openbao",
+      "perspective": "tuppence",
+      "currency": "GBP",
+      "amount": 2315591.3329167743,
+      "detail": "openbao is declared or named in the adopter's repo without governed: \"true\", and was not in the last signed composed artefact's recorded ungoverned set; priced at 2315591.33 GBP as 1 of 4 institution workloads x ramp 1.0000"
+    }
+  ],
   "floor_change": {
     "schema": 1,
     "before": {

@@ -121,7 +121,7 @@ Source: `composed/HEADER.yaml` → `baseline`, `selected-controls`, `holes`; `co
 - So 2 of 287 selected controls have an implementation in this artefact. A hole is priced, never refused (ADR-0020).
 - `refusals[]`: 0
 - `restatements[]`: 0
-- `deltas[]`: 0
+- `deltas[]`: 1
 - `ungoverned[]`: 2
 
 ## 6. What this handbook cannot say
