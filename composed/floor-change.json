@@ -36,6 +36,19 @@
       "before_residual": null,
       "after_residual": 4451.486238056754,
       "residual_delta": null
+    },
+    {
+      "source": "feeds",
+      "kind": "feed",
+      "name": "cve",
+      "perspective": "tuppence",
+      "currency": "GBP",
+      "uncaged_amount": 241549.84018780073,
+      "before_tier": null,
+      "after_tier": "isolated",
+      "before_residual": null,
+      "after_residual": 4830.996803756019,
+      "residual_delta": null
     }
   ],
   "could_not_look": "previous floor was not recorded; absence of history is not an absent floor",

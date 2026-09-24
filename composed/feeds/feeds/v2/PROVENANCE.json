@@ -1,0 +1,39 @@
+{
+  "converter": "cve/to_fair_scenario.py",
+  "converter_from": "platform",
+  "feed_path": "cve/v2/feed.json",
+  "files": {
+    "cve/to_fair_scenario.py": "10e2f5b412b09a16ff8bff2e1fe108938c79b25ac20b95b4047b4e17631bcbe7",
+    "cve/v2/feed.json": "59cea1eb574ce459e839e37f35a1888e90669317df24890c52b008cb6a851595",
+    "party.yaml": "204f41b1138803ed5a43f7a7f910627d428d9f3ead7232c48b926da62f427e48"
+  },
+  "invocation": [
+    "cve"
+  ],
+  "kind": "feed",
+  "name": "cve",
+  "party": "feeds",
+  "party_artefact": "party.yaml",
+  "payload_version_key": "feed_version",
+  "published_at": "2026-07-31",
+  "publisher_observation": {
+    "name": "cve",
+    "newer": null,
+    "party": "feeds",
+    "pin_signature": {
+      "detail": "no signed tag cve/v2.x.y (or v2.x.y) exists on the feeds parent's checkout, which carries 3 tag(s) of its own",
+      "state": "untagged",
+      "tag": null
+    },
+    "schema": 1,
+    "sha": "ddace466f0cc410f228aeff3b4c5704eeea15a30",
+    "superseded": {
+      "detail": "no signed tag of the form cve/vN.x.y with N > 2 on the feeds checkout, so the pinned v2 is the newest published major",
+      "state": "current"
+    },
+    "version": "v2"
+  },
+  "scenario_sha256": "59127e45b7ed0d99c102c9fd3b474e3ccd5cb4e990e43c04a3a382dbf7ded9a4",
+  "sha": "ddace466f0cc410f228aeff3b4c5704eeea15a30",
+  "version": "v2"
+}

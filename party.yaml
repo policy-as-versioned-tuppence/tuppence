@@ -28,6 +28,15 @@ inherits:
   - { party: nist,     kind: controls,        version: "1.1.0", since: '2026-08-28' }
   - { party: ico,      kind: feed, name: penalty-schema,    version: "v3", since: '2026-08-28' }
   - { party: feeds,    kind: feed, name: threat-register,   version: "v1", since: '2026-08-28' }
+  # Eco-system ticket 84: the CVE feed the feeds publisher carries (cve/v2, the newest
+  # directory it publishes). Priced through platform's converter as the feed's headline
+  # entry. The publisher has cut no cve/vX.Y.Z tag yet, so until it does this pin is an
+  # untagged pin -- a PRICED HOLE of the whole line under this party's own perspective
+  # (ticket 69), never a refusal. v2 rather than v1 because two feeds of one publisher
+  # at one major share a vendored directory (ticket 45 refuses that), and v2 is what a
+  # subscriber joining today would pin. Renovate bumps this line when a newer major is tagged;
+  # a supersede line (ticket 84) prices staying behind and the proposer opens the retirement.
+  - { party: feeds,    kind: feed, name: cve,               version: "v2", since: '2026-09-08' }
 overlay:
   add: []
   restate: []
