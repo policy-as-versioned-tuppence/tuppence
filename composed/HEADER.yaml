@@ -618,7 +618,7 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: 0014c0550f979145f0aa043d89395ebd28969a7e2a78bba5f57d17e0929177b5
+  after: a4a32130f7d9244d12b1018751044f0ca0363586e968fa04a063fa0fa1d401c3
   before:
     header:
       parents:
@@ -1251,7 +1251,7 @@ comparison-inputs:
       name: cve
       proposed_tier: isolated
       hole:
-        status: new
+        status: recorded
     - kind: switching
       source: ico
       name: penalty-schema
@@ -1272,7 +1272,7 @@ vendored-feeds:
 - party: ico
   name: penalty-schema
   version: v3
-  path: composed/feeds/ico/v3
+  path: composed/feeds/ico/penalty-schema/v3
   sha: e1fb8eb5663e50088b13d872a4e44112476f516e
   files:
     party.yaml: 6f7e82a9616ee49ba2bbe1f2824b43458f8f72fd859216e2d5ba32577364ac72
@@ -1281,7 +1281,7 @@ vendored-feeds:
 - party: feeds
   name: threat-register
   version: v1
-  path: composed/feeds/feeds/v1
+  path: composed/feeds/feeds/threat-register/v1
   sha: 50a0b330a730f4f9ee9520561b0c05c8be4c9268
   files:
     party.yaml: 204f41b1138803ed5a43f7a7f910627d428d9f3ead7232c48b926da62f427e48
@@ -1290,7 +1290,7 @@ vendored-feeds:
 - party: feeds
   name: cve
   version: v2
-  path: composed/feeds/feeds/v2
+  path: composed/feeds/feeds/cve/v2
   sha: ddace466f0cc410f228aeff3b4c5704eeea15a30
   files:
     cve/to_fair_scenario.py: 10e2f5b412b09a16ff8bff2e1fe108938c79b25ac20b95b4047b4e17631bcbe7
