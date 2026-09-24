@@ -5,9 +5,9 @@
 # segment (ticket 15), not the caller's network position or a per-service
 # allowlist. Two callers prove both sides of the gate on one root:
 #
-#   teller-current -> claims policy-version 4.0.0 (current) -> stamp-posture
-#       stamps posture=4.0.0 -> posture ClusterSPIFFEID bakes
-#       spiffe://acme.internal/posture/4.0.0/ns/tuppence-reset/sa/teller-current
+#   teller-current -> claims policy-version 5.0.0 (current) -> stamp-posture
+#       stamps posture=5.0.0 -> posture ClusterSPIFFEID bakes
+#       spiffe://acme.internal/posture/5.0.0/cage/baseline/ns/tuppence-reset/sa/teller-current
 #       -> matches the AuthorizationPolicy prefix -> REACHES, and OpenBao's jwt
 #       role globs the same prefix -> GETS the secret.
 #   teller-stale   -> claims 1.0.0 (still supported, but below this service's
@@ -17,6 +17,16 @@
 # Own namespace (istio-injection enabled) so the identity substrate injects the
 # Envoy sidecar; part-of tuppence. The posture segment leads the SVID path, so
 # the namespace name is irrelevant to the gate — one version prefix matches.
+#
+# 2026-09-24 (Phase B, owner-instructed): the current bar moved from 4.0.0 to
+# 5.0.0. Every institution accepts 5.0.0 and platform retires 4.0.0. 5.0.0's
+# cage-tier has no ungoverned-namespace default: a namespace that declares no
+# tier puts its pods on `isolated`, which injects a WAF sidecar whose image
+# exists in no registry and cuts the mesh egress these callers need. 4.0.0 put
+# this ungoverned namespace on `baseline` by default. The Namespace below now
+# DECLARES `baseline`, so the rung is the one it was, written down rather than
+# inherited from a default that 5.0.0 removed. destinationrule.yaml's SAN
+# carries that rung.
 #
 # `inject.istio.io/templates: "sidecar,spire"` (ticket 11, live-discovered):
 # every workload below needs this annotation to opt the sidecar injector into
@@ -39,6 +49,7 @@ metadata:
     istio-injection: enabled
     app.kubernetes.io/part-of: tuppence
     policy-as-versioned.dev/institution: tuppence
+    posture.acme.io/tier: baseline
 ---
 # ---- the sensitive service ------------------------------------------------
 apiVersion: v1
@@ -58,7 +69,7 @@ spec:
       labels:
         app: customer-accounts-reset
         spiffe.io/spire-managed-identity: "true"          # opt into a SPIRE SVID
-        policy-as-versioned.dev/policy-version: "4.0.0"   # current bar; stamps posture
+        policy-as-versioned.dev/policy-version: "5.0.0"   # current bar; stamps posture
       annotations:
         inject.istio.io/templates: "sidecar,spire"        # opt into the SPIRE CSI mount
     spec:
@@ -76,7 +87,7 @@ spec:
   selector: { app: customer-accounts-reset }
   ports: [{ port: 80, targetPort: 8080 }]
 ---
-# ---- current caller: attests 4.0.0, reaches + gets the secret -------------
+# ---- current caller: attests 5.0.0, reaches + gets the secret -------------
 apiVersion: v1
 kind: ServiceAccount
 metadata: { name: teller-current, namespace: tuppence-reset }
@@ -94,7 +105,7 @@ spec:
       labels:
         app: teller-current
         spiffe.io/spire-managed-identity: "true"
-        policy-as-versioned.dev/policy-version: "4.0.0"   # current
+        policy-as-versioned.dev/policy-version: "5.0.0"   # current
       annotations:
         inject.istio.io/templates: "sidecar,spire"        # opt into the SPIRE CSI mount
     spec:

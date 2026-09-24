@@ -1593,11 +1593,11 @@ def selfcheck() -> int:
     assert _verdict({f: {"observed": True} for f in FACT_IDS}) == "PASS", \
         "a record taken before the cage facts existed is graded on the five it carries"
     # The experiment declares no rung ANYWHERE: the rung is the cage's answer, not this file's.
-    assert "isolated" not in _cage_objects("4.0.0", "img") and \
-        "posture.acme.io/tier" not in _cage_objects("4.0.0", "img"), \
+    assert "isolated" not in _cage_objects("5.0.0", "img") and \
+        "posture.acme.io/tier" not in _cage_objects("5.0.0", "img"), \
         "the probe must not name a rung: a tier this file typed would be an assertion, not a " \
         "measurement of where the cage puts an unlabelled workload"
-    assert CAGE_TIER_NAME.match("cage-tier-4-0-0") and not CAGE_TIER_NAME.match("cage-tier")
+    assert CAGE_TIER_NAME.match("cage-tier-5-0-0") and not CAGE_TIER_NAME.match("cage-tier")
 
     # Fact 6's verdict. `caged` marks a workload the cage really wrote to; without it nothing
     # below is a statement about the cage at all (review F-03).
@@ -1672,7 +1672,7 @@ def selfcheck() -> int:
                "phase": "Running", "ready": True, "containers": ["app", "waf-sidecar"]}
     _loose = {"namespace": CAGE_CONTROL_NS, "tier": "baseline", "caged": "true",
               "phase": "Running", "ready": True, "containers": ["app"]}
-    _common = {"policy_version_in_force": "4.0.0", "probe_image": "stand-in",
+    _common = {"policy_version_in_force": "5.0.0", "probe_image": "stand-in",
                "fall_closed_namespace": CAGE_FALLCLOSED_NS, "control_namespace": CAGE_CONTROL_NS}
     # The polls are real seconds against a real CNI. Here there is neither, and a selfcheck that
     # slept ninety seconds to prove six branches would stop being run.
