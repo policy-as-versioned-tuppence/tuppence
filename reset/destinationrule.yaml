@@ -4,8 +4,8 @@
 # SAN from the destination's Kubernetes ServiceAccount, using Istio's OWN
 # standard shape — `spiffe://<trustDomain>/ns/<ns>/sa/<sa>` — regardless of
 # what SPIRE actually issues. `customer-accounts-reset`'s real SVID carries
-# the posture-prefixed path (`spiffe://acme.internal/posture/4.0.0/ns/
-# tuppence-reset/sa/customer-accounts-reset`), so every caller's outbound
+# the posture-prefixed path (`spiffe://acme.internal/posture/5.0.0/cage/baseline/
+# ns/tuppence-reset/sa/customer-accounts-reset`), so every caller's outbound
 # cluster rejects it outright: `CERTIFICATE_VERIFY_FAILED`, surfaced to the
 # caller as a 503 (not a 403 — the AuthorizationPolicy is never reached).
 # Confirmed live with `pilot-agent request GET config_dump`: the auto-derived
@@ -19,7 +19,7 @@
 # override wasn't honoured for ISTIO_MUTUAL, it works as expected on Istio
 # 1.24 — confirmed live (403→200 for the current caller).
 #
-# Calibration knob: the SAN's `posture/4.0.0` segment must track
+# Calibration knob: the SAN's `posture/5.0.0` segment must track
 # authorizationpolicy.yaml's and openbao-role.yaml's version glob — all three
 # move together on a currency bump.
 #
@@ -34,6 +34,11 @@
 # TLS SAN mismatch, not an RBAC 403. The rung is now part of the knob: if this
 # namespace ever becomes governed and declares a tier, this segment moves with
 # it.
+#
+# 2026-09-24 (Phase B): the workloads moved to 5.0.0. 5.0.0's cage-tier has no
+# ungoverned-namespace default and puts a namespace with no tier on `isolated`.
+# workloads.yaml's Namespace now declares `posture.acme.io/tier: baseline`, so
+# the rung segment stays `baseline` and the version segment moves to 5.0.0.
 apiVersion: networking.istio.io/v1
 kind: DestinationRule
 metadata:
@@ -45,4 +50,4 @@ spec:
     tls:
       mode: ISTIO_MUTUAL
       subjectAltNames:
-        - "spiffe://acme.internal/posture/4.0.0/cage/baseline/ns/tuppence-reset/sa/customer-accounts-reset"
+        - "spiffe://acme.internal/posture/5.0.0/cage/baseline/ns/tuppence-reset/sa/customer-accounts-reset"

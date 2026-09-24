@@ -17,22 +17,24 @@
 # it in four ways, each of which is what a lift means:
 #
 #   1. RE-LABELLED. `mycompany.com/policy-version: "1.0.0"` becomes
-#      `policy-as-versioned.dev/policy-version: "4.0.0"`. The incumbent org's `department:
+#      `policy-as-versioned.dev/policy-version: "5.0.0"`. The incumbent org's `department:
 #      finance` label goes with it: it was read by that org's `require-department-label` policy,
 #      which no version in tuppence's composed set carries.
-#   2. RE-PINNED to tuppence's own composed artefact. 4.0.0 is not a number chosen here -- it is
-#      the only version `composed/orphan-guard.yaml`'s allowed array admits, and
-#      `composed/policies/v4.0.0/` is the set that grades this pod. A claim outside that array is
-#      an orphan that reaches no cage at all (ticket 89).
+#   2. RE-PINNED to tuppence's own composed artefact. 5.0.0 is not a number chosen here -- it is
+#      a version `composed/orphan-guard.yaml`'s allowed array admits, and
+#      `composed/policies/v5.0.0/` is the set that grades this pod. A claim outside that array is
+#      an orphan that reaches no cage at all (ticket 89). The claim moved from 4.0.0 on
+#      2026-09-24 (Phase B, owner-instructed): every institution accepts 5.0.0 and platform
+#      retires 4.0.0. The array still holds both until that retirement lands.
 #   3. RE-NAMESPACED into tuppence's governed Namespace, where the cage tier is declared
 #      (`gitops/apps/namespace.yaml`, `posture.acme.io/tier: isolated`). This manifest carries no
-#      tier label of its own: under 4.0.0 the tier is declared on the Namespace and `cage-tier`
+#      tier label of its own: under 5.0.0 the tier is declared on the Namespace and `cage-tier`
 #      writes the pod label as an OUTPUT (ADR-0022). One declared here would be clobbered.
 #   4. A POD, not a Deployment. Every policy in the composed set matches `pods`; the cage ladder's
 #      held round is pod-only (ticket 09). A Deployment would be graded by nothing this repository
 #      composes, which is the shape of lift this ticket exists to avoid.
 #
-# securityContext: `require-nonroot-4-0-0` validates `runAsNonRoot` on the pod and
+# securityContext: `require-nonroot-5-0-0` validates `runAsNonRoot` on the pod and
 # `readOnlyRootFilesystem` on every container. The image (`eclipse-temurin:11-jre-alpine`) sets
 # no USER, so `runAsNonRoot: true` alone would leave the kubelet refusing to start the container
 # -- the defect driftwood's own pod.yaml hit for real on 2026-08-31 -- hence an explicit numeric
@@ -40,15 +42,18 @@
 # entry in /etc/passwd. /tmp is an emptyDir because a read-only root filesystem otherwise denies
 # the JVM its `hsperfdata` directory.
 #
-# The cage this pod would actually get: `cage-tier-4-0-0` reads the tier from the governed
+# The cage this pod would actually get: `cage-tier-5-0-0` reads the tier from the governed
 # Namespace (`gitops/apps/namespace.yaml`, `isolated`) and writes resources.limits of cpu 100m /
 # memory 64Mi and capabilities.drop ALL onto the container. A JVM under 64Mi: nothing here sets
 # `-XX:MaxRAMPercentage`, so a container-aware JDK 11 takes a quarter of the cgroup limit (16Mi)
 # as heap, plus metaspace, code cache and thread stacks; a plain `HttpServer` on one class
 # fits, but that is reasoning about a start-up nobody has observed. `kyverno apply` (the hub's
 # verify/lifted-apps check and this repository's own shift-left job) evaluates the same policy
-# with `namespaceObject` null and so applies the BASELINE dial (500m / 256Mi, no drop): the cage
-# graded offline is not the cage the cluster would write (review 2026-09-08, F2).
+# with `namespaceObject` null. Under 4.0.0 that fell to the BASELINE dial (review 2026-09-08,
+# F2). Under 5.0.0 a pod with no namespace tier falls to `isolated`, so the offline grade now
+# writes the same isolated dial (priorityClassName cage-isolated-5-0-0, 100m / 64Mi, drop ALL,
+# the WAF sidecar) the cluster would write here. Read off kyverno 1.18.2 over the v2.0.0 set,
+# 2026-09-24.
 #
 # NOT OBSERVED: whether this pod actually starts. No citable run of this estate has had a
 # persistent cluster, and the reasoning above is reasoning, not an observation. The hub's
@@ -62,7 +67,7 @@ metadata:
   labels:
     app: ledger
     app.kubernetes.io/part-of: tuppence
-    policy-as-versioned.dev/policy-version: "4.0.0"
+    policy-as-versioned.dev/policy-version: "5.0.0"
 spec:
   securityContext:
     runAsNonRoot: true

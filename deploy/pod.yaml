@@ -1,21 +1,24 @@
-# A real tuppence workload manifest, pinned to policy-version 4.0.0 --
+# A real tuppence workload manifest, pinned to policy-version 5.0.0 --
 # platform/shift-left/ci-check.py's target resource (see
 # .github/workflows/shift-left.yml).
 #
 # REPINNED 2026-08-29: the whole 2.x/3.x fan-out is retired from
 # distribution/versions.yaml (unable to admit a pod, and reading the tier from
-# the pod's own label -- see that file for both reasons in full), so 4.0.0 is
-# the only version the array declares and the only one the orphan guard allows.
-# The old "compliant with both 1.0.0 and 2.0.0, so it passes the whole target
-# +/-1 supported window" claim went with it: the declared array holds one major
-# line today, so there is no neighbour to be compliant with.
+# the pod's own label -- see that file for both reasons in full), so 4.0.0 was
+# then the only version the array declared and the only one the orphan guard
+# allowed. The old "compliant with both 1.0.0 and 2.0.0" claim went with it.
 #
-# It carries no posture.acme.io/tier label on purpose. Under 4.0.0 the tier is
+# MOVED 2026-09-24 (Phase B, owner-instructed): every institution accepts 5.0.0
+# and platform retires 4.0.0, so this claim moves from 4.0.0 to 5.0.0. The
+# orphan guard at v2.0.0 allows ['4.0.0', '5.0.0'], so the move leaves nothing
+# uncaged. ci-check.py grades this pod across that window, both versions.
+#
+# It carries no posture.acme.io/tier label on purpose. Under 5.0.0 the tier is
 # declared on the governed Namespace and the cage writes the pod label as an
 # OUTPUT (ADR-0022); a tier declared here would be clobbered.
 apiVersion: v1
 kind: Pod
-metadata: { name: payments-svc, labels: { "policy-as-versioned.dev/policy-version": "4.0.0" } }
+metadata: { name: payments-svc, labels: { "policy-as-versioned.dev/policy-version": "5.0.0" } }
 spec:
   securityContext: { runAsNonRoot: true }
   containers: [{ name: c, image: nginx, securityContext: { readOnlyRootFilesystem: true } }]

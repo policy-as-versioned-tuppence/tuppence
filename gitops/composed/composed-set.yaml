@@ -96,10 +96,10 @@ spec:
         - { version: "4.0.0" }
         - { version: "5.0.0" }
         # v2.0.0 carries composed/policies/v4.0.0 and v5.0.0, and every machinery allow-list at
-        # that tag admits both. Every in-currency workload tuppence declares claims 4.0.0, so 5.0.0
-        # alone would leave them caged by nothing (eco-system ticket 130). teller-stale in
-        # reset/workloads.yaml claims 1.0.0 on purpose; the orphan cage takes it. Drop 4.0.0 only
-        # after the workloads move to 5.0.0 and platform retires 4.0.0.
+        # that tag admits both. Since 2026-09-24 (Phase B) every in-currency workload tuppence
+        # declares claims 5.0.0, and none claims 4.0.0. teller-stale in reset/workloads.yaml
+        # claims 1.0.0 on purpose; the orphan cage takes it. 4.0.0 stays in this array until
+        # platform retires it and a tag without v4.0.0 moves the pin above.
   resourcesTemplate: |
     << range $v := (index (inputs) "versions") >>
     ---
