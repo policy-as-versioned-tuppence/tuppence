@@ -1,0 +1,33 @@
+apiVersion: policies.kyverno.io/v1alpha1
+kind: MutatingPolicy
+metadata:
+  name: governed-namespace-cage-holds
+  labels:
+    policy-as-versioned.dev/policy: platform-machinery
+    policy-as-versioned.dev/composed-for: tuppence
+  annotations:
+    policy-as-versioned.dev/inherited-from: platform@3.3.0
+    policy-as-versioned.dev/source-path: distribution/versions.yaml (static, ticket 89)
+spec:
+  matchConstraints:
+    resourceRules:
+    - apiGroups:
+      - ''
+      apiVersions:
+      - v1
+      operations:
+      - UPDATE
+      resources:
+      - pods
+    namespaceSelector:
+      matchLabels:
+        policy-as-versioned.dev/governed: 'true'
+  matchConditions:
+  - name: claims-no-policy-version
+    expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('') == ''
+  - name: was-on-the-bottom-rung
+    expression: oldObject.?metadata.?labels['posture.acme.io/tier'].orValue('') == 'isolated'
+  mutations:
+  - patchType: ApplyConfiguration
+    applyConfiguration:
+      expression: "Object{\n  metadata: Object.metadata{ labels: {\n    \"posture.acme.io/caged\": \"true\",\n    \"posture.acme.io/tier\": \"isolated\"\n  } }\n}"

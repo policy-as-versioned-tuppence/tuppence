@@ -5,8 +5,8 @@
     {
       "party": "platform",
       "kind": "implementations",
-      "version": "2.0.1",
-      "sha": "533dccb0a823001b396fd60ab08014bf75065a37"
+      "version": "3.3.0",
+      "sha": "38089a68769453db9ea3faf0ee637ae93f309980"
     },
     {
       "party": "nist",
@@ -32,11 +32,47 @@
   "members": [
     {
       "family": "graded-enforcement",
+      "name": "cage-baseline",
+      "kind": "PriorityClass",
+      "version": "4.0.0",
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "graded-enforcement",
+      "name": "cage-isolated",
+      "kind": "PriorityClass",
+      "version": "4.0.0",
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "graded-enforcement",
       "name": "cage-netpol",
       "kind": "GeneratingPolicy",
       "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "533dccb0a823001b396fd60ab08014bf75065a37",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "graded-enforcement",
+      "name": "cage-quarantine",
+      "kind": "PriorityClass",
+      "version": "4.0.0",
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "graded-enforcement",
+      "name": "cage-restricted",
+      "kind": "PriorityClass",
+      "version": "4.0.0",
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
       "action": null
     },
     {
@@ -45,7 +81,7 @@
       "kind": "MutatingPolicy",
       "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "533dccb0a823001b396fd60ab08014bf75065a37",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
       "action": null
     },
     {
@@ -54,7 +90,7 @@
       "kind": "ValidatingPolicy",
       "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "533dccb0a823001b396fd60ab08014bf75065a37",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
       "action": "Deny"
     },
     {
@@ -63,7 +99,7 @@
       "kind": "MutatingPolicy",
       "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "533dccb0a823001b396fd60ab08014bf75065a37",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
       "action": null
     },
     {
@@ -72,7 +108,88 @@
       "kind": "ValidatingPolicy",
       "version": "4.0.0",
       "source_party": "platform",
-      "source_sha": "533dccb0a823001b396fd60ab08014bf75065a37",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": "Audit"
+    },
+    {
+      "family": "graded-enforcement",
+      "name": "cage-baseline",
+      "kind": "PriorityClass",
+      "version": "5.0.0",
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "graded-enforcement",
+      "name": "cage-isolated",
+      "kind": "PriorityClass",
+      "version": "5.0.0",
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "graded-enforcement",
+      "name": "cage-netpol",
+      "kind": "GeneratingPolicy",
+      "version": "5.0.0",
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "graded-enforcement",
+      "name": "cage-quarantine",
+      "kind": "PriorityClass",
+      "version": "5.0.0",
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "graded-enforcement",
+      "name": "cage-restricted",
+      "kind": "PriorityClass",
+      "version": "5.0.0",
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "graded-enforcement",
+      "name": "cage-tier",
+      "kind": "MutatingPolicy",
+      "version": "5.0.0",
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "posture",
+      "name": "posture-trust-boundary",
+      "kind": "ValidatingPolicy",
+      "version": "5.0.0",
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": "Deny"
+    },
+    {
+      "family": "posture",
+      "name": "stamp-posture",
+      "kind": "MutatingPolicy",
+      "version": "5.0.0",
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "require-nonroot",
+      "name": "require-nonroot",
+      "kind": "ValidatingPolicy",
+      "version": "5.0.0",
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
       "action": "Audit"
     },
     {
@@ -81,16 +198,70 @@
       "kind": "ValidatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "533dccb0a823001b396fd60ab08014bf75065a37",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
       "action": null
     },
     {
       "family": "platform-machinery",
       "name": "governed-namespace-requires-claim",
+      "kind": "MutatingPolicy",
+      "version": null,
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "platform-machinery",
+      "name": "policy-version-orphan-cage",
+      "kind": "MutatingPolicy",
+      "version": null,
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "platform-machinery",
+      "name": "policy-version-orphan-cage-holds",
+      "kind": "MutatingPolicy",
+      "version": null,
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "platform-machinery",
+      "name": "governed-namespace-cage-holds",
+      "kind": "MutatingPolicy",
+      "version": null,
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "platform-machinery",
+      "name": "governed-namespace-unclaimed-report",
       "kind": "ValidatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "533dccb0a823001b396fd60ab08014bf75065a37",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "platform-machinery",
+      "name": "cage-netpol-bottom-rung",
+      "kind": "GeneratingPolicy",
+      "version": null,
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "action": null
+    },
+    {
+      "family": "platform-machinery",
+      "name": "cage-isolated",
+      "kind": "PriorityClass",
+      "version": null,
+      "source_party": "platform",
+      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
       "action": null
     }
   ],
@@ -2666,20 +2837,42 @@
   ],
   "ungoverned": [
     {
+      "namespace": "openbao",
+      "status": "new",
+      "price": {
+        "perspective": "tuppence",
+        "currency": "GBP",
+        "amount": 2315591.3329167743,
+        "share": 0.25,
+        "workloads": 1,
+        "workloads_total": 4,
+        "base": 9262365.331667097,
+        "ramp": 1.0,
+        "since": null,
+        "since_by": null,
+        "as_of": "2026-08-28",
+        "bounded": false,
+        "limits": [
+          "no signed composed artefact names openbao or a Namespace its workloads left: ramp held at 1.0 until a signed tag records it"
+        ]
+      }
+    },
+    {
       "namespace": "tuppence-reset",
       "status": "recorded",
       "price": {
         "perspective": "tuppence",
         "currency": "GBP",
-        "amount": 9262365.331667097,
-        "share": 1.0,
+        "amount": 7003870.771342793,
+        "share": 0.75,
         "workloads": 3,
-        "workloads_total": 3,
+        "workloads_total": 4,
         "base": 9262365.331667097,
         "ramp": 1.0082191780821919,
         "since": "2026-08-25",
+        "since_by": "v1.1.0 names tuppence-reset",
         "as_of": "2026-08-28",
-        "bounded": true,
+        "bounded": false,
         "limits": []
       }
     }
@@ -2746,9 +2939,40 @@
       "hole": null,
       "publisher_observation_scope": "Publisher tags were observed when this artefact was composed; the recorded observation is replayed offline and during verification. It does not establish the publisher's current newest major. A fresh composition with the publisher present refreshes it.",
       "superseded": {
-        "state": "unobserved",
-        "detail": "v4.0.0 sign(s) penalty-schema majors ahead of the pinned v3, but this checkout carries no directory for any of them to price against"
+        "state": "behind",
+        "detail": "tag v4.0.0, signed 2026-09-10, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, so the line is priced from the signed tags alone"
       }
+    },
+    {
+      "source": "ico",
+      "kind": "supersede",
+      "perspective": "tuppence",
+      "currency": "GBP",
+      "amount": 0.0,
+      "per_customer": null,
+      "name": "penalty-schema",
+      "version": "v3",
+      "newer": {
+        "version": "v4",
+        "tag": "v4.0.0",
+        "tagged": "2026-09-10",
+        "published_at": null,
+        "readable": false,
+        "since_tag": "v4.0.0",
+        "since": "2026-09-10"
+      },
+      "since": "2026-09-10",
+      "as_of": "2026-08-28",
+      "ramp": 1.0,
+      "base": 9039791.01976426,
+      "proposed_tier": null,
+      "changed": false,
+      "basis": "the pinned line's own amount x (eol_ramp(since, as_of) - 1): the surcharge the feeds module's EOL ramp puts on a version its publisher has superseded, +1x per year behind and capped at +4x, where `since` is the day the newer major's signing tag was cut; zero on that day, printed with both dates, and never summed into the exposure the line itself is already in",
+      "limits": [
+        "zero (as_of 2026-08-28 precedes the tag day 2026-09-10): the signed artefact's as-of is its newest signed input; only a re-composition --as-of a later day (the scheduled proposer's) grows this line",
+        "the pinned checkout carries no directory for v4.0.0, so the newer major's content is unread here: this line is priced from the signed tags alone, and no retirement to v4 is proposed until the ico pin reaches a commit that carries it"
+      ],
+      "detail": "tag v4.0.0, signed 2026-09-10, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, so the line is priced from the signed tags alone"
     },
     {
       "source": "feeds",
@@ -2838,6 +3062,14 @@
           "perspective": "tuppence",
           "currency": "GBP",
           "amount": 9039791.01976426
+        },
+        {
+          "kind": "supersede",
+          "source": "ico",
+          "name": "penalty-schema",
+          "perspective": "tuppence",
+          "currency": "GBP",
+          "amount": 0.0
         }
       ],
       "sized": false,
@@ -2886,7 +3118,59 @@
       ]
     }
   ],
-  "deltas": [],
+  "deltas": [
+    {
+      "kind": "new-ungoverned-namespace",
+      "namespace": "openbao",
+      "perspective": "tuppence",
+      "currency": "GBP",
+      "amount": 2315591.3329167743,
+      "detail": "openbao is declared or named in the adopter's repo without governed: \"true\", and was not in the last signed composed artefact's recorded ungoverned set; priced at 2315591.33 GBP as 1 of 4 institution workloads x ramp 1.0000"
+    }
+  ],
+  "floor_change": {
+    "schema": 1,
+    "before": {
+      "known": false
+    },
+    "after": {
+      "known": true,
+      "value": null
+    },
+    "changed": null,
+    "basis": "floor-only counterfactual at current publisher, scenario, appetite and selection inputs",
+    "residual_basis": "platform-cage-tiers@1.0.0",
+    "lines": [
+      {
+        "source": "ico",
+        "kind": "feed",
+        "name": "penalty-schema",
+        "perspective": "tuppence",
+        "currency": "GBP",
+        "uncaged_amount": 9039791.01976426,
+        "before_tier": null,
+        "after_tier": "isolated",
+        "before_residual": null,
+        "after_residual": 180795.82039528535,
+        "residual_delta": null
+      },
+      {
+        "source": "feeds",
+        "kind": "feed",
+        "name": "threat-register",
+        "perspective": "tuppence",
+        "currency": "GBP",
+        "uncaged_amount": 222574.31190283748,
+        "before_tier": null,
+        "after_tier": "isolated",
+        "before_residual": null,
+        "after_residual": 4451.486238056754,
+        "residual_delta": null
+      }
+    ],
+    "could_not_look": "previous floor was not recorded; absence of history is not an absent floor",
+    "limit": "selection evidence, not an enacted Namespace tier; platform reductions are self-declared calibration, not measured effectiveness"
+  },
   "limits": [
     {
       "name": "two-publisher-conflict",
@@ -2898,7 +3182,7 @@
       "name": "pinned-parent-lacks-rendered-versions",
       "detail": "the composed set renders policy versions the pinned parent commit does not contain; the header names a parent release that holds none of these trees. every rendered version is present at the pinned commit",
       "count": 0,
-      "checked": 1,
+      "checked": 2,
       "status": "closed"
     },
     {
@@ -2944,10 +3228,18 @@
           "tag": "v3.0.0",
           "detail": "tag v3.0.0 on the ico checkout carries a signature block"
         },
-        "newer": null,
+        "newer": {
+          "version": "v4",
+          "tag": "v4.0.0",
+          "tagged": "2026-09-10",
+          "published_at": null,
+          "readable": false,
+          "since_tag": "v4.0.0",
+          "since": "2026-09-10"
+        },
         "superseded": {
-          "state": "unobserved",
-          "detail": "v4.0.0 sign(s) penalty-schema majors ahead of the pinned v3, but this checkout carries no directory for any of them to price against"
+          "state": "behind",
+          "detail": "tag v4.0.0, signed 2026-09-10, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, so the line is priced from the signed tags alone"
         }
       },
       "path": "composed/feeds/ico/v3"

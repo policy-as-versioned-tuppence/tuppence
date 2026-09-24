@@ -20,7 +20,15 @@
   "published_at": "2026-08-28",
   "publisher_observation": {
     "name": "penalty-schema",
-    "newer": null,
+    "newer": {
+      "published_at": null,
+      "readable": false,
+      "since": "2026-09-10",
+      "since_tag": "v4.0.0",
+      "tag": "v4.0.0",
+      "tagged": "2026-09-10",
+      "version": "v4"
+    },
     "party": "ico",
     "pin_signature": {
       "detail": "tag v3.0.0 on the ico checkout carries a signature block",
@@ -30,8 +38,8 @@
     "schema": 1,
     "sha": "e1fb8eb5663e50088b13d872a4e44112476f516e",
     "superseded": {
-      "detail": "v4.0.0 sign(s) penalty-schema majors ahead of the pinned v3, but this checkout carries no directory for any of them to price against",
-      "state": "unobserved"
+      "detail": "tag v4.0.0, signed 2026-09-10, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, so the line is priced from the signed tags alone",
+      "state": "behind"
     },
     "version": "v3"
   },

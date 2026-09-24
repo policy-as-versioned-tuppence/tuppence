@@ -1,0 +1,14 @@
+# The delivery route for the platform machinery at the composed/ root (eco-system ticket 130).
+# Rendered by composition.py from the same list that wrote the files; never edit by hand.
+# Each policy version under policies/v<version>/ has its own Kustomization and is not listed here.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- bottom-rung-netpol.yaml
+- bottom-rung-priorityclass.yaml
+- governed-namespace-guard.yaml
+- governed-namespace-holds.yaml
+- governed-namespace-report.yaml
+- orphan-cage-holds.yaml
+- orphan-cage.yaml
+- orphan-guard.yaml

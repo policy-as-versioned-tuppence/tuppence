@@ -10,7 +10,7 @@ Source: `composed/HEADER.yaml` → `parents[]`. Each row is a publisher this art
 
 | publisher | kind | feed name | version | commit |
 | --- | --- | --- | --- | --- |
-| platform | implementations | — | 2.0.1 | `533dccb0a823001b396fd60ab08014bf75065a37` |
+| platform | implementations | — | 3.3.0 | `38089a68769453db9ea3faf0ee637ae93f309980` |
 | nist | controls | — | 1.1.0 | `33a05df1f5241bca6ffbc1c69a70075cdb7a5819` |
 | ico | feed | penalty-schema | v3 | `e1fb8eb5663e50088b13d872a4e44112476f516e` |
 | feeds | feed | threat-register | v1 | `50a0b330a730f4f9ee9520561b0c05c8be4c9268` |
@@ -21,22 +21,41 @@ Source: the object files under `composed/`, and `composed/evidence.json` → `me
 
 | object | kind | policy version | does | inherited from | source path |
 | --- | --- | --- | --- | --- | --- |
-| `governed-namespace-requires-claim` | ValidatingPolicy | — (not versioned) | refuses (1) | platform@2.0.1 | `distribution/versions.yaml (static, ADR-0014)` |
-| `policy-version-orphan-guard` | ValidatingPolicy | — (not versioned) | refuses (1) | platform@2.0.1 | `distribution/versions.yaml (rendered from the array)` |
-| `cage-netpol-4-0-0` | GeneratingPolicy | 4.0.0 | generates (1), evaluates | platform@2.0.1 | `distribution/policies/v4.0.0/cage-netpol.yaml` |
-| `cage-tier-4-0-0` | MutatingPolicy | 4.0.0 | mutates (2) | platform@2.0.1 | `distribution/policies/v4.0.0/cage-tier.yaml` |
-| `posture-trust-boundary-4-0-0` | ValidatingPolicy | 4.0.0 | refuses (1) | platform@2.0.1 | `distribution/policies/v4.0.0/posture-trust-boundary.yaml` |
-| `require-nonroot-4-0-0` | ValidatingPolicy | 4.0.0 | refuses (2) | platform@2.0.1 | `distribution/policies/v4.0.0/require-nonroot.yaml` |
-| `stamp-posture-4-0-0` | MutatingPolicy | 4.0.0 | mutates (1) | platform@2.0.1 | `distribution/policies/v4.0.0/stamp-posture.yaml` |
+| `cage-netpol-bottom-rung` | GeneratingPolicy | — (not versioned) | generates (1), evaluates | platform@3.3.0 | `distribution/versions.yaml (rendered from the array, ticket 89)` |
+| `cage-isolated` | PriorityClass | — (not versioned) | nothing this page can read | platform@3.3.0 | `distribution/versions.yaml (static, ticket 89)` |
+| `governed-namespace-requires-claim` | MutatingPolicy | — (not versioned) | mutates (4) | platform@3.3.0 | `distribution/versions.yaml (static, ADR-0014)` |
+| `governed-namespace-cage-holds` | MutatingPolicy | — (not versioned) | mutates (1) | platform@3.3.0 | `distribution/versions.yaml (static, ticket 89)` |
+| `governed-namespace-unclaimed-report` | ValidatingPolicy | — (not versioned) | refuses (1) | platform@3.3.0 | `distribution/versions.yaml (static, ticket 89)` |
+| `policy-version-orphan-cage-holds` | MutatingPolicy | — (not versioned) | mutates (1) | platform@3.3.0 | `distribution/versions.yaml (rendered from the array, ticket 89)` |
+| `policy-version-orphan-cage` | MutatingPolicy | — (not versioned) | mutates (4) | platform@3.3.0 | `distribution/versions.yaml (rendered from the array, ticket 89)` |
+| `policy-version-orphan-guard` | ValidatingPolicy | — (not versioned) | refuses (1) | platform@3.3.0 | `distribution/versions.yaml (rendered from the array)` |
+| `cage-baseline-4-0-0` | PriorityClass | 4.0.0 | nothing this page can read | platform@3.3.0 | `distribution/policies/v4.0.0/priorityclasses.yaml` |
+| `cage-isolated-4-0-0` | PriorityClass | 4.0.0 | nothing this page can read | platform@3.3.0 | `distribution/policies/v4.0.0/priorityclasses.yaml` |
+| `cage-netpol-4-0-0` | GeneratingPolicy | 4.0.0 | generates (1), evaluates | platform@3.3.0 | `distribution/policies/v4.0.0/cage-netpol.yaml` |
+| `cage-quarantine-4-0-0` | PriorityClass | 4.0.0 | nothing this page can read | platform@3.3.0 | `distribution/policies/v4.0.0/priorityclasses.yaml` |
+| `cage-restricted-4-0-0` | PriorityClass | 4.0.0 | nothing this page can read | platform@3.3.0 | `distribution/policies/v4.0.0/priorityclasses.yaml` |
+| `cage-tier-4-0-0` | MutatingPolicy | 4.0.0 | mutates (2) | platform@3.3.0 | `distribution/policies/v4.0.0/cage-tier.yaml` |
+| `posture-trust-boundary-4-0-0` | ValidatingPolicy | 4.0.0 | refuses (1) | platform@3.3.0 | `distribution/policies/v4.0.0/posture-trust-boundary.yaml` |
+| `require-nonroot-4-0-0` | ValidatingPolicy | 4.0.0 | refuses (2) | platform@3.3.0 | `distribution/policies/v4.0.0/require-nonroot.yaml` |
+| `stamp-posture-4-0-0` | MutatingPolicy | 4.0.0 | mutates (1) | platform@3.3.0 | `distribution/policies/v4.0.0/stamp-posture.yaml` |
+| `cage-baseline-5-0-0` | PriorityClass | 5.0.0 | nothing this page can read | platform@3.3.0 | `distribution/policies/v5.0.0/priorityclasses.yaml` |
+| `cage-isolated-5-0-0` | PriorityClass | 5.0.0 | nothing this page can read | platform@3.3.0 | `distribution/policies/v5.0.0/priorityclasses.yaml` |
+| `cage-netpol-5-0-0` | GeneratingPolicy | 5.0.0 | generates (1), evaluates | platform@3.3.0 | `distribution/policies/v5.0.0/cage-netpol.yaml` |
+| `cage-quarantine-5-0-0` | PriorityClass | 5.0.0 | nothing this page can read | platform@3.3.0 | `distribution/policies/v5.0.0/priorityclasses.yaml` |
+| `cage-restricted-5-0-0` | PriorityClass | 5.0.0 | nothing this page can read | platform@3.3.0 | `distribution/policies/v5.0.0/priorityclasses.yaml` |
+| `cage-tier-5-0-0` | MutatingPolicy | 5.0.0 | mutates (2) | platform@3.3.0 | `distribution/policies/v5.0.0/cage-tier.yaml` |
+| `posture-trust-boundary-5-0-0` | ValidatingPolicy | 5.0.0 | refuses (1) | platform@3.3.0 | `distribution/policies/v5.0.0/posture-trust-boundary.yaml` |
+| `require-nonroot-5-0-0` | ValidatingPolicy | 5.0.0 | refuses (1) | platform@3.3.0 | `distribution/policies/v5.0.0/require-nonroot.yaml` |
+| `stamp-posture-5-0-0` | MutatingPolicy | 5.0.0 | mutates (1) | platform@3.3.0 | `distribution/policies/v5.0.0/stamp-posture.yaml` |
 
-7 object(s) in the artefact; `members[]` records 7: `cage-netpol`, `cage-tier`, `posture-trust-boundary`, `stamp-posture`, `require-nonroot`, `policy-version-orphan-guard`, `governed-namespace-requires-claim`.
+26 object(s) in the artefact; `members[]` records 26: `cage-baseline`, `cage-isolated`, `cage-netpol`, `cage-quarantine`, `cage-restricted`, `cage-tier`, `posture-trust-boundary`, `stamp-posture`, `require-nonroot`, `cage-baseline`, `cage-isolated`, `cage-netpol`, `cage-quarantine`, `cage-restricted`, `cage-tier`, `posture-trust-boundary`, `stamp-posture`, `require-nonroot`, `policy-version-orphan-guard`, `governed-namespace-requires-claim`, `policy-version-orphan-cage`, `policy-version-orphan-cage-holds`, `governed-namespace-cage-holds`, `governed-namespace-unclaimed-report`, `cage-netpol-bottom-rung`, `cage-isolated`.
 
 ## 3. The cage you land in
 
 Source: `composed/HEADER.yaml` → `governed-namespaces`, `ungoverned-namespaces`, `selection-policy`; `composed/evidence.json` → `cages[]` and each `prices[].proposed_tier`.
 
 - Governed namespaces (1): `tuppence`
-- Ungoverned namespaces (1): `tuppence-reset`
+- Ungoverned namespaces (2): `openbao`, `tuppence-reset`
 - Tier(s) the pricing proposes (1): `isolated`
 - `cages[]` entries: 0
 
@@ -47,6 +66,7 @@ Source: `composed/evidence.json` → `prices[]`, and `composed/HEADER.yaml` → 
 | priced by | kind | name | perspective | currency | amount | moved | proposed tier |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | ico | feed | penalty-schema | tuppence | GBP | GBP 9,039,791.02 | no | isolated |
+| ico | supersede | penalty-schema | tuppence | GBP | GBP 0.00 | no | — |
 | feeds | feed | threat-register | tuppence | GBP | GBP 222,574.31 | no | isolated |
 | feeds | supersede | threat-register | tuppence | GBP | GBP 0.00 | no | — |
 | ico | switching | penalty-schema | tuppence | GBP | GBP 9,039,791.02 | no | — |
@@ -54,6 +74,8 @@ Source: `composed/evidence.json` → `prices[]`, and `composed/HEADER.yaml` → 
 
 - **ico/penalty-schema** — Publisher tags were observed when this artefact was composed; the recorded observation is replayed offline and during verification. It does not establish the publisher's current newest major. A fresh composition with the publisher present refreshes it.
 - **ico/penalty-schema** — basis: lm sourced from ICO (Information Commissioner's Office) real public fines (UK GDPR / Data Protection Act 2018 s157). warn/deny lef are editorial (schema doesn't carry frequency). Not sized to any subscriber: priced at the statutory cap.
+- **ico/penalty-schema supersede** — clock starts 2026-09-10; priced as of 2026-08-28. zero (as_of 2026-08-28 precedes the tag day 2026-09-10): the signed artefact's as-of is its newest signed input; only a re-composition --as-of a later day (the scheduled proposer's) grows this line; the pinned checkout carries no directory for v4.0.0, so the newer major's content is unread here: this line is priced from the signed tags alone, and no retirement to v4 is proposed until the ico pin reaches a commit that carries it
+- **ico/penalty-schema** (supersede) — basis: the pinned line's own amount x (eol_ramp(since, as_of) - 1): the surcharge the feeds module's EOL ramp puts on a version its publisher has superseded, +1x per year behind and capped at +4x, where `since` is the day the newer major's signing tag was cut; zero on that day, printed with both dates, and never summed into the exposure the line itself is already in
 - **feeds/threat-register** — Publisher tags were observed when this artefact was composed; the recorded observation is replayed offline and during verification. It does not establish the publisher's current newest major. A fresh composition with the publisher present refreshes it.
 - **feeds/threat-register** — basis: payment-fraud / account-takeover via API abuse (fintech, FCA/PCI, availability+fraud flavour). lef sourced from DBIR financial-sector base rate + card-scheme fraud-loss reporting, editorial midpoint. MAGNITUDE UNSOURCED: the impact per event (5000.0, 25000.0, 90000.0) GBP is not in payload version v1, which predates the publisher's `lm_gbp` field; it is this converter's frozen copy of the adopter-keyed table that used to live in the SUBSCRIBER's own code (platform/feeds/to_fair_scenario.py THREAT_LM_GBP). From major 3 the number and its basis are in the payload. A named could-not-look (eco-system ticket 79 item 4), never a bare number.
 - **feeds/threat-register supersede** — clock starts 2026-09-01; priced as of 2026-08-28. zero (as_of 2026-08-28 precedes the tag day 2026-09-01): the signed artefact's as-of is its newest signed input; only a re-composition --as-of a later day (the scheduled proposer's) grows this line
@@ -76,6 +98,19 @@ Source: `composed/evidence.json` → `prices[]`, and `composed/HEADER.yaml` → 
   - `uk-gdpr` from ico feed `penalty-schema` v3: GBP 9,039,791.02, 4 control(s) named
   - `threat-register` from feeds feed `threat-register` v1: GBP 222,574.31, 0 control(s) named
 
+### Floor comparison
+
+Source: `composed/floor-change.json`; recorded floor inputs in `composed/HEADER.yaml` → `floor-comparison`.
+
+Floor: **unknown → absent**. floor-only counterfactual at current publisher, scenario, appetite and selection inputs.
+
+Could not look: previous floor was not recorded; absence of history is not an absent floor.
+
+- ico/penalty-schema: unknown → isolated; retained residual unknown → GBP 180,795.82; delta unknown.
+- feeds/threat-register: unknown → isolated; retained residual unknown → GBP 4,451.49; delta unknown.
+
+Instrument: `platform-cage-tiers@1.0.0`. selection evidence, not an enacted Namespace tier; platform reductions are self-declared calibration, not measured effectiveness.
+
 ## 5. What is not covered
 
 Source: `composed/HEADER.yaml` → `baseline`, `selected-controls`, `holes`; `composed/evidence.json` → `holes[]`, `ungoverned[]`, `refusals[]`, `restatements[]`, `deltas[]`.
@@ -86,8 +121,8 @@ Source: `composed/HEADER.yaml` → `baseline`, `selected-controls`, `holes`; `co
 - So 2 of 287 selected controls have an implementation in this artefact. A hole is priced, never refused (ADR-0020).
 - `refusals[]`: 0
 - `restatements[]`: 0
-- `deltas[]`: 0
-- `ungoverned[]`: 1
+- `deltas[]`: 1
+- `ungoverned[]`: 2
 
 ## 6. What this handbook cannot say
 
@@ -102,12 +137,21 @@ Source: `composed/evidence.json` → `limits[]`, plus every field this render lo
 
 One recorded limit is deliberately not stated above: `publisher-clone-absent` records which publisher clones the run that re-derived this artefact could read, which is a fact about that run and not about the artefact; a page that stated it could not re-render byte-identically with a publisher absent, and re-rendering with a publisher absent is what `composition.py verify` holds this page to (ticket 45). `composed/evidence.json` records it in full.
 
-**1 field(s) this render looked for in the artefact and did not find.** Where a field is absent this page states nothing in its place — no default prose, no zero (ADR-0020: a missing instrument refuses; it is never invented).
+**10 field(s) this render looked for in the artefact and did not find.** Where a field is absent this page states nothing in its place — no default prose, no zero (ADR-0020: a missing instrument refuses; it is never invented).
 
+- `spec of cage-isolated` (in `composed/bottom-rung-priorityclass.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-baseline-4-0-0` (in `composed/policies/v4.0.0/cage-baseline.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-isolated-4-0-0` (in `composed/policies/v4.0.0/cage-isolated.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-quarantine-4-0-0` (in `composed/policies/v4.0.0/cage-quarantine.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-restricted-4-0-0` (in `composed/policies/v4.0.0/cage-restricted.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-baseline-5-0-0` (in `composed/policies/v5.0.0/cage-baseline.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-isolated-5-0-0` (in `composed/policies/v5.0.0/cage-isolated.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-quarantine-5-0-0` (in `composed/policies/v5.0.0/cage-quarantine.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-restricted-5-0-0` (in `composed/policies/v5.0.0/cage-restricted.yaml`) — this object declares no mutation, validation or generation this page can read
 - `selection-policy` (in `composed/HEADER.yaml`) — no versioned rule is recorded as having chosen the tier, so this page names none
 
 Two things this page can never tell you, by construction, and neither is a field of the artefact: whether the rules above are the **right** rules, and whether a human read and accepted the change that produced them. The first is the editorial review ([ADR-0007](https://github.com/policy-as-versioned-flux/policy-as-versioned-flux/blob/main/docs/adr/0007-agent-assisted-editorial-governance.md)); the second is the pull request this artefact arrived in.
 
 ---
 
-Counted from the artefact: 4 publisher(s), 7 installed object(s), 7 recorded member(s), 5 price(s), 287 selected control(s), 285 hole(s), 2 recorded limit(s), 1 named absence(s).
+Counted from the artefact: 4 publisher(s), 26 installed object(s), 26 recorded member(s), 6 price(s), 287 selected control(s), 285 hole(s), 2 recorded limit(s), 10 named absence(s).

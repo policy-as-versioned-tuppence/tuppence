@@ -1,15 +1,15 @@
 apiVersion: policies.kyverno.io/v1alpha1
 kind: MutatingPolicy
 metadata:
-  name: cage-tier-4-0-0
+  name: cage-tier-5-0-0
   labels:
     app.kubernetes.io/part-of: platform
     policy-as-versioned.dev/policy: graded-enforcement
-    policy-as-versioned.dev/policy-version: 4.0.0
+    policy-as-versioned.dev/policy-version: 5.0.0
     policy-as-versioned.dev/composed-for: tuppence
   annotations:
     policy-as-versioned.dev/inherited-from: platform@3.3.0
-    policy-as-versioned.dev/source-path: distribution/policies/v4.0.0/cage-tier.yaml
+    policy-as-versioned.dev/source-path: distribution/policies/v5.0.0/cage-tier.yaml
 spec:
   matchConstraints:
     resourceRules:
@@ -26,16 +26,14 @@ spec:
   - name: claims-a-policy-version
     expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('') != ''
   - name: only-this-policy-version
-    expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('') == '4.0.0'
+    expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('') == '5.0.0'
   variables:
-  - name: nsGoverned
-    expression: namespaceObject != null && namespaceObject.metadata.?labels['policy-as-versioned.dev/governed'].orValue('') == 'true'
   - name: nsTier
     expression: "namespaceObject != null\n  ? namespaceObject.metadata.?labels['posture.acme.io/tier'].orValue('')\n  : ''"
   - name: tier
-    expression: "variables.nsTier in ['baseline', 'restricted', 'quarantine', 'isolated']\n  ? variables.nsTier\n  : (variables.nsGoverned ? 'isolated' : 'baseline')"
+    expression: "variables.nsTier in ['baseline', 'restricted', 'quarantine', 'isolated']\n  ? variables.nsTier\n  : 'isolated'"
   - name: dial
-    expression: "{'baseline':  {'cpu':'500m','mem':'256Mi','pc':'cage-baseline-4-0-0',  'prio':'-10',   'harden':'false','wafCpu':'0',   'wafMem':'0'},\n 'restricted':{'cpu':'250m','mem':'128Mi','pc':'cage-restricted-4-0-0','prio':'-100',  'harden':'true', 'wafCpu':'100m','wafMem':'128Mi'},\n 'quarantine':{'cpu':'100m','mem':'64Mi', 'pc':'cage-quarantine-4-0-0','prio':'-1000', 'harden':'true', 'wafCpu':'250m','wafMem':'256Mi'},\n 'isolated':  {'cpu':'100m','mem':'64Mi', 'pc':'cage-isolated-4-0-0',  'prio':'-10000','harden':'true', 'wafCpu':'250m','wafMem':'256Mi'}}[variables.tier]"
+    expression: "{'baseline':  {'cpu':'500m','mem':'256Mi','pc':'cage-baseline-5-0-0',  'prio':'-10',   'harden':'false','wafCpu':'0',   'wafMem':'0'},\n 'restricted':{'cpu':'250m','mem':'128Mi','pc':'cage-restricted-5-0-0','prio':'-100',  'harden':'true', 'wafCpu':'100m','wafMem':'128Mi'},\n 'quarantine':{'cpu':'100m','mem':'64Mi', 'pc':'cage-quarantine-5-0-0','prio':'-1000', 'harden':'true', 'wafCpu':'250m','wafMem':'256Mi'},\n 'isolated':  {'cpu':'100m','mem':'64Mi', 'pc':'cage-isolated-5-0-0',  'prio':'-10000','harden':'true', 'wafCpu':'250m','wafMem':'256Mi'}}[variables.tier]"
   mutations:
   - patchType: ApplyConfiguration
     applyConfiguration:

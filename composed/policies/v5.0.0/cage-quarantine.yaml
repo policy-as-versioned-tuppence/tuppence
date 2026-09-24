@@ -1,0 +1,16 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: cage-quarantine-5-0-0
+  labels:
+    app.kubernetes.io/part-of: platform
+    policy-as-versioned.dev/policy: graded-enforcement
+    policy-as-versioned.dev/policy-version: 5.0.0
+    policy-as-versioned.dev/composed-for: tuppence
+  annotations:
+    policy-as-versioned.dev/inherited-from: platform@3.3.0
+    policy-as-versioned.dev/source-path: distribution/policies/v5.0.0/priorityclasses.yaml
+value: -1000
+preemptionPolicy: Never
+globalDefault: false
+description: 'Graded cage — quarantine tier: first to be evicted, the hardest cage short of Deny.'
