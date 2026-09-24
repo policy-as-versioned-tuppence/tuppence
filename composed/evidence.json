@@ -2859,7 +2859,9 @@
         "since_by": "v2.0.0 names openbao",
         "as_of": "2026-09-08",
         "bounded": false,
-        "limits": []
+        "limits": [
+          "as_of 2026-09-08 precedes since 2026-09-24: the composition's as-of is its newest signed input and a tag date is not one, so the ramp holds at its start until a composition as of a later day"
+        ]
       }
     },
     {
