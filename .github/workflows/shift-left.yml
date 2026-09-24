@@ -419,7 +419,12 @@ jobs:
       - name: Compiler boundary and real checkout-layout regression
         env:
           PAVF_REAL_ESTATE: ${{ github.workspace }}
-        run: python3 -m unittest discover -s tuppence/tests -p test_platform_tools.py
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tuppence/tests -p test_platform_tools.py
+          # Ticket 131: workflow-shape tests live under .github/ so they stay
+          # outside the comparison identity that composed/ records.
+          python3 -m unittest discover -s tuppence/.github/tests -p 'test_*.py'
 
       - name: recompose tuppence's party artefact; fail on refusal or drift; print the document as the job summary
         run: |
