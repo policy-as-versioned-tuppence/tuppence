@@ -436,6 +436,7 @@ jobs:
           set -euo pipefail
           git -C tuppence fetch --quiet --tags origin
           python3 -m unittest discover -s tuppence/tests -p test_composed_reach.py
+          python3 -m unittest discover -s tuppence/tests -p test_fact_four_compare.py
           python3 tuppence/scripts/render_composed.py reach
 
       - name: recompose tuppence's party artefact; fail on refusal or drift; print the document as the job summary

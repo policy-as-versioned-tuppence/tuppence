@@ -69,6 +69,13 @@ five_fact_sample:
         live. A field the render omits is not compared. Both verdicts are recorded per object --
         `declared_equal` (what the fact is graded on) and `strict_equal` (byte identity, recorded
         for the reader) -- so the weaker one is visible rather than implied.
+      amended: >-
+        2026-09-24, ticket 140. The ceiling above is unchanged. One absence is read as equal: a
+        declared zero value on a field a built-in type tags `omitempty`, which the API server never
+        writes out. Today that is PriorityClass `globalDefault: false` only, listed with its Go tag
+        in scripts/render_composed.py API_OMITTED_ZERO. A declared non-zero value that is absent
+        live still fails, and every object read this way is named in the sample under
+        objects_read_through_omitted_zero.
     - id: fact_5_every_rendered_object_is_in_the_flux_inventory
       per: the composed set
       claim: >-

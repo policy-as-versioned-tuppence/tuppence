@@ -358,6 +358,7 @@ def composed_set_facts(cluster: Cluster, ref: str | None) -> tuple[dict, dict, l
         return fact(None, why), fact(None, why), []
     inventory = inventory_ids(cluster)
     unequal, absent, uninventoried, checked = [], [], [], []
+    omitted: dict[str, list[str]] = {}
     for k, obj in sorted(declared.items()):
         obj = {kk: vv for kk, vv in obj.items() if kk != "_source_path"}
         kind, name = obj["kind"], obj["metadata"]["name"]
@@ -377,6 +378,8 @@ def composed_set_facts(cluster: Cluster, ref: str | None) -> tuple[dict, dict, l
             continue
         verdict = rc.compare(obj, live)
         checked.append(k)
+        if verdict["omitted_zero"]:
+            omitted[k] = verdict["omitted_zero"]
         if not verdict["declared_equal"]:
             unequal.append({"object": k, "differences": verdict["differences"],
                             "strict_equal": verdict["strict_equal"]})
@@ -392,8 +395,12 @@ def composed_set_facts(cluster: Cluster, ref: str | None) -> tuple[dict, dict, l
         scope="the composed set", objects_declared=total, objects_absent=absent,
         objects_unequal=unequal,
         rendered_from=ref or "the working tree",
+        objects_read_through_omitted_zero=omitted,
         ceiling="declared_equal, not byte identity: the API server defaults fields the render "
-                "never declared. strict_equal is recorded per unequal object.")
+                "never declared. strict_equal is recorded per unequal object. A declared zero "
+                "that the API server omits (an omitempty field of a built-in type, listed in "
+                "render_composed.API_OMITTED_ZERO) reads as equal, and each object read that way "
+                "is named under objects_read_through_omitted_zero (ticket 140).")
     f5 = fact(
         not absent and not uninventoried,
         (f"all {total} rendered objects appear in a Flux inventory"
