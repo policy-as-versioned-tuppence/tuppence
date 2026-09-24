@@ -831,6 +831,89 @@ for case in absent-root wrong-rekor-key corrupt-rekor-key wrong-ct-key wrong-ful
 done
 echo "    (warm = this machine's own HOME, whose ~/.sigstore is warm on a laptop that has ever run cosign online and cold on a CI runner; either way the doctored root, not a cached one, is what refused)"
 
+say "Scenario J: the real v3.3.0 rollout (pull request 36) -- an accepted major is admitted, and only an accepted one"
+# Eco-system ticket 132. The subject is this repository's own history, not a planting: the commit
+# before pull request 36 merged (base) and its merge commit (head). Between them the composed
+# window moves from [4.0.0] to [4.0.0, 5.0.0], platform's signed evidence at v3.3.0 records 5.0.0
+# as major, and the head carries accepted-majors/platform-5.0.0.yaml, the owner's acceptance of
+# 2026-09-23. The merge commit is named, not HEAD, so a later change to main cannot move what this
+# scenario grades. Three variants then commit on top of that head in a throwaway clone: the record
+# removed, the record naming another version, and the record naming another party. Real cosign,
+# real identity constants read out of shift-left.yml (Scenario E), no --skip-cosign-verify.
+ROLLOUT_MERGE=81ef938a2634bfcfa4ec129f25f6cf0b146d1fdd
+if ! git -C "$here" cat-file -e "${ROLLOUT_MERGE}^{commit}" 2>/dev/null; then
+  echo "SKIP: J: this checkout does not carry the v3.3.0 rollout's merge commit ${ROLLOUT_MERGE:0:12} (a shallow clone?), so the real rollout cannot be replayed" >&2
+  exit 3
+fi
+j_repo="$scratch/tuppence-j"
+git clone --quiet --no-checkout "$here" "$j_repo"
+git -C "$j_repo" fetch --quiet "$here" "$ROLLOUT_MERGE"
+j_base=$(git -C "$j_repo" rev-parse "${ROLLOUT_MERGE}^1")
+git -C "$j_repo" show "${j_base}:gitops/platform/platform-pin.yaml" > "$scratch/j-old-pin.yaml"
+git -C "$j_repo" show "${ROLLOUT_MERGE}:gitops/platform/platform-pin.yaml" > "$scratch/j-new-pin.yaml"
+j_platform="$scratch/platform-j"
+git clone --local --quiet "$platform_repo" "$j_platform"
+echo "the rollout: base ${j_base:0:12} ($(awk '/^    tag: / {print $2; exit}' "$scratch/j-old-pin.yaml")), head ${ROLLOUT_MERGE:0:12} ($(awk '/^    tag: / {print $2; exit}' "$scratch/j-new-pin.yaml"))"
+
+gate_rollout() {  # $1 head ref, $2 out prefix -> exit code on stdout
+  set +e
+  gate --platform-dir "$j_platform" --new-pin-yaml "$scratch/j-new-pin.yaml" \
+       --old-pin-yaml "$scratch/j-old-pin.yaml" \
+       --identity-regexp "$e_regexp" --issuer "$e_issuer" \
+       --adopter-dir "$j_repo" --base-ref "$j_base" --head-ref "$1" \
+       --out "$scratch/$2.json" > "$scratch/$2.out" 2>&1
+  local code=$?
+  set -e
+  echo "$code"
+}
+j_variant() {  # $1 branch name, $2 python that edits the record in place ("" removes it) -> head sha
+  git -C "$j_repo" checkout --quiet -B "$1" "$ROLLOUT_MERGE"
+  if [ -z "$2" ]; then
+    git -C "$j_repo" rm --quiet accepted-majors/platform-5.0.0.yaml
+  else
+    python3 -c "$2" "$j_repo/accepted-majors/platform-5.0.0.yaml"
+    git -C "$j_repo" add accepted-majors/platform-5.0.0.yaml
+  fi
+  git -C "$j_repo" -c user.name=t -c user.email=t@example.invalid -c commit.gpgsign=false \
+    commit --quiet -m "J: $1"
+  git -C "$j_repo" rev-parse HEAD
+}
+
+j_code=$(gate_rollout "$ROLLOUT_MERGE" j)
+tail -4 "$scratch/j.out"
+[ "$j_code" -eq 0 ] || fail "J: the real rollout carries an acceptance of 5.0.0 for tuppence and the gate still refused it (exit $j_code): $(tail -2 "$scratch/j.out")"
+python3 - "$scratch/j.json" <<'PY' || fail "J: the gate adopted, but its own summary does not say it composed major and admitted 5.0.0 on the rollout's own record"
+import json, sys
+d = json.load(open(sys.argv[1]))
+assert d["composed"] == "major", d["composed"]
+assert d["added"] == ["5.0.0"], d["added"]
+assert all(e["verified"] is True for e in d["elements"]), d["elements"]
+a = d["acceptance"]
+assert a["admitted"] is True, a
+assert [x["record"] for x in a["accepted"]] == ["accepted-majors/platform-5.0.0.yaml"], a
+PY
+echo "ok  J[accepted]: the real rollout composes major (5.0.0 added, its evidence verified by real cosign), and the gate admits it on accepted-majors/platform-5.0.0.yaml at ${ROLLOUT_MERGE:0:12}"
+
+for variant in removed other-version other-party; do
+  case "$variant" in
+    removed) edit=""; label="removed" ;;
+    other-version) label="naming 5.0.1"; edit='import sys, pathlib; p = pathlib.Path(sys.argv[1]); p.write_text(p.read_text().replace("version: 5.0.0", "version: 5.0.1"))' ;;
+    other-party) label="naming ludlow"; edit='import sys, pathlib; p = pathlib.Path(sys.argv[1]); p.write_text(p.read_text().replace("party: tuppence", "party: ludlow"))' ;;
+  esac
+  j_head=$(j_variant "j-$variant" "$edit")
+  code=$(gate_rollout "$j_head" "j-$variant")
+  tail -2 "$scratch/j-$variant.out"
+  [ "$code" -ne 0 ] || fail "J[$variant]: the rollout with its record $label must refuse, got exit 0"
+  grep -q "^FAIL: composed bump is major" "$scratch/j-$variant.out" \
+    || fail "J[$variant]: the refusal does not name the composed major: $(tail -1 "$scratch/j-$variant.out")"
+  grep -q "5.0.0" "$scratch/j-$variant.out" || fail "J[$variant]: the refusal does not name 5.0.0"
+  if [ "$variant" = other-party ]; then
+    grep -q "for ludlow, not for tuppence" "$scratch/j-$variant.out" \
+      || fail "J[other-party]: the refusal does not name the record that accepts 5.0.0 for another party"
+  fi
+  echo "ok  J[$variant]: the same rollout with its record $label REFUSES, exit ${code}, naming 5.0.0"
+done
+
 echo
 echo "PASS: adopter-gate.py checks out the tag under review (never the default branch), refuses a"
 echo "resolved-commit disagreement with the pinned commit field, and refuses -- with the real cosign"
@@ -847,3 +930,5 @@ echo "retirement still forces a real non-zero-exit FAIL naming the version. The 
 echo "note prints and never downgrades. Eco-system ticket 105: the gate verifies platform's real bundle"
 echo "with a cold TUF cache and egress blocked, exit 0, through its own CLI (G), and a wrong, corrupt,"
 echo "retired or absent trust root refuses on the trust material and never on the network, cold and warm (H)."
+echo "Eco-system ticket 132: the real v3.3.0 rollout composes major and is admitted on its own acceptance"
+echo "record, and refuses when that record is removed or names another version or party (J)."
