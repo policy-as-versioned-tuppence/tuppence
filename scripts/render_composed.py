@@ -56,6 +56,18 @@ created it. `compare()` therefore returns two verdicts and the caller records bo
 
 Upgrade path if `declared_equal` ever proves too weak: pull the CRD's structural schema and prune
 defaulted fields from the live object instead of ignoring live-only keys.
+
+## A declared zero the API server omits (ticket 140)
+
+`declared_equal` counts a declared field that is absent live as a difference. One case is not a
+difference. A built-in type whose Go field is tagged `omitempty` is never written out holding its
+zero value, so a render that declares that zero finds the field absent live, and the object is
+still exactly what the render declared. `API_OMITTED_ZERO` lists each such field by API group,
+kind and field, with the Go tag it rests on. The rule reads an absence as equal only when the
+declared value is that zero, of that type, on that kind. A declared non-zero value that is absent
+live, a changed value, and a false field on any kind not listed all still read as differences.
+Custom resources are never listed: they are stored as unstructured JSON, so the server keeps a
+false field as it was sent. `compare()` names every field it read this way under `omitted_zero`.
 """
 from __future__ import annotations
 
@@ -83,6 +95,20 @@ SERVER_METADATA = (
     "selfLink", "deletionTimestamp", "deletionGracePeriodSeconds",
 )
 SERVER_ANNOTATIONS = ("kubectl.kubernetes.io/last-applied-configuration",)
+
+# Declared fields the API server omits when they hold their zero value (ticket 140). Keyed by
+# (API group, kind), then by top-level field. Each entry is measured against the Go type in
+# k8s.io/api, never guessed: a field joins this table only when its tag carries `omitempty`.
+API_OMITTED_ZERO: dict[tuple[str, str], dict[str, dict]] = {
+    ("scheduling.k8s.io", "PriorityClass"): {
+        "globalDefault": {
+            "zero": False,
+            "why": "k8s.io/api scheduling/v1 PriorityClass declares "
+                   "`GlobalDefault bool json:\"globalDefault,omitempty\"`, so the API server "
+                   "never writes out a false globalDefault",
+        },
+    },
+}
 
 
 class CouldNotLook(Exception):
@@ -331,14 +357,28 @@ def _contains(declared, live) -> list[str]:
     return [] if declared == live else [f" want {declared!r}, live {live!r}"]
 
 
+def omitted_zero(declared: dict, live: dict) -> list[str]:
+    """The declared fields that are absent live only because the API server omits their zero
+    value (ticket 140). The declared value must BE the zero, of the zero's own type: `0` is not
+    `False`, and a declared `true` that is absent live is a real difference."""
+    api = str(declared.get("apiVersion", ""))
+    group = api.rsplit("/", 1)[0] if "/" in api else ""
+    fields = API_OMITTED_ZERO.get((group, str(declared.get("kind", ""))), {})
+    return [name for name, entry in fields.items()
+            if name in declared and name not in live
+            and type(declared[name]) is type(entry["zero"]) and declared[name] == entry["zero"]]
+
+
 def compare(declared: dict, live: dict) -> dict:
     """The two verdicts fact 4 records. See the ceiling in this module's docstring."""
     reduced = strip_server_fields(live)
-    differences = _contains(declared, reduced)
+    omitted = omitted_zero(declared, reduced)
+    differences = _contains({k: v for k, v in declared.items() if k not in omitted}, reduced)
     return {
         "declared_equal": not differences,
         "strict_equal": canonical(declared) == canonical(reduced),
         "differences": differences[:10],
+        "omitted_zero": [f".{name}" for name in omitted],
     }
 
 
@@ -511,6 +551,14 @@ def selfcheck() -> int:
     missing = json.loads(json.dumps(declared))
     del missing["data"]
     assert not compare(declared, missing)["declared_equal"], "an absent declared field IS drift"
+    # Ticket 140: a false globalDefault is omitted by the API server, so absent live is equal;
+    # a true one absent live is still drift.
+    pc = {"apiVersion": "scheduling.k8s.io/v1", "kind": "PriorityClass",
+          "metadata": {"name": "p"}, "value": 1, "globalDefault": False}
+    served = {k: v for k, v in pc.items() if k != "globalDefault"}
+    assert compare(pc, served)["declared_equal"], "an omitted zero globalDefault is not drift"
+    assert not compare({**pc, "globalDefault": True}, served)["declared_equal"], \
+        "a declared true globalDefault that is absent live IS drift"
     # The render that matters is the one at the tag the ResourceSet pins: that is the tree the
     # Kustomizations reconcile. The working tree is the fallback where the tag is not fetched.
     try:
@@ -521,7 +569,7 @@ def selfcheck() -> int:
         at = None
     objects = render(at)
     assert objects, "the composed set rendered to nothing"
-    print(f"ok  compare() bites both ways; the composed set renders {len(objects)} objects "
+    print(f"ok  compare() bites both ways, an omitted zero reads equal; the composed set renders {len(objects)} objects "
           f"at {at or 'the working tree'}")
     return 0
 
