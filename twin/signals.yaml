@@ -22,13 +22,13 @@ org: tuppence
 pins_read_from: party.yaml
 
 signals:
-  - pin: { party: platform, kind: implementations, version: '3.3.0' }
+  - pin: { party: platform, kind: implementations, version: '4.0.0' }
     signal:
-      id: platform-implementations-3.3.0-is-the-pinned-release
+      id: platform-implementations-4.0.0-is-the-pinned-release
       at: '2026-09-24'
       scenario: eol-date-passes-2026
       what: >-
-        This institution's cage policy line comes from platform 3.3.0. The end-of-life date for
+        This institution's cage policy line comes from platform 4.0.0. The end-of-life date for
         that release is the publisher's to publish; this row is what binds it to the standing
         question about a pinned dependency passing one. `at` is the `since` date on the
         subscription in party.yaml, which is the day this pin was last declared.
