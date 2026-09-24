@@ -8,7 +8,7 @@ metadata:
     policy-as-versioned.dev/policy-version: 5.0.0
     policy-as-versioned.dev/composed-for: tuppence
   annotations:
-    policy-as-versioned.dev/inherited-from: platform@3.3.0
+    policy-as-versioned.dev/inherited-from: platform@4.0.0
     policy-as-versioned.dev/source-path: distribution/policies/v5.0.0/priorityclasses.yaml
 value: -10000
 preemptionPolicy: Never

@@ -5,8 +5,8 @@
     {
       "party": "platform",
       "kind": "implementations",
-      "version": "3.3.0",
-      "sha": "38089a68769453db9ea3faf0ee637ae93f309980"
+      "version": "4.0.0",
+      "sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71"
     },
     {
       "party": "nist",
@@ -41,90 +41,9 @@
       "family": "graded-enforcement",
       "name": "cage-baseline",
       "kind": "PriorityClass",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-isolated",
-      "kind": "PriorityClass",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-netpol",
-      "kind": "GeneratingPolicy",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-quarantine",
-      "kind": "PriorityClass",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-restricted",
-      "kind": "PriorityClass",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-tier",
-      "kind": "MutatingPolicy",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": null
-    },
-    {
-      "family": "posture",
-      "name": "posture-trust-boundary",
-      "kind": "ValidatingPolicy",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": "Deny"
-    },
-    {
-      "family": "posture",
-      "name": "stamp-posture",
-      "kind": "MutatingPolicy",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": null
-    },
-    {
-      "family": "require-nonroot",
-      "name": "require-nonroot",
-      "kind": "ValidatingPolicy",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": "Audit"
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-baseline",
-      "kind": "PriorityClass",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     },
     {
@@ -133,7 +52,7 @@
       "kind": "PriorityClass",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     },
     {
@@ -142,7 +61,7 @@
       "kind": "GeneratingPolicy",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     },
     {
@@ -151,7 +70,7 @@
       "kind": "PriorityClass",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     },
     {
@@ -160,7 +79,7 @@
       "kind": "PriorityClass",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     },
     {
@@ -169,7 +88,7 @@
       "kind": "MutatingPolicy",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     },
     {
@@ -178,7 +97,7 @@
       "kind": "ValidatingPolicy",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": "Deny"
     },
     {
@@ -187,7 +106,7 @@
       "kind": "MutatingPolicy",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     },
     {
@@ -196,7 +115,7 @@
       "kind": "ValidatingPolicy",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": "Audit"
     },
     {
@@ -205,7 +124,7 @@
       "kind": "ValidatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     },
     {
@@ -214,7 +133,7 @@
       "kind": "MutatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     },
     {
@@ -223,7 +142,7 @@
       "kind": "MutatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     },
     {
@@ -232,7 +151,7 @@
       "kind": "MutatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     },
     {
@@ -241,7 +160,7 @@
       "kind": "MutatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     },
     {
@@ -250,7 +169,7 @@
       "kind": "ValidatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     },
     {
@@ -259,7 +178,7 @@
       "kind": "GeneratingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     },
     {
@@ -268,7 +187,7 @@
       "kind": "PriorityClass",
       "version": null,
       "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
+      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
       "action": null
     }
   ],
@@ -3295,7 +3214,7 @@
       "name": "pinned-parent-lacks-rendered-versions",
       "detail": "the composed set renders policy versions the pinned parent commit does not contain; the header names a parent release that holds none of these trees. every rendered version is present at the pinned commit",
       "count": 0,
-      "checked": 2,
+      "checked": 1,
       "status": "closed"
     },
     {
