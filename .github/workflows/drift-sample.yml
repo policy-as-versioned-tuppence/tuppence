@@ -60,10 +60,6 @@ env:
   KYVERNO_SHA256: 3dcd43eaf11f0719084217148cd0c82a8fa49faa9b1a783ea5bea2cf84041bda
   FLUX_OPERATOR_VERSION: 0.58.1
   FLUX_OPERATOR_SHA256: d674546f8cd6c9a09c55a279b119c880ae6d79c726ff7c57ec4d92b26827a04d
-  # The tag gitops/composed/composed-set.yaml pins. The offline render fact 4 compares against is
-  # taken from the tree AT this ref, not from the working checkout, so the comparison is against
-  # what the cluster was actually told to install.
-  COMPOSED_REF: v1.1.0
   # The image facts 6 and 7 place at a rung (ecosystem ticket 86), and the image the cage itself
   # injects as a WAF sidecar at every hardened rung. ONE name, deliberately: loading it once
   # covers both the sidecar the cage adds and the container the probe connects from.
@@ -314,6 +310,13 @@ jobs:
           # whatever the default branch happens to hold today.
           # `--cage-probe-image` empty is not an error: the sample records facts 6 and 7 as
           # could-not-look with the reason, rather than placing a pod that cannot pull.
+          # The tag is READ from gitops/composed/composed-set.yaml, the file the step above applied,
+          # never typed here: it was a hardcoded v1.1.0 until ticket 130, so the day the
+          # composed-set moved, fact 4 would have compared the cluster against the old tag's tree.
+          COMPOSED_REF="$(python3 -c 'import sys; sys.path.insert(0, "scripts"); import render_composed as rc; print(rc.pinned_tag())')"
+          # The delivery check (ticket 130), printed for a reader of the run and never failing it:
+          # the gate for it is shift-left, on the pull request that moves the tag.
+          python3 scripts/render_composed.py reach --ref "${COMPOSED_REF}" || true
           python3 drift/five-facts.py sample \
             --context "${CTX}" --cluster "${CLUSTER}" --ref "${COMPOSED_REF}" \
             --cage-probe-image "${{ steps.cageprobe.outputs.image }}"
