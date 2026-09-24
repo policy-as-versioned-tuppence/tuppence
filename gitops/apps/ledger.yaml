@@ -25,7 +25,8 @@
 #      `composed/policies/v5.0.0/` is the set that grades this pod. A claim outside that array is
 #      an orphan that reaches no cage at all (ticket 89). The claim moved from 4.0.0 on
 #      2026-09-24 (Phase B, owner-instructed): every institution accepts 5.0.0 and platform
-#      retires 4.0.0. The array still holds both until that retirement lands.
+#      retires 4.0.0. Platform v4.0.0 retired it. The array in gitops/composed/composed-set.yaml
+#      now holds 5.0.0 only, the one version directory tuppence's v3.0.0 carries.
 #   3. RE-NAMESPACED into tuppence's governed Namespace, where the cage tier is declared
 #      (`gitops/apps/namespace.yaml`, `posture.acme.io/tier: isolated`). This manifest carries no
 #      tier label of its own: under 5.0.0 the tier is declared on the Namespace and `cage-tier`

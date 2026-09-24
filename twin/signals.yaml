@@ -30,8 +30,9 @@ signals:
       what: >-
         This institution's cage policy line comes from platform 4.0.0. The end-of-life date for
         that release is the publisher's to publish; this row is what binds it to the standing
-        question about a pinned dependency passing one. `at` is the `since` date on the
-        subscription in party.yaml, which is the day this pin was last declared.
+        question about a pinned dependency passing one. `at` is the day this row was re-derived
+        for the 4.0.0 pin, 2026-09-24. It is not the `since` date on the subscription in
+        party.yaml, which stays 2026-08-28 across pin moves.
 
   - pin: { party: nist, kind: controls, version: '1.1.0' }
     signal:
