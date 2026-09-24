@@ -128,6 +128,16 @@ def render(summary: dict) -> str:
         lines.append(f"**Retired, reaching this institution as major:** {', '.join(f'`{v}`' for v in summary['retired'])}")
         lines.append("")
 
+    # Eco-system ticket 132: a composed major is admitted only on this repository's own
+    # acceptance records, read at the head the gate graded. Say which way it went, and why.
+    acceptance = summary.get("acceptance")
+    if acceptance:
+        verdict = ("admitted: every major this pull request adds is accepted" if acceptance["admitted"]
+                   else "not admitted: not every major this pull request brings is accepted")
+        lines.append(f"**Composed major, {verdict}** (records under `accepted-majors/`):")
+        lines.extend(f"- {line}" for line in acceptance.get("lines") or [])
+        lines.append("")
+
     for el in summary["elements"]:
         version = el["version"]
         if el.get("retired"):
@@ -261,6 +271,19 @@ def selfcheck() -> None:
     assert "Retired, reaching this institution as major" in out2
     assert "`9.0.0`" in out2
     assert "%" not in out2
+
+    # Eco-system ticket 132: a composed major carries the gate's acceptance verdict, and the body
+    # says whether it was admitted and on which record.
+    accepted_fixture = dict(retired_fixture, retired=[], elements=[], acceptance={
+        "admitted": True, "lines": ["5.0.0 is a major, accepted for tuppence by Example Owner on "
+                                    "2026-09-23 (accepted-majors/platform-5.0.0.yaml at 81ef938a2634)"]})
+    out3 = render(accepted_fixture)
+    assert "admitted" in out3 and "accepted-majors/platform-5.0.0.yaml" in out3, out3
+    refused_fixture = dict(accepted_fixture, acceptance={
+        "admitted": False, "lines": ["5.0.0 is a major, and no accepted-majors/ record at "
+                                     "81ef938a2634 accepts it for tuppence"]})
+    out4 = render(refused_fixture)
+    assert "not admitted" in out4 and "no accepted-majors/ record" in out4, out4
 
     # ---- wrap_section / splice_body (ticket cs-29's body-edit mechanism) ----
     renovate_body = "Bumps platform-pin.yaml from v1.0.0 to v1.1.0.\n\n---\n\n - [ ] <!-- rebase-check -->"
