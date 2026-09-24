@@ -618,14 +618,14 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: 9772c9961218e0a1c265508da7a0c18eb8c25c248a7fe704ee6628106f7ebecd
+  after: bd11d30de949985a98e352d37971a70ce73f0e8542b633cfb596cb1c3b816471
   before:
     header:
       parents:
       - party: platform
         kind: implementations
-        version: 3.3.0
-        sha: 38089a68769453db9ea3faf0ee637ae93f309980
+        version: 4.0.0
+        sha: 557c1538fe022c784ea4ffb345c92d2e4b11fe71
       - party: nist
         kind: controls
         version: 1.1.0

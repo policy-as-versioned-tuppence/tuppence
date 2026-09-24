@@ -10,8 +10,9 @@
 #
 # MOVED 2026-09-24 (Phase B, owner-instructed): every institution accepts 5.0.0
 # and platform retires 4.0.0, so this claim moves from 4.0.0 to 5.0.0. The
-# orphan guard at v2.0.0 allows ['4.0.0', '5.0.0'], so the move leaves nothing
-# uncaged. ci-check.py grades this pod across that window, both versions.
+# orphan guard at v3.0.0 allows ['5.0.0'] only, and this pod claims 5.0.0, so
+# the claim is not an orphan. ci-check.py grades this pod across platform's
+# declared window, which at v4.0.0 is 5.0.0 only.
 #
 # It carries no posture.acme.io/tier label on purpose. Under 5.0.0 the tier is
 # declared on the governed Namespace and the cage writes the pod label as an
