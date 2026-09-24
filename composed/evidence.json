@@ -2855,13 +2855,11 @@
         "workloads_total": 4,
         "base": 9503915.171854898,
         "ramp": 1.0,
-        "since": null,
-        "since_by": null,
+        "since": "2026-09-24",
+        "since_by": "v2.0.0 names openbao",
         "as_of": "2026-09-08",
         "bounded": false,
-        "limits": [
-          "no signed composed artefact names openbao or a Namespace its workloads left: ramp held at 1.0 until a signed tag records it"
-        ]
+        "limits": []
       }
     },
     {
@@ -3080,7 +3078,7 @@
         "version": "v2",
         "perspective": "tuppence",
         "currency": "GBP",
-        "status": "new",
+        "status": "recorded",
         "amount": 241549.84018780073,
         "priced_by": "feeds cve@v2: the exposure the pin prices, read off a feed no signed tag carries",
         "detail": "no signed tag cve/v2.x.y (or v2.x.y) exists on the feeds parent's checkout, which carries 3 tag(s) of its own"
@@ -3227,19 +3225,7 @@
       ]
     }
   ],
-  "deltas": [
-    {
-      "kind": "new-untagged-pin",
-      "source": "feeds",
-      "name": "cve",
-      "version": "v2",
-      "perspective": "tuppence",
-      "currency": "GBP",
-      "amount": 241549.84018780073,
-      "priced_by": "feeds cve@v2: the exposure the pin prices, read off a feed no signed tag carries",
-      "detail": "tuppence pins feeds/cve@v2 and no signed tag cve/v2.x.y (or v2.x.y) exists on the feeds parent's checkout, which carries 3 tag(s) of its own; 241549.84 GBP of exposure is booked against an unsigned feed"
-    }
-  ],
+  "deltas": [],
   "floor_change": {
     "schema": 1,
     "before": {
