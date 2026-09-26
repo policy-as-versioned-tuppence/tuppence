@@ -263,6 +263,23 @@ jobs:
             python3 platform/shift-left/ci-check.py --resource "${manifest}"
           done < "${RUNNER_TEMP}/served.txt"
 
+      - name: the cage probe grades the served documents (eco-system ticket 161)
+        # The lane's facts 6 and 7 prove the cage on a cluster. This proves the DOCUMENTS the
+        # cluster reads, offline, with the CLI the step above installed: the sampler's own probe
+        # objects (drift/five-facts.py) run against composed/ at the tag
+        # gitops/composed/composed-set.yaml pins and at HEAD, through drift/cage_probe.py. It
+        # fails when the fall-closed pod is not on the ladder's bottom, when anything selects the
+        # reference pod, or when a PriorityClass a mutation names is not served. This job checks
+        # the repository out without tags, so the pinned tag is fetched first; a tag that is still
+        # missing is a could-not-look the script names (exit 3), and here that fails the job.
+        # It sits after the version cross-check gate, and not beside the CLI install step,
+        # so a change to how the CLI is installed (ticket 147) does not collide with it.
+        run: |
+          set -euo pipefail
+          tag="$(python3 -c 'import sys; sys.path.insert(0, "tuppence/scripts"); import render_composed as rc; print(rc.pinned_tag())')"
+          git -C tuppence fetch --quiet --depth=1 origin "refs/tags/${tag}:refs/tags/${tag}"
+          bash tuppence/verify-cage-probe.sh
+
       - name: build the shift-left attestation
         # Only reached if the gate step above exited 0 -- the attestation
         # claims "pass" because a non-zero ci-check.py already stopped the
