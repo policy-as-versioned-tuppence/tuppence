@@ -6,8 +6,8 @@ policy-as-versioned.dev/composed: true
 parents:
 - party: platform
   kind: implementations
-  version: 4.0.0
-  sha: 557c1538fe022c784ea4ffb345c92d2e4b11fe71
+  version: 4.1.0
+  sha: 923447e4b1ebeb104554aec464750f24fd6a5898
 - party: nist
   kind: controls
   version: 1.1.0
@@ -28,6 +28,10 @@ parents:
   version: v2
   sha: ddace466f0cc410f228aeff3b4c5704eeea15a30
 baseline: MODERATE
+declared-engine:
+  engine: kyverno
+  version: 1.18.2
+  file: gitops/engine/kyverno.yaml
 floor-comparison:
   schema: 1
   before:
@@ -618,7 +622,7 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: 5c02d43310ad328b6a623142b798975291f42653abbb2fb1f9a5fafb63a1a0a4
+  after: 75942fa38a81266cea054bea47bb822f242ae4e421b99ffeafc4ff820bec6530
   before:
     header:
       parents:

@@ -5,8 +5,8 @@
     {
       "party": "platform",
       "kind": "implementations",
-      "version": "4.0.0",
-      "sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71"
+      "version": "4.1.0",
+      "sha": "923447e4b1ebeb104554aec464750f24fd6a5898"
     },
     {
       "party": "nist",
@@ -43,7 +43,7 @@
       "kind": "PriorityClass",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     },
     {
@@ -52,7 +52,7 @@
       "kind": "PriorityClass",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     },
     {
@@ -61,7 +61,7 @@
       "kind": "GeneratingPolicy",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     },
     {
@@ -70,7 +70,7 @@
       "kind": "PriorityClass",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     },
     {
@@ -79,7 +79,7 @@
       "kind": "PriorityClass",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     },
     {
@@ -88,7 +88,7 @@
       "kind": "MutatingPolicy",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     },
     {
@@ -97,7 +97,7 @@
       "kind": "ValidatingPolicy",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": "Deny"
     },
     {
@@ -106,7 +106,7 @@
       "kind": "MutatingPolicy",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     },
     {
@@ -115,7 +115,7 @@
       "kind": "ValidatingPolicy",
       "version": "5.0.0",
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": "Audit"
     },
     {
@@ -124,7 +124,7 @@
       "kind": "ValidatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     },
     {
@@ -133,7 +133,7 @@
       "kind": "MutatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     },
     {
@@ -142,7 +142,7 @@
       "kind": "MutatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     },
     {
@@ -151,7 +151,7 @@
       "kind": "MutatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     },
     {
@@ -160,7 +160,7 @@
       "kind": "MutatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     },
     {
@@ -169,7 +169,7 @@
       "kind": "ValidatingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     },
     {
@@ -178,7 +178,7 @@
       "kind": "GeneratingPolicy",
       "version": null,
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     },
     {
@@ -187,7 +187,7 @@
       "kind": "PriorityClass",
       "version": null,
       "source_party": "platform",
-      "source_sha": "557c1538fe022c784ea4ffb345c92d2e4b11fe71",
+      "source_sha": "923447e4b1ebeb104554aec464750f24fd6a5898",
       "action": null
     }
   ],
@@ -3364,5 +3364,62 @@
       },
       "path": "composed/feeds/feeds/cve/v2"
     }
-  ]
+  ],
+  "engine": {
+    "declared": {
+      "engine": "kyverno",
+      "version": "1.18.2",
+      "file": "gitops/engine/kyverno.yaml"
+    },
+    "file": "gitops/engine/kyverno.yaml",
+    "pairings": [
+      {
+        "subject": "platform policy 5.0.0",
+        "party": "platform",
+        "line": "5.0.0",
+        "tree": "platform@4.1.0",
+        "read_from": "distribution/versions.yaml",
+        "tested_engines": [
+          "1.18.2"
+        ],
+        "status": "supported",
+        "reason": null,
+        "bodies": [
+          "cage-netpol",
+          "cage-tier",
+          "posture-trust-boundary",
+          "require-nonroot",
+          "stamp-posture"
+        ],
+        "controls": [
+          "ac-6"
+        ]
+      },
+      {
+        "subject": "platform machinery",
+        "party": "platform",
+        "line": "machinery",
+        "tree": "platform@4.1.0",
+        "read_from": "distribution/machinery.yaml",
+        "tested_engines": [
+          "1.18.2",
+          "1.19.1"
+        ],
+        "status": "supported",
+        "reason": null,
+        "bodies": [
+          "cage-netpol-bottom-rung",
+          "governed-namespace-cage-holds",
+          "governed-namespace-requires-claim",
+          "governed-namespace-unclaimed-report",
+          "policy-version-orphan-cage",
+          "policy-version-orphan-cage-holds",
+          "policy-version-orphan-guard"
+        ],
+        "controls": [
+          "cm-6"
+        ]
+      }
+    ]
+  }
 }
