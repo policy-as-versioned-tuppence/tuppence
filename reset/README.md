@@ -64,7 +64,7 @@ Prereqs, in order (they install what this depends on):
 
 ```bash
 estate/platform/identity/up.sh    # SPIRE + Istio + OpenBao + jwt seam
-estate/platform/engine/up.sh      # Kyverno + flux-operator
+talk/engine-up.sh driftwood       # hub: Kyverno from driftwood's gitops/engine/kyverno.yaml, + flux-operator
 estate/platform/posture/up.sh     # stamp-posture + trust-boundary + posture ClusterSPIFFEID
 estate/tuppence/reset/up.sh       # this: workloads + reach gate + secret gate
 ```
