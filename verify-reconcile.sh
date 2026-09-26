@@ -150,7 +150,7 @@ say "6b. the composed cage is actually enforced on $CTX (a governed Namespace th
 # was admitted untouched -- the manifest was inert and nothing here said so.
 # Silence about a cage that is not there is the shape the brief forbids.
 if ! timeout 10 kubectl --context "$CTX" get crd mutatingpolicies.policies.kyverno.io >/dev/null 2>&1; then
-  skip "Kyverno MutatingPolicy CRD not installed on $CTX, so the composed cage is not enforced there at all: the governed Namespace declares a tier that nothing reads, and no pod in it is caged. Run platform/engine/up.sh then platform/graded/up.sh against this cluster (as driftwood has)"
+  skip "Kyverno MutatingPolicy CRD not installed on $CTX, so the composed cage is not enforced there at all: the governed Namespace declares a tier that nothing reads, and no pod in it is caged. An engine on this cluster must be the one gitops/engine/kyverno.yaml declares (hub ADR-0033 point 2), and platform/graded/up.sh then runs against it, as on kind-driftwood"
 fi
 for pol in $(python3 -c "
 import pathlib, sys

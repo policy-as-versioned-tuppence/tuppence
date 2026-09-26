@@ -1,0 +1,48 @@
+# The engine tuppence declares: hub ADR-0033 point 2, eco-system ticket 147.
+#
+# tuppence owns the Kyverno version it runs, and this file is the one place it says which. It is a
+# plain declaration, not a Kubernetes manifest. Nothing applies this file, and no Flux
+# Kustomization reconciles gitops/engine/. A cluster that runs an engine for tuppence installs it
+# from this file, or, on a cluster another adopter owns, from the owner's file, which must declare
+# the same engine:
+#   the drift lane    .github/workflows/drift-sample.yml downloads install.url, checks it against
+#                     install.sha256 and applies it server-side on its ephemeral cluster (two
+#                     Kyverno CRDs are larger than a client-side apply can annotate).
+#   kind-driftwood    tuppence's workload flagship (reset/) runs on the named cluster driftwood
+#                     owns. Hub talk/up.sh installs that cluster's Kyverno from driftwood's own
+#                     gitops/engine/kyverno.yaml. One cluster runs one engine, so this file must
+#                     declare the same engine as driftwood's, and hub verify/adopter-engines
+#                     asserts that.
+#   kind-tuppence     runs no engine, and ticket 147 adds none (hub ticket 71, decision 17).
+#   the offline CLI   .github/workflows/shift-left.yml installs cli.linux_x86_64 by its sha256
+#                     and refuses a binary that reports another version.
+# .github/scripts/engine_declaration.py is the one reader in this repository, and it checks the
+# shape. Eco-system ticket 161 builds verify-cage-probe.sh to read `version` from here as well.
+#
+# EVERY FIGURE is the row for this version in platform engine/kyverno/engine-table.yaml, which
+# says where each came from: the CLI sha256 from the release's own checksums.txt, and the
+# install.yaml sha256 from the GitHub release API's asset digest (checksums.txt does not list
+# install.yaml). Hub verify/adopter-engines holds this file to that row on platform origin/main.
+# The figures are carried here, and not read from the table, because the platform tools tag this
+# repository pins (.github/platform-tools-pin.yaml, v4.0.0) predates the table.
+#
+# WHAT IT INSTALLS, measured 2026-09-26 on the bytes install.sha256 names: 70 objects. The 24
+# namespaced ones (4 Deployments, 6 Services, 4 ServiceAccounts, 4 Roles, 4 RoleBindings and
+# 2 ConfigMaps) all sit in the `kyverno` Namespace, which the platform declares as substrate
+# (engine/namespaces.yaml, `posture.acme.io/tier: infra`). The other 46 are cluster-scoped: the
+# Namespace itself, 22 CRDs, 16 ClusterRoles and 7 ClusterRoleBindings. Composition prices none
+# of them: it walks this repository's own files, and this file declares no object.
+#
+# TO MOVE THE ENGINE: one reviewed pull request that changes the version and every figure
+# together, from the engine table's row for the new version, and recomposes. Ticket 150 is the
+# only ticket that moves an adopter's engine.
+schema: 1
+engine: kyverno
+version: "1.18.2"
+install:
+  url: https://github.com/kyverno/kyverno/releases/download/v1.18.2/install.yaml
+  sha256: "3dcd43eaf11f0719084217148cd0c82a8fa49faa9b1a783ea5bea2cf84041bda"
+cli:
+  linux_x86_64:
+    file: kyverno-cli_v1.18.2_linux_x86_64.tar.gz
+    sha256: "cb2feb8356149fd2fe774c894ccf0969f4a60a83867dd913af724f74ffbbc18b"

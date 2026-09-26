@@ -50,14 +50,13 @@ env:
   FLUX_SHA256: eae4e8608c0ade2bf4e8dec1669dbb6b0c28b5822b252d97feccfb4fb1181fd2
   GITSIGN_VERSION: 0.17.1
   GITSIGN_SHA256: 69213a8a0813a151e5a47d0060862952ff833a845d57309dff76f7ba6600abae
-  # Kyverno serves the CRDs the composed policy objects are instances of, and flux-operator serves
-  # the ResourceSet CRD gitops/composed/ needs. Pinned to the same versions driftwood's own
-  # drift-sample.yml pins and kind-driftwood runs -- the local kind-tuppence cluster carries neither,
-  # so there is nothing here to match it against and the engine exists only on this ephemeral
-  # cluster. A difference between the adopters' pins is then a version bump somebody made on
-  # purpose, in a reviewed PR, and not a cluster that drifted.
-  KYVERNO_VERSION: 1.18.2
-  KYVERNO_SHA256: 3dcd43eaf11f0719084217148cd0c82a8fa49faa9b1a783ea5bea2cf84041bda
+  # flux-operator serves the ResourceSet CRD gitops/composed/ needs. Kyverno, which serves the CRDs
+  # the composed policy objects are instances of, is not pinned here. It is tuppence's declared
+  # engine, gitops/engine/kyverno.yaml (hub ADR-0033 point 2, eco-system ticket 147), and the step
+  # `read the engine this repository declares` below reads its install.yaml URL and sha256 from
+  # that file. The local kind-tuppence cluster runs no engine. tuppence's workload flagship runs on
+  # kind-driftwood, whose engine driftwood declares, and hub verify/adopter-engines asserts that
+  # the two declarations agree.
   FLUX_OPERATOR_VERSION: 0.58.1
   FLUX_OPERATOR_SHA256: d674546f8cd6c9a09c55a279b119c880ae6d79c726ff7c57ec4d92b26827a04d
   # The image facts 6 and 7 place at a rung (ecosystem ticket 86), and the image the cage itself
@@ -97,7 +96,19 @@ jobs:
           ref: ${{ steps.platform.outputs.tag }}
           path: .platform-src
 
+      - name: read the engine this repository declares (gitops/engine/kyverno.yaml, ticket 147)
+        id: engine
+        run: |
+          set -euo pipefail
+          pip install --quiet pyyaml
+          # The one reader: it refuses a file that is not an exact version with that release's
+          # URL and a sha256 for each artefact, and prints what the install step below uses.
+          python3 .github/scripts/engine_declaration.py outputs gitops/engine/kyverno.yaml | tee -a "$GITHUB_OUTPUT"
+
       - name: install the pinned tools (binary + checksum, no marketplace action)
+        env:
+          KYVERNO_INSTALL_URL: ${{ steps.engine.outputs.install_url }}
+          KYVERNO_INSTALL_SHA256: ${{ steps.engine.outputs.install_sha256 }}
         run: |
           set -euo pipefail
           # Into RUNNER_TEMP, never the checkout cwd. Two real failures live there: this repo's
@@ -118,8 +129,10 @@ jobs:
           echo "${GITSIGN_SHA256}  gitsign" | sha256sum -c -
           chmod +x gitsign && sudo mv gitsign /usr/local/bin/gitsign
 
-          curl -sSL -o kyverno.yaml "https://github.com/kyverno/kyverno/releases/download/v${KYVERNO_VERSION}/install.yaml"
-          echo "${KYVERNO_SHA256}  kyverno.yaml" | sha256sum -c -
+          # The declared engine's install.yaml, by the URL and sha256 gitops/engine/kyverno.yaml
+          # states (the step above). It is applied once, server-side, below.
+          curl -sSL -o kyverno.yaml "${KYVERNO_INSTALL_URL}"
+          echo "${KYVERNO_INSTALL_SHA256}  kyverno.yaml" | sha256sum -c -
           curl -sSL -o flux-operator.yaml "https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v${FLUX_OPERATOR_VERSION}/install.yaml"
           echo "${FLUX_OPERATOR_SHA256}  flux-operator.yaml" | sha256sum -c -
 
