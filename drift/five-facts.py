@@ -25,13 +25,16 @@ the verify-script contract: 0 every fact observed true, 3 could not look, 1 a fa
   4. every rendered policy object is live and byte-equal to an offline render;
   5. every such object is in the Flux inventory;
   6. a workload the cage puts on its OWN BOTTOM RUNG is admitted and Running;
-  7. that workload reaches neither the API server nor the internet, while a control workload
-     the cage left loose reaches both.
+  7. that workload reaches neither the API server nor the internet, while a reference workload
+     the cage does not select reaches both.
 
-Facts 6 and 7 are ecosystem ticket 86. They are pre-registered in `window.yaml` under
+Facts 6 and 7 are ecosystem ticket 86, registered again by ticket 152 and built by ticket 161
+with the reference workload OUTSIDE the cage. They are pre-registered in `window.yaml` under
 `cage_behaviour_sample` and graded in the same sample and the same run as the five. `grade`
-refuses to score them against any sample taken before the commit that registered them, and
-reads that commit out of git at the served ref rather than from a date typed anywhere.
+reads the newest commit that changed that section out of git at the served ref, never a date
+typed anywhere; a sample taken before that commit reads could-not-look on both facts, because
+a question not yet asked is never a pass (ticket 152 Q4); and a cage fact that is null on the
+three newest samples taken since that commit is a fall (ticket 152 Q10).
 
 Facts 1 to 3 are per source. Facts 4 and 5 are properties of THE COMPOSED SET, which is one thing
 where the sources are three, so every record carries the same values for them with
@@ -78,7 +81,9 @@ ORG = _org()
 SAMPLES = os.path.join(HERE, "samples.jsonl")
 WINDOW = os.path.join(HERE, "window.yaml")
 KIND = "flux.five-facts/v1"
-SCHEMA_VERSION = 2  # 2 (ticket 86): every record carries facts 6 and 7 as well
+# 2 (ticket 86): every record carries facts 6 and 7 as well. 3 (ticket 161): fact 7 has a new id,
+# the comparison pod is the reference workload, and the evidence keys say `reference`.
+SCHEMA_VERSION = 3
 
 FACT_IDS = (
     "fact_1_ready_at_the_pin_on_the_real_remote",
@@ -93,10 +98,11 @@ FALSIFIER_IDS = (
     "coverage_below_the_floor_at_close_recorded_unmeasured",
 )
 
-# --- the cage (facts 6 and 7, ecosystem ticket 86) ----------------------------
+# --- the cage (facts 6 and 7, ecosystem ticket 86; registered again by ticket 152) ----------
 # Pre-registered in `drift/window.yaml` under `cage_behaviour_sample`, committed before any sample
-# that scores them, and `grade` REFUSES to score them against a sample taken before that commit
-# (ticket 93's rule, measured from git at the served ref rather than from a date typed here).
+# that scores them. `grade` reads the NEWEST commit that changed that section on the served ref
+# (ticket 93's rule, measured from git rather than from a date typed here), and a sample taken
+# before that commit reads could-not-look on both facts (ticket 152 Q4).
 #
 # The estate's most distinctive claim is that nothing is denied: a workload that does not fit its
 # cage runs on a tighter rung, and the bottom rung runs and reaches nothing. Until these two facts
@@ -112,37 +118,57 @@ FALSIFIER_IDS = (
 # is reach, and fact 7 is a could-not-look whenever fact 6 did not deliver a running workload.
 CAGE_FACT_IDS = (
     "fact_6_the_bottom_rung_is_admitted_and_runs",
-    "fact_7_the_bottom_rung_reaches_nothing_while_the_control_reaches",
+    "fact_7_the_bottom_rung_reaches_nothing_while_the_reference_reaches",
 )
 # Declared in window.yaml before the first sample. Each is a way this measurement comes out
-# AGAINST the claim, or comes out unmeasured -- never a quiet pass.
+# AGAINST the claim, or comes out unmeasured -- never a quiet pass. Ticket 152 renamed the third,
+# replaced the fourth (a reference the cage does not select carries no rung, so it can share the
+# fall-closed pod's rung only if the cage stamps it, and the new fourth catches exactly that) and
+# added the fifth and the sixth.
 CAGE_FALSIFIER_IDS = (
     "the_cage_refuses_or_never_runs_the_workload_it_caged",
     "the_bottom_rung_completes_a_connection",
-    "the_control_reaches_nothing_either_recorded_unmeasured",
-    "the_cage_puts_the_control_and_the_fall_closed_workload_on_the_same_rung",
+    "the_reference_reaches_nothing_either_recorded_unmeasured",
+    "the_cage_selects_the_reference_workload",
+    "the_fall_closed_rung_is_not_the_ladder_s_bottom",
+    "the_cage_facts_stay_unmeasured",
 )
 ALL_FACT_IDS = FACT_IDS + CAGE_FACT_IDS
 CAGE_SCOPE = "the cage in force"
+# How many samples in a row a cage fact may read null before `grade` calls it a fall (ticket 152
+# Q10). Counted over the samples taken at or after the newest registration, and no earlier one.
+CAGE_UNMEASURED_SAMPLES = 3
 
 # The cage's own fan-out names its MutatingPolicy `cage-tier-<major>-<minor>-<patch>`. The version
 # in force is READ off the cluster, never typed here: an adopter whose composed array declares a
 # different set gets its own answer with no edit to this file.
 CAGE_TIER_NAME = re.compile(r"^cage-tier-(\d+)-(\d+)-(\d+)$")
+# Every PriorityClass the cage names starts with this. The ladder's BOTTOM is the lowest value
+# among them ON THE CLUSTER, read live for the bottom check (ticket 152 Q7) and never typed.
+CAGE_PRIORITY_PREFIX = "cage-"
 
 # Two namespaces, and NEITHER declares a rung.
 #
 #   * the FALL-CLOSED namespace declares only `policy-as-versioned.dev/governed: "true"`. The
 #     cage's own rule is that a governed namespace with no tier falls closed to its bottom rung,
 #     so the rung is the CAGE's answer and not this instrument's assertion. Nothing here types
-#     the word `isolated`; whatever the cage stamps on the pod is recorded as what it stamped.
-#   * the CONTROL namespace declares nothing at all, so the cage stamps its loosest rung.
+#     the word `isolated`; whatever the cage stamps on the pod is recorded as what it stamped, and
+#     the instrument then checks that the landing place IS the ladder's bottom, from what the
+#     cluster serves: the pod's priority is the lowest `cage-` PriorityClass on the cluster, and
+#     the NetworkPolicy that selects it carries no rule and declares both policy types.
+#   * the REFERENCE namespace declares nothing at all -- no governed label, no tier -- and its pod
+#     claims no policy version, so the cage does not select it (ecosystem 119, decision 2). It is
+#     the workload that shows this cluster's network works. Ticket 86's control pod claimed a
+#     version in an ungoverned namespace and, from 2026-09-24, landed on `isolated` beside the
+#     fall-closed pod under 5.0.0, so fact 7 read null on every sample (ticket 152).
 #
 # The tier is a property of the NAMESPACE in this cage (ticket 26, ADR-0022: never a pod label, or
-# a workload could select its own rung), so the control cannot be the same pod twice. That is the
+# a workload could select its own rung), so the reference cannot be the same pod twice. Nor may it
+# sit on a looser rung this sampler declares: a Namespace created at run time that named a rung
+# would buy a cage no signed declaration chose, which ADR-0022 calls an exemption. That is the
 # comparison's ceiling and it is recorded on the fact.
 CAGE_FALLCLOSED_NS = "cage-probe-fallclosed"
-CAGE_CONTROL_NS = "cage-probe-control"
+CAGE_REFERENCE_NS = "cage-probe-reference"
 CAGE_POD = "cage-probe"
 # A public address that is not the cluster's. Port 80 rather than 443: the question is whether a
 # TCP connection completes at all, and an open port anybody can dial makes a REACHED verdict mean
@@ -164,7 +190,7 @@ CAGE_TRANSIENT_WAITS = ("ContainerCreating", "PodInitializing")
 
 # How many FURTHER reads a bottom-rung silence has to survive after it first goes quiet, three
 # seconds apart. A silence read once is indistinguishable from a cluster-wide outage that clears a
-# moment later (review F-02, 2026-09-10). Three, because the control is read immediately before
+# moment later (review F-02, 2026-09-10). Three, because the reference is read immediately before
 # and immediately after as well, so this is the narrow middle of a bracket and not the only guard.
 CAGE_SILENCE_READS = 3
 
@@ -456,10 +482,14 @@ def cage_in_force(cluster: Cluster) -> tuple[str, str]:
 def _cage_objects(version: str, image: str) -> str:
     """The experiment, as JSON kubectl can apply. Two namespaces and two pods.
 
-    The pods declare `runAsNonRoot` and a NUMERIC `runAsUser`, and `readOnlyRootFilesystem` on
-    their own container: the hardened rungs write both, the kubelet refuses an image whose USER it
-    cannot resolve to a uid, and a pod that declared them itself proves the cage's tighten-only
-    rule left them alone rather than that the cage supplied them. Neither pod declares a tier.
+    The FALL-CLOSED pod claims `version`, the newest cage in force, in a Namespace that declares
+    only `governed`. The REFERENCE pod claims nothing, in a Namespace that declares nothing, so the
+    cage does not select it (ecosystem 119, decision 2): it is outside the cage, not on a rung of
+    it. Both pods declare `runAsNonRoot` and a NUMERIC `runAsUser`, and `readOnlyRootFilesystem`
+    on their own container: the hardened rungs write both, the kubelet refuses an image whose USER
+    it cannot resolve to a uid, and a pod that declared them itself proves the cage's tighten-only
+    rule left them alone rather than that the cage supplied them. Neither Namespace declares a
+    tier. `verify-cage-probe.sh` runs these same objects against the served documents offline.
     """
     def namespace(name: str, governed: bool) -> dict:
         labels = {"app.kubernetes.io/managed-by": "drift-five-facts"}
@@ -468,18 +498,18 @@ def _cage_objects(version: str, image: str) -> str:
         return {"apiVersion": "v1", "kind": "Namespace",
                 "metadata": {"name": name, "labels": labels}}
 
-    def pod(namespace_name: str) -> dict:
+    def pod(namespace_name: str, claim: str | None) -> dict:
+        labels = {"policy-as-versioned.dev/policy-version": claim} if claim else {}
         return {"apiVersion": "v1", "kind": "Pod",
-                "metadata": {"name": CAGE_POD, "namespace": namespace_name,
-                             "labels": {"policy-as-versioned.dev/policy-version": version}},
+                "metadata": {"name": CAGE_POD, "namespace": namespace_name, "labels": labels},
                 "spec": {"securityContext": {"runAsNonRoot": True, "runAsUser": 65532},
                          "containers": [{"name": "app", "image": image,
                                          "imagePullPolicy": "IfNotPresent",
                                          "securityContext": {"readOnlyRootFilesystem": True}}]}}
 
     return json.dumps({"apiVersion": "v1", "kind": "List", "items": [
-        namespace(CAGE_FALLCLOSED_NS, True), namespace(CAGE_CONTROL_NS, False),
-        pod(CAGE_FALLCLOSED_NS), pod(CAGE_CONTROL_NS)]})
+        namespace(CAGE_FALLCLOSED_NS, True), namespace(CAGE_REFERENCE_NS, False),
+        pod(CAGE_FALLCLOSED_NS, version), pod(CAGE_REFERENCE_NS, None)]})
 
 
 def _cage_pod_state(cluster: Cluster, namespace: str) -> dict:
@@ -497,6 +527,7 @@ def _cage_pod_state(cluster: Cluster, namespace: str) -> dict:
                            f"({stuck.get('message') or 'no message'})")
     return {
         "namespace": namespace,
+        "labels": dict(meta.get("labels") or {}),
         "tier": str((meta.get("labels") or {}).get("posture.acme.io/tier", "")),
         "caged": str((meta.get("labels") or {}).get("posture.acme.io/caged", "")),
         "priority_class": str(spec.get("priorityClassName", "")),
@@ -512,33 +543,44 @@ def _cage_pod_state(cluster: Cluster, namespace: str) -> dict:
     }
 
 
-def _cage_networkpolicies(cluster: Cluster, namespace: str, labels: dict) -> list[str]:
-    """The NetworkPolicies in `namespace` whose podSelector matches `labels`.
+def _cage_networkpolicies(cluster: Cluster, namespace: str, labels: dict) -> list[dict]:
+    """The NetworkPolicies in `namespace` whose podSelector matches a pod carrying `labels`.
 
-    Recorded as CORROBORATION, never as the measurement: fact 7 is graded on connections. A
-    deny-all that is present and a pod that cannot connect are two observations, and this estate
-    has already shipped the failure where reading the policy's own YAML passed while a
-    host-network pod walked out of the cage (platform/graded/verify-graded.sh, 2026-08-28).
+    Each is `{"name", "policy_types", "ingress", "egress"}`, the rule COUNTS and not the rules.
+    Recorded as CORROBORATION of fact 7 and read as half of the bottom check (ticket 152 Q7),
+    never as the reach measurement: fact 7 is graded on connections. A deny-all that is present
+    and a pod that cannot connect are two observations, and this estate has already shipped the
+    failure where reading the policy's own YAML passed while a host-network pod walked out of the
+    cage (platform/graded/verify-graded.sh, 2026-08-28).
 
-    LIMIT, named rather than left to be found: `labels` carries the two labels the cage stamps,
-    so a NetworkPolicy selecting a pod on some OTHER label is not counted here. Selectors carrying
-    matchExpressions are also not evaluated and never counted, even if their matchLabels match.
-    Ignoring their expressions would treat an expression-only selector as selecting every pod.
-    With no supported match observed, fact 7 is a could-not-look: this does not prove that no
-    policy selects the pod, and can leave a cage that really holds unmeasured.
+    `labels` is the pod's OWN label set as read back off the cluster, so a policy selecting on any
+    label the pod carries is counted, and an empty podSelector (every pod in the namespace) is
+    counted too. LIMIT, named rather than left to be found: selectors carrying matchExpressions
+    are not evaluated and never counted, even if their matchLabels match. Ignoring their
+    expressions would treat an expression-only selector as selecting every pod. With no supported
+    match observed, fact 7 is a could-not-look: this does not prove that no policy selects the
+    pod, and can leave a cage that really holds unmeasured.
     """
     listing = cluster.get("-n", namespace, "get", "networkpolicies.networking.k8s.io")
     out = []
     for item in (listing or {}).get("items", []) or []:
-        selector = (item.get("spec") or {}).get("podSelector") or {}
+        spec = item.get("spec") or {}
+        selector = spec.get("podSelector") or {}
         if selector.get("matchExpressions"):
             continue  # unsupported is not match-all (ticket 86 integration review)
         wanted = selector.get("matchLabels") or {}
         if all(str(labels.get(k, "")) == str(v) for k, v in wanted.items()):
-            spec = item.get("spec") or {}
-            out.append(f"{item['metadata']['name']} policyTypes={spec.get('policyTypes')} "
-                       f"ingress={len(spec.get('ingress') or [])} egress={len(spec.get('egress') or [])}")
-    return sorted(out)
+            out.append({"name": str((item.get("metadata") or {}).get("name", "")),
+                        "policy_types": sorted(str(t) for t in (spec.get("policyTypes") or [])),
+                        "ingress": len(spec.get("ingress") or []),
+                        "egress": len(spec.get("egress") or [])})
+    return sorted(out, key=lambda p: p["name"])
+
+
+def _cage_policy_lines(policies: list[dict]) -> list[str]:
+    """The evidence form of `_cage_networkpolicies`, one line per policy."""
+    return [f"{p['name']} policyTypes={p['policy_types']} ingress={p['ingress']} "
+            f"egress={p['egress']}" for p in policies]
 
 
 def _cage_connect(cluster: Cluster, namespace: str, host: str, port: str) -> tuple[bool | None, str]:
@@ -567,7 +609,9 @@ def _cage_touched(state: dict) -> bool:
     `posture.acme.io/tier` and `posture.acme.io/caged` on everything it mutates. Neither present
     means the mutating webhook did not act -- the policy is installed but not serving, its version
     match did not match, or the API server never called it -- and then whatever the pod did
-    afterwards is not evidence about the cage.
+    afterwards is not evidence about the cage. On the REFERENCE pod the same two labels are the
+    first half of `the_cage_selects_the_reference_workload`: a stamp there is the cage selecting
+    a pod it must not select.
 
     MEASURED LIVE on a throwaway cluster, 2026-09-10, before this existed (review F-03). With
     cage-tier installed and Ready but its version match neutered so it matched nothing, the
@@ -609,17 +653,94 @@ def _cage_admission_verdict(state: dict, applied_ok: bool) -> bool | None:
     return False
 
 
+def _cage_priorityclasses(cluster: Cluster) -> dict[str, int] | None:
+    """{name: value} for every PriorityClass on the cluster whose name starts `cage-`. None when
+    the API server did not answer the listing. Read live, as fact 4 reads the cluster: the
+    ladder's bottom is the LOWEST of these, and nothing here types which one that is."""
+    listing = cluster.get("get", "priorityclasses.scheduling.k8s.io")
+    if listing is None:
+        return None
+    out: dict[str, int] = {}
+    for item in listing.get("items", []) or []:
+        name = str((item.get("metadata") or {}).get("name", ""))
+        if name.startswith(CAGE_PRIORITY_PREFIX) and isinstance(item.get("value"), int):
+            out[name] = int(item["value"])
+    return out
+
+
+def _cage_bottom(cluster: Cluster, fallclosed: dict) -> dict:
+    """Is the rung the cage stamped on the fall-closed pod the ladder's BOTTOM? (ticket 152 Q7)
+
+    Two connects alone cannot tell `isolated` from `restricted` or `quarantine`: every hardened
+    rung reaches neither of fact 7's targets. So the bottom is DERIVED from the cluster, never
+    named: the pod's priority must equal the lowest value among the `cage-` PriorityClasses the
+    cluster serves, and every NetworkPolicy that selects the pod must carry no ingress rule and no
+    egress rule and declare both policy types (a rule loosens reach; one declared type leaves the
+    other direction open). Anything else fires `the_fall_closed_rung_is_not_the_ladder_s_bottom`,
+    and facts 6 and 7 both read could-not-look: each names the bottom rung, and a TRUE would name
+    a rung the cage did not use.
+
+    Returns `{"why": "" | reason, "fires": bool, ...evidence}`. `why` is empty when the pod is on
+    the bottom, or when there is no stamped pod to place (fact 6 says what happened to it). A
+    listing the cluster did not answer is a reason without a firing: nothing was derived either
+    way, and that is a could-not-look and not a falsifier.
+    """
+    out: dict = {"why": "", "fires": False, "fall_closed_priority": fallclosed.get("priority"),
+                 "lowest_cage_priority": None, "cage_priorityclasses": {},
+                 "networkpolicies_selecting_the_fall_closed_pod": []}
+    if not fallclosed or not _cage_touched(fallclosed):
+        return out
+    classes = _cage_priorityclasses(cluster)
+    if not classes:
+        out["why"] = ("no PriorityClass whose name starts `cage-` could be listed on this cluster, "
+                      "so whether the fall-closed rung is the ladder's bottom could not be derived")
+        return out
+    out["cage_priorityclasses"] = classes
+    lowest_name = min(classes, key=lambda n: (classes[n], n))
+    lowest = classes[lowest_name]
+    out["lowest_cage_priority"] = lowest
+    # A pod that names no class has priority 0 on the API server, and the cage writes `priority`
+    # onto everything it stamps, so a stamped pod without one is a pod the cage left at 0.
+    priority = fallclosed.get("priority")
+    priority = 0 if priority is None else int(priority)
+    selecting = _cage_networkpolicies(cluster, CAGE_FALLCLOSED_NS, fallclosed.get("labels") or {})
+    out["networkpolicies_selecting_the_fall_closed_pod"] = _cage_policy_lines(selecting)
+    reasons = []
+    if priority > lowest:
+        reasons.append(f"its priority {priority} is above the lowest `cage-` PriorityClass on the "
+                       f"cluster ({lowest_name} = {lowest})")
+    for policy in selecting:
+        if policy["ingress"] or policy["egress"]:
+            reasons.append(f"NetworkPolicy {policy['name']} selects it and carries "
+                           f"{policy['ingress']} ingress and {policy['egress']} egress rule(s)")
+        if policy["policy_types"] != ["Egress", "Ingress"]:
+            reasons.append(f"NetworkPolicy {policy['name']} selects it and declares "
+                           f"policyTypes={policy['policy_types']}, not both")
+    if reasons:
+        out["fires"] = True
+        out["why"] = (f"the cage in force fell closed to a rung "
+                      f"({fallclosed.get('tier') or 'no tier stamped'}) that is NOT the ladder's "
+                      f"bottom: " + "; ".join(reasons)
+                      + ". The restricted and quarantine rungs reach neither target either, so the "
+                        "two connects cannot tell them from the bottom rung, and a TRUE here would "
+                        "name a rung the cage did not use")
+    return out
+
+
 def cage_facts(cluster: Cluster, image: str) -> tuple[dict, dict]:
-    """Facts 6 and 7: the bottom rung runs, and it reaches nothing while the control reaches.
+    """Facts 6 and 7: the bottom rung runs, and it reaches nothing while the reference reaches.
 
     The experiment, in the cage's own terms:
 
       * two namespaces, neither naming a rung. One is `governed`, so the cage's fall-closed rule
-        puts its pod on the bottom rung; one is not, so the cage puts its pod on the loosest rung.
-      * one pod each, claiming the policy version whose cage is in force, read off the cluster.
-      * fact 6 is what the API SERVER did with the fall-closed pod: admitted, and running.
+        puts its pod on the bottom rung; one declares nothing, and its pod claims nothing, so the
+        cage does not select it at all. That pod is the REFERENCE workload, outside the cage.
+      * the fall-closed pod claims the policy version whose cage is in force, read off the cluster.
+      * fact 6 is what the API SERVER did with the fall-closed pod: admitted, and running, on a
+        rung this instrument then checks is the ladder's bottom (priority and reach policy, both
+        read off the cluster, never named here).
       * fact 7 is two TCP connects from each pod -- the API server's own ClusterIP, and an address
-        outside the cluster -- with the control's pair as the thing that makes the fall-closed
+        outside the cluster -- with the reference's pair as the thing that makes the fall-closed
         pair mean something.
 
     Every could-not-look says which of the two halves could not be looked at and why. A broken
@@ -642,7 +763,7 @@ def cage_facts(cluster: Cluster, image: str) -> tuple[dict, dict]:
 
     applied_code, applied = cluster.run("apply", "-f", "-", stdin=_cage_objects(version, image))
     fallclosed = _cage_pod_state(cluster, CAGE_FALLCLOSED_NS)
-    control = _cage_pod_state(cluster, CAGE_CONTROL_NS)
+    reference = _cage_pod_state(cluster, CAGE_REFERENCE_NS)
     # Bounded and best-effort, exactly like the lane's own waits: whatever the pods have or have
     # not become when this returns is what the sample records. A pod that does not exist is
     # SETTLED -- it was refused, and waiting two minutes for a pod the API server declined is the
@@ -652,11 +773,11 @@ def cage_facts(cluster: Cluster, image: str) -> tuple[dict, dict]:
             or any(r not in CAGE_TRANSIENT_WAITS for r in (state.get("waiting_reasons") or []))
 
     for _ in range(60):
-        if settled(fallclosed) and settled(control):
+        if settled(fallclosed) and settled(reference):
             break
         time.sleep(2)
         fallclosed = _cage_pod_state(cluster, CAGE_FALLCLOSED_NS)
-        control = _cage_pod_state(cluster, CAGE_CONTROL_NS)
+        reference = _cage_pod_state(cluster, CAGE_REFERENCE_NS)
 
     refusal = ""
     if applied_code != 0 and not fallclosed:
@@ -666,7 +787,15 @@ def cage_facts(cluster: Cluster, image: str) -> tuple[dict, dict]:
         refusal = (applied.strip().splitlines() or [""])[-1]
 
     common = {"policy_version_in_force": version, "probe_image": image,
-              "fall_closed_namespace": CAGE_FALLCLOSED_NS, "control_namespace": CAGE_CONTROL_NS}
+              "fall_closed_namespace": CAGE_FALLCLOSED_NS, "reference_namespace": CAGE_REFERENCE_NS}
+
+    # ---- the bottom check (ticket 152 Q7), once, before either fact is written ----
+    # The rung is what the cage stamped. Whether it is the BOTTOM is derived from the cluster's
+    # own `cage-` PriorityClasses and from the NetworkPolicy that selects the pod. Asked here
+    # because both facts name the bottom rung, and both read could-not-look when it is not.
+    bottom = _cage_bottom(cluster, fallclosed)
+    bottom_evidence = {k: v for k, v in bottom.items() if k not in ("why", "fires")}
+    bottom_falsifier = {"falsifier": CAGE_FALSIFIER_IDS[4]} if bottom["fires"] else {}
 
     # ---- fact 6: admitted, and running -------------------------------------
     verdict = _cage_admission_verdict(fallclosed, applied_code == 0)
@@ -677,15 +806,26 @@ def cage_facts(cluster: Cluster, image: str) -> tuple[dict, dict]:
                    f"{refusal or 'no pod exists and the apply reported nothing'}",
                    scope=CAGE_SCOPE, admission_error=refusal, apply_output=applied[:4000],
                    falsifier=CAGE_FALSIFIER_IDS[0], **common)
+    elif running and bottom["why"]:
+        # A running pod on a rung that is not the bottom, or whose bottom could not be derived, is
+        # a could-not-look and never a TRUE: fact 6 names the bottom rung. An observed FALSE below
+        # is kept as FALSE whatever the rung, because a refusal or a never-run was observed and a
+        # fail is the strongest verdict a fact can produce (ADR-0028, point 6).
+        six = fact(None,
+                   f"the workload was ADMITTED and is Running, but {bottom['why']}. Fact 6 names "
+                   f"the bottom rung, so a TRUE here would assert a rung this instrument did not "
+                   f"derive",
+                   scope=CAGE_SCOPE, pod=fallclosed, **bottom_falsifier, **common, **bottom_evidence)
     elif running:
         injected = sorted(set(fallclosed["containers"]) - {"app"})
         six = fact(True,
                    f"the workload the cage put on its bottom rung ({fallclosed['tier']}) "
                    f"was ADMITTED and is Running, on priority class "
-                   f"{fallclosed['priority_class'] or 'none'} (priority {fallclosed['priority']}), "
+                   f"{fallclosed['priority_class'] or 'none'} (priority {fallclosed['priority']}, "
+                   f"the lowest `cage-` PriorityClass on this cluster), "
                    f"carrying {len(fallclosed['containers'])} container(s)"
                    + (f" including {', '.join(injected)} injected by the cage" if injected else ""),
-                   scope=CAGE_SCOPE, pod=fallclosed, **common)
+                   scope=CAGE_SCOPE, pod=fallclosed, **common, **bottom_evidence)
     elif not fallclosed:
         six = fact(None,
                    "the apply reported success and no pod exists in the fall-closed namespace, so "
@@ -723,29 +863,29 @@ def cage_facts(cluster: Cluster, image: str) -> tuple[dict, dict]:
                       "here means the caged workload started with the sidecar the cage added, not "
                       "that a real WAF inspected anything.")
 
-    # ---- fact 7: reaches nothing, while the control reaches -----------------
-    seven = _cage_reach_fact(cluster, fallclosed, control, running, common)
+    # ---- fact 7: reaches nothing, while the reference reaches ---------------
+    seven = _cage_reach_fact(cluster, fallclosed, reference, running, common, bottom)
     if applied_code != 0 and fallclosed:
         for one in (six, seven):
             one["apply_reported"] = (applied.strip().splitlines() or [""])[-1]
     # The namespaces are the instrument's, never the estate's: deleted whatever happened, so a
     # rehearsal on a real cluster leaves nothing behind and the next sample starts clean.
-    cluster.run("delete", "ns", CAGE_FALLCLOSED_NS, CAGE_CONTROL_NS, "--wait=false",
+    cluster.run("delete", "ns", CAGE_FALLCLOSED_NS, CAGE_REFERENCE_NS, "--wait=false",
                 "--ignore-not-found")
     return six, seven
 
 
-def _cage_control_reads(cluster: Cluster, targets: tuple, tries: int) -> tuple[dict, dict]:
-    """Each target, from the CONTROL pod, polled until it connects. (reached, why) per target.
+def _cage_reference_reads(cluster: Cluster, targets: tuple, tries: int) -> tuple[dict, dict]:
+    """Each target, from the REFERENCE pod, polled until it connects. (reached, why) per target.
 
-    The control is a workload the cage left on its loosest rung, so it SHOULD reach: a retry here
-    is waiting for a pod's own network to come up, never for a cage to close.
+    The reference is a workload the cage does not select, so it SHOULD reach: a retry here is
+    waiting for a pod's own network to come up, never for a cage to close.
     """
     reached: dict[str, bool | None] = {}
     why: dict[str, str] = {}
     for host, port in targets:
         for _ in range(tries):
-            got, said = _cage_connect(cluster, CAGE_CONTROL_NS, host, port)
+            got, said = _cage_connect(cluster, CAGE_REFERENCE_NS, host, port)
             reached[f"{host}:{port}"], why[f"{host}:{port}"] = got, said
             if got is not False:
                 break
@@ -763,12 +903,13 @@ def _cage_silence_persists(cluster: Cluster, host: str, port: str) -> tuple[bool
     PERSIST, and this is the half the 2026-09-10 review bought (F-02). A silence read ONCE is
     indistinguishable from a cluster-wide outage that clears a moment later. Before this existed
     the bottom-rung pod got exactly one read per target -- the settle loop breaks on the first
-    non-true -- while the control was retried ten times per target, so an outage that spanned both
-    caged reads and cleared during the control's retries scored as a cage that held. Measured over
-    the real function with sleeps counted: an outage clearing at any exec from 3 to 12 returned
-    observed=true, twenty-seven simulated seconds of retry budget, and the live green this
-    instrument had already recorded carried `seconds_waited_for_the_cage: 0`, so it too was earned
-    from two reads at the earliest possible moment.
+    non-true -- while the comparison pod (then the control, now the reference) was retried ten
+    times per target, so an outage that spanned both caged reads and cleared during those retries
+    scored as a cage that held. Measured over the real function with sleeps counted: an outage
+    clearing at any exec from 3 to 12 returned observed=true, twenty-seven simulated seconds of
+    retry budget, and the live green this instrument had already recorded carried
+    `seconds_waited_for_the_cage: 0`, so it too was earned from two reads at the earliest possible
+    moment.
     """
     spent, said = 0, ""
     got: bool | None = True
@@ -792,102 +933,128 @@ def _cage_silence_persists(cluster: Cluster, host: str, port: str) -> tuple[bool
                    f"{CAGE_SILENCE_READS + 1} reads spanning {spent}s of held silence"), spent
 
 
-def _cage_reach_fact(cluster: Cluster, fallclosed: dict, control: dict, running: bool,
-                     common: dict) -> dict:
+def _cage_reach_fact(cluster: Cluster, fallclosed: dict, reference: dict, running: bool,
+                     common: dict, bottom: dict | None = None) -> dict:
     """Fact 7. Every branch that is not an observed reach or an observed cage is a could-not-look.
 
     The order of the branches is the whole design, and it is:
 
-      1. fact 6 did not deliver a running workload on the bottom rung -- nothing to measure reach
+      1. the fall-closed rung is not the ladder's BOTTOM, or its bottom could not be derived
+         (ticket 152 Q7) -- asked before any connect because it needs none, and because the
+         connects would otherwise measure a rung that is not a bottom rung;
+      2. fact 6 did not deliver a running workload on the bottom rung -- nothing to measure reach
          from, and fact 6 says why;
-      2. both workloads on the SAME rung -- there is no bottom rung to look at. Asked before any
-         connect because it needs none, and because the connects would otherwise measure a rung
-         that is not a bottom rung;
-      3. the CONTROL, FIRST. The network is established as working BEFORE a silence is measured,
-         not after: a measurement that reads the cage first and the control afterwards cannot tell
-         a cage that held from an outage that cleared in between, and that is precisely the defect
-         the 2026-09-10 review found here;
-      4. the bottom-rung workload, with its silence required to PERSIST across further reads. A
+      3. the cage SELECTED the reference -- a tier or caged label stamped on it, or a NetworkPolicy
+         that selects it (ticket 152 Q6). The reference is then not a reference, and the
+         comparison is void before a connect is made;
+      4. the REFERENCE, FIRST. The network is established as working BEFORE a silence is measured,
+         not after: a measurement that reads the cage first and the reference afterwards cannot
+         tell a cage that held from an outage that cleared in between, and that is precisely the
+         defect the 2026-09-10 review found here;
+      5. the bottom-rung workload, with its silence required to PERSIST across further reads. A
          connection completed at any point falsifies the cage whatever else is true;
-      5. the CONTROL AGAIN. If the network stopped working under the measurement, the silence in
-         step 4 is not attributable to the cage and the run is unmeasured.
+      6. the REFERENCE AGAIN. If the network stopped working under the measurement, the silence in
+         step 5 is not attributable to the cage and the run is unmeasured.
 
     A cluster whose network is broken silences both pods, and silencing both is unmeasured here,
     never a cage that held.
     """
     ceiling = ("two pods in two namespaces, not one pod twice: in this cage the rung is a property "
-               "of the NAMESPACE (ADR-0022) and never of the pod, so the control cannot be the "
-               "same workload. Two TCP connects on two ports each -- the API server's ClusterIP "
-               "and one address outside the cluster -- is not a proof that nothing at all is "
-               "reachable. The control brackets the cage's reads rather than running "
-               "simultaneously with them, so an outage entirely contained between two working "
-               "control reads is still unobservable here; it is narrower than one read, not zero.")
+               "of the NAMESPACE (ADR-0022) and never of the pod, so the reference cannot be the "
+               "same workload. The reference is OUTSIDE the cage, so this fact compares the bottom "
+               "rung with no cage at all: it shows that the bottom rung reaches nothing on a "
+               "network that works, and it says nothing about the rungs between. Two TCP connects "
+               "on two ports each -- the API server's ClusterIP and one address outside the "
+               "cluster -- is not a proof that nothing at all is reachable. Reach is graded on the "
+               "four connection results and the reference, never on a NetworkPolicy; the "
+               "NetworkPolicy that selects the bottom-rung pod is read for one purpose only, its "
+               "rule count is half of the bottom check. The reference brackets the cage's reads "
+               "rather than running simultaneously with them, so an outage entirely contained "
+               "between two working reference reads is still unobservable here; it is narrower "
+               "than one read, not zero.")
+
+    if bottom is None:
+        bottom = _cage_bottom(cluster, fallclosed)
+    evidence: dict = {k: v for k, v in bottom.items() if k not in ("why", "fires")}
 
     def could_not(why: str, **extra) -> dict:
         return fact(None, why, scope=CAGE_SCOPE, ceiling=ceiling, **common, **extra)
 
+    # ---- 1. the bottom, before a single connect: it needs no network, it is the most diagnostic
+    # answer this fact can give, and where it holds the connects below would measure a rung that
+    # is not a bottom rung.
+    if bottom["why"]:
+        return could_not(bottom["why"], **evidence,
+                         **({"falsifier": CAGE_FALSIFIER_IDS[4]} if bottom["fires"] else {}))
+
+    # ---- 2. nothing running to measure from ---------------------------------
     if not running:
         return could_not("fact 6 did not deliver a workload running on the cage's bottom rung, so "
                          "there was nothing to measure reach from; fact 6 carries what happened "
-                         "to it")
+                         "to it", **evidence)
 
-    # Asked FIRST, before a single connect: it needs no network, it is the most diagnostic answer
-    # this fact can give, and where it holds the connects below would measure a rung that is not a
-    # bottom rung. Both pods locked down alike would otherwise come back as "the control reached
-    # nothing either", which is true and says less.
-    if control and fallclosed.get("tier") == control.get("tier"):
+    if not reference:
+        return could_not("no reference workload exists, so nothing says whether this cluster's "
+                         "network works at all", **evidence)
+    if not (reference.get("phase") == "Running" and reference.get("ready")):
+        return could_not("the reference workload is not running "
+                         f"({reference.get('phase') or 'no phase'}, Ready={reference.get('ready')}), "
+                         "so a silence from the bottom rung has nothing to be compared against",
+                         **evidence)
+
+    # ---- 3. the cage must not have selected the reference -------------------
+    evidence.update({
+        "fall_closed_tier": fallclosed.get("tier", ""),
+        "reference_tier": reference.get("tier", ""),
+        "reference_caged": reference.get("caged", ""),
+        "networkpolicies_selecting_the_reference_pod": _cage_policy_lines(
+            _cage_networkpolicies(cluster, CAGE_REFERENCE_NS, reference.get("labels") or {})),
+    })
+    selected = []
+    if _cage_touched(reference):
+        selected.append(f"it stamped tier {reference.get('tier')!r} and caged "
+                        f"{reference.get('caged')!r} on an unclaimed pod in a Namespace that "
+                        f"declares nothing")
+    if evidence["networkpolicies_selecting_the_reference_pod"]:
+        selected.append("NetworkPolicy "
+                        + ", ".join(evidence["networkpolicies_selecting_the_reference_pod"])
+                        + " select(s) it")
+    if selected:
         return could_not(
-            f"the cage in force put the fall-closed workload and the control on the SAME rung "
-            f"({fallclosed.get('tier') or 'no tier stamped'}), so it has no bottom rung distinct "
-            f"from its loosest one and there was no bottom rung to look at",
-            falsifier=CAGE_FALSIFIER_IDS[3],
-            fall_closed_tier=fallclosed.get("tier", ""), control_tier=control.get("tier", ""))
-
-    if not control:
-        return could_not("no control workload exists, so nothing says whether this cluster's "
-                         "network works at all")
-    if not (control.get("phase") == "Running" and control.get("ready")):
-        return could_not("the control workload is not running "
-                         f"({control.get('phase') or 'no phase'}, Ready={control.get('ready')}), "
-                         "so a silence from the bottom rung has nothing to be compared against")
+            "the cage in force SELECTED the reference workload: " + "; ".join(selected)
+            + ". That reverses ecosystem 119 decision 2, which keeps an unclaimed pod in an "
+              "ungoverned Namespace outside the cage and prices it instead. The reference is then "
+              "not a reference, and fact 7 is unmeasured until this section is registered again "
+              "against the new decision",
+            falsifier=CAGE_FALSIFIER_IDS[3], **evidence)
 
     api = cluster.get("-n", "default", "get", "svc", "kubernetes")
     api_ip = str(((api or {}).get("spec") or {}).get("clusterIP", ""))
     if not api_ip:
         return could_not("the kubernetes Service ClusterIP could not be read, so there was no "
-                         "API server address to try to reach")
+                         "API server address to try to reach", **evidence)
 
     targets = ((api_ip, "443"), (CAGE_INTERNET_HOST, CAGE_INTERNET_PORT))
-    evidence: dict = {"targets": [f"{h}:{p}" for h, p in targets],
-                      "fall_closed_tier": fallclosed.get("tier", ""),
-                      "control_tier": control.get("tier", ""),
-                      "networkpolicies_selecting_the_fall_closed_pod":
-                          _cage_networkpolicies(cluster, CAGE_FALLCLOSED_NS,
-                                                {"posture.acme.io/caged": fallclosed.get("caged", ""),
-                                                 "posture.acme.io/tier": fallclosed.get("tier", "")}),
-                      "networkpolicies_selecting_the_control_pod":
-                          _cage_networkpolicies(cluster, CAGE_CONTROL_NS,
-                                                {"posture.acme.io/caged": control.get("caged", ""),
-                                                 "posture.acme.io/tier": control.get("tier", "")})}
+    evidence["targets"] = [f"{h}:{p}" for h, p in targets]
 
-    # ---- 3. the control, BEFORE anything is concluded from a silence -------
-    before, why_before = _cage_control_reads(cluster, targets, tries=10)
-    evidence["control_before"] = why_before
+    # ---- 4. the reference, BEFORE anything is concluded from a silence ------
+    before, why_before = _cage_reference_reads(cluster, targets, tries=10)
+    evidence["reference_before"] = why_before
     if any(got is None for got in before.values()):
-        return could_not("a connect from the control could not be RUN at all, so nothing was "
+        return could_not("a connect from the reference could not be RUN at all, so nothing was "
                          "observed about this cluster's network: "
                          + "; ".join(sorted(set(why_before.values()))), **evidence)
     silent = sorted(t for t, got in before.items() if got is not True)
     if silent:
         return could_not(
-            "the CONTROL workload could not reach " + ", ".join(silent)
+            "the REFERENCE workload could not reach " + ", ".join(silent)
             + " BEFORE the cage was measured at all, so this cluster's network says nothing about "
               "the cage: a pod that reaches nothing because the cluster is broken must not read "
               "the same as a pod that reaches nothing because the cage holds. Recorded UNMEASURED, "
               "which is not a pass",
             falsifier=CAGE_FALSIFIER_IDS[2], **evidence)
 
-    # ---- 4. the cage, with the silence required to hold ---------------------
+    # ---- 5. the cage, with the silence required to hold ---------------------
     caged: dict[str, bool | None] = {}
     why_caged: dict[str, str] = {}
     waited = 0
@@ -912,14 +1079,14 @@ def _cage_reach_fact(cluster: Cluster, fallclosed: dict, control: dict, running:
                          "silence was not observed: "
                          + "; ".join(sorted(set(why_caged.values()))), **evidence)
 
-    # ---- 5. the control AGAIN, so the silence is bracketed by a working net -
-    after, why_after = _cage_control_reads(cluster, targets, tries=3)
-    evidence["control_after"] = why_after
+    # ---- 6. the reference AGAIN, so the silence is bracketed by a working net
+    after, why_after = _cage_reference_reads(cluster, targets, tries=3)
+    evidence["reference_after"] = why_after
     lost = sorted(t for t, got in after.items() if got is not True)
     if lost:
         return could_not(
-            "the CONTROL workload reached every target before the cage was measured and could no "
-            "longer reach " + ", ".join(lost) + " afterwards, so this cluster's network changed "
+            "the REFERENCE workload reached every target before the cage was measured and could "
+            "no longer reach " + ", ".join(lost) + " afterwards, so this cluster's network changed "
             "under the measurement and the bottom rung's silence is not attributable to the cage. "
             "Recorded UNMEASURED, which is not a pass",
             falsifier=CAGE_FALSIFIER_IDS[2], **evidence)
@@ -927,17 +1094,19 @@ def _cage_reach_fact(cluster: Cluster, fallclosed: dict, control: dict, running:
     if not evidence["networkpolicies_selecting_the_fall_closed_pod"]:
         return could_not(
             "the workload on the bottom rung reached nothing, and NO POLICY THIS INSTRUMENT CAN "
-            "EVALUATE SELECTS IT: no NetworkPolicy with a supported selector matches its two "
-            "recorded labels (matchExpressions are not evaluated), so nothing observed here "
-            "explains the silence and it may not be credited to the cage", **evidence)
+            "EVALUATE SELECTS IT: no NetworkPolicy with a supported selector matches its labels "
+            "(matchExpressions are not evaluated), so nothing observed here explains the silence "
+            "and it may not be credited to the cage", **evidence)
 
     return fact(True,
                 f"the workload the cage put on its bottom rung ({fallclosed.get('tier')}) reached "
                 f"NEITHER the API server nor {CAGE_INTERNET_HOST} on "
-                f"{CAGE_SILENCE_READS + 1} reads per target spanning {waited}s, while the control "
-                f"workload on {control.get('tier') or 'the loosest rung'} reached both from the "
-                f"same cluster with the same image BEFORE and AFTER -- a connection refused by the "
-                f"cage, not a YAML read",
+                f"{CAGE_SILENCE_READS + 1} reads per target spanning {waited}s, while the "
+                f"reference workload, which the cage did not select, reached both from the same "
+                f"cluster with the same image BEFORE and AFTER -- a connection refused by the "
+                f"cage, not a YAML read. The rung is the ladder's bottom by priority "
+                f"({evidence['fall_closed_priority']}, the lowest `cage-` PriorityClass on this "
+                f"cluster) and by a reach policy with no rules",
                 scope=CAGE_SCOPE, ceiling=ceiling, **common, **evidence)
 
 
@@ -1375,8 +1544,52 @@ def sample_provenance(path: str, group: list[dict]) -> str:
     return ""
 
 
+def _parse_ts(ts: str) -> dt.datetime:
+    return dt.datetime.strptime(ts, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc)
+
+
+def _cage_facts_stay_unmeasured(samples: list[dict], registered: dt.datetime) -> list[str]:
+    """Ticket 152 Q10: a cage fact that is null on each of the CAGE_UNMEASURED_SAMPLES newest
+    samples taken at or after the newest registration is a FALL, not a wait. One sentence per fact
+    that fired; empty when none did, or when fewer samples than that exist since the registration.
+
+    Samples from before the registration do not count, or the rule would fire on the first new
+    sample. A lane run started by hand from the Actions tab counts, because its record is not told
+    apart from a scheduled one; it is not citable as a pass either way (ADR-0028), and here it can
+    only bring a fall sooner. A rehearsal is never appended (ADR-0023, D4). A record taken after
+    the registration that carries no such fact is a sample on which nothing looked, which is null.
+    The cage facts are the same on every record of one sample, so one record per sample is read.
+    From 2026-09-24 ticket 86's fact 7 was null on every sample and the gate read that null as a
+    declared wait (ticket 152); this is what makes a null that never clears a fall.
+    """
+    by_ts: dict[str, dict] = {}
+    for s in samples:
+        by_ts.setdefault(s["ts"], s)
+    since = [ts for ts in sorted(by_ts) if _parse_ts(ts) >= registered]
+    newest = since[-CAGE_UNMEASURED_SAMPLES:]
+    if len(newest) < CAGE_UNMEASURED_SAMPLES:
+        return []
+    out: list[str] = []
+    for name in CAGE_FACT_IDS:
+        reasons: list[str] = []
+        for ts in newest:
+            got = (by_ts[ts].get("facts") or {}).get(name)
+            if got is None:
+                why = "the sample carries no such fact: the sampler that took it did not look"
+            elif got.get("observed") is None:
+                why = str(got.get("why") or "no reason recorded")
+            else:
+                break
+            if why not in reasons:
+                reasons.append(why)
+        else:
+            out.append(f"{name} is null on the {CAGE_UNMEASURED_SAMPLES} newest samples taken "
+                       f"since the registration ({newest[0]} to {newest[-1]}): "
+                       + " | ".join(reasons))
+    return out
+
+
 def grade(path: str, max_age_hours: float) -> tuple[int, list[str]]:
-    lines: list[str] = []
     declared = falsifiers_declared()
     missing = [f for f in FALSIFIER_IDS if f not in declared]
     if missing:
@@ -1419,40 +1632,54 @@ def grade(path: str, max_age_hours: float) -> tuple[int, list[str]]:
     if rehearsal:
         return 3, [f"SKIP: {rehearsal}"]
 
-    lines.append(f"five-fact sample {latest} on cluster {group[0].get('cluster')} "
-                 f"(run {group[0].get('run') or 'local'}), {len(group)} sources")
+    return _score(samples, group, latest, *cage_registration())
+
+
+def _score(samples: list[dict], group: list[dict], latest: str,
+           registered: dt.datetime | None, how: str) -> tuple[int, list[str]]:
+    """The grade of the newest sample, given everything `grade` read off disk and git. Pure, so
+    the selfcheck can put synthetic samples and a synthetic registration through it."""
+    lines = [f"five-fact sample {latest} on cluster {group[0].get('cluster')} "
+             f"(run {group[0].get('run') or 'local'}), {len(group)} sources"]
 
     # WHEN the cage facts were registered, read out of git at the served ref (ticket 93's rule,
-    # ticket 86's application of it). A sample taken before that commit is not scored on them:
-    # the question had not been asked when the observation was made, and scoring it either way
-    # would be scoring an answer to a question nobody had put. Said out loud on the line, because
-    # a fact silently dropped is the same shape as a fact silently passed.
-    registered, how = cage_registration()
-    taken = dt.datetime.strptime(latest, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc)
+    # ticket 86's application of it, ticket 152 Q4's correction). A sample taken before that
+    # commit reads COULD-NOT-LOOK on both cage facts, on a line that names the commit: the
+    # question had not been asked when the observation was made, and a question not yet asked is
+    # never a pass. Until ticket 152 the two facts were silently dropped instead, and a sample from
+    # before a re-registration could print PASS on the five it carried.
+    taken = _parse_ts(latest)
     score_cage = registered is not None and taken >= registered
-    verdict = 0
     if registered is None:
-        lines.append(f"  the cage facts (6, 7) are NOT SCORED here: {how}. A registration that "
-                     f"cannot be established is a could-not-look, never a pass")
-        verdict = 3
+        cage_why = (f"the registration of the cage facts could not be established ({how}), and a "
+                    f"registration that cannot be established is a could-not-look, never a pass")
+        lines.append(f"  the cage facts (6, 7) read could-not-look on this sample: {how}")
     elif not score_cage:
-        lines.append(f"  the cage facts (6, 7) are NOT SCORED on this sample: it was taken "
+        cage_why = (f"this sample was taken {latest}, before the cage facts were {how}; a question "
+                    f"not yet asked is never a pass (ticket 152 Q4)")
+        lines.append(f"  the cage facts (6, 7) read could-not-look on this sample: it was taken "
                      f"{latest}, before they were {how}")
     else:
+        cage_why = ""
         lines.append(f"  the cage facts (6, 7) ARE scored on this sample: {how}, and the sample "
                      f"is later")
 
+    verdict = 0
+    nulls: dict[tuple[str, str], list[str]] = {}
     for record in sorted(group, key=lambda r: r["source"]):
         for name in ALL_FACT_IDS:
-            if name in CAGE_FACT_IDS and not score_cage:
-                continue
-            got = record["facts"].get(name) or {
-                "observed": None,
-                "why": "this sample carries no such fact, though it was taken after the fact was "
-                       "registered -- the sampler that took it did not look"}
+            if name in CAGE_FACT_IDS and cage_why:
+                got = {"observed": None, "why": cage_why}
+            else:
+                got = record["facts"].get(name) or {
+                    "observed": None,
+                    "why": "this sample carries no such fact, though it was taken after the fact "
+                           "was registered -- the sampler that took it did not look"}
             mark = {True: "true ", False: "FALSE", None: "?    "}[got["observed"]]
             lines.append(f"  {record['source']:<20} {mark} {name}: {got['why']}")
             verdict = _worse(verdict, got["observed"])
+            if got["observed"] is None:
+                nulls.setdefault((name, str(got["why"])), []).append(str(record["source"]))
 
     # The cage's own falsifiers. Each is set by the branch of `cage_facts` that reaches it, so a
     # firing is DERIVED from the observation rather than read back out of its sentence.
@@ -1487,10 +1714,25 @@ def grade(path: str, max_age_hours: float) -> tuple[int, list[str]]:
             if verdict == 0:
                 verdict = 3
 
+    # Ticket 152 Q10: a cage fact that is null on the three newest samples since the registration
+    # is a fall, and the line names the fact and its reason. Nothing before the registration counts.
+    stayed = _cage_facts_stay_unmeasured(samples, registered) if registered is not None else []
+    for why in stayed:
+        lines.append(f"  FALSIFIER FIRED: {CAGE_FALSIFIER_IDS[5]} -- {why}")
+        verdict = 1
+
     if verdict == 0:
-        lines.append("PASS: all five facts observed true for every source; no falsifier fired")
+        lines.append("PASS: all seven facts observed true for every source; no falsifier fired")
     elif verdict == 3:
-        lines.append("SKIP: a fact could not be looked at, and a fact not looked at is never a pass")
+        # Each null fact and its reason, by name (ticket 152 Q10): a fact silently dropped is the
+        # same shape as a fact silently passed, and a SKIP that names no fact hides which one.
+        named = "; ".join(f"{name} on {', '.join(sources)}: {why}"
+                          for (name, why), sources in nulls.items())
+        lines.append(f"SKIP: {len(nulls)} could-not-look(s), and a fact not looked at is never a "
+                     f"pass: {named}")
+    elif stayed:
+        lines.append(f"FAIL: {CAGE_FALSIFIER_IDS[5]} fired -- " + " || ".join(stayed)
+                     + " -- a fact never looked at is a fall, not a wait (ticket 152 Q10)")
     else:
         lines.append("FAIL: a fact of the five-fact sample was observed false")
     return verdict, lines
@@ -1577,13 +1819,15 @@ def selfcheck() -> int:
                                r"platform/\.github/workflows/cut-release\.yml@refs/heads/main$",
                                ci) == "", "a parent's own anchored pin must be acceptable"
 
-    # --- the cage: facts 6 and 7 (ecosystem ticket 86) -----------------------
+    # --- the cage: facts 6 and 7 (ecosystem ticket 86, registered again by ticket 152) --------
     # The pre-registration is real in this checkout, and the instrument's ids are the window's.
     _section = cage_section()
     assert [str(f.get("id")) for f in (_section.get("facts") or [])] == list(CAGE_FACT_IDS), \
         "window.yaml must pre-register the two cage facts, in order, before a sample takes them"
     assert set(CAGE_FALSIFIER_IDS) <= {str(f.get("id")) for f in (_section.get("falsifiers") or [])}, \
         "window.yaml must declare every falsifier the cage facts can fire"
+    assert str(_section.get("scoring") or "").strip(), \
+        "window.yaml must carry the scoring rule for a sample older than the registration (ticket 152 Q4)"
     assert _verdict({f: {"observed": True} for f in ALL_FACT_IDS}) == "PASS"
     assert _verdict({**{f: {"observed": True} for f in ALL_FACT_IDS},
                      CAGE_FACT_IDS[0]: {"observed": False}}) == "FAIL", \
@@ -1592,11 +1836,24 @@ def selfcheck() -> int:
                      CAGE_FACT_IDS[1]: {"observed": None}}) == "COULD-NOT-LOOK"
     assert _verdict({f: {"observed": True} for f in FACT_IDS}) == "PASS", \
         "a record taken before the cage facts existed is graded on the five it carries"
-    # The experiment declares no rung ANYWHERE: the rung is the cage's answer, not this file's.
+    # The experiment declares no rung ANYWHERE: the rung is the cage's answer, not this file's. The
+    # reference Namespace declares nothing at all and the reference pod claims nothing, so the
+    # cage does not select it (ticket 152 Q6); the fall-closed pod claims the version in force.
+    _objects = json.loads(_cage_objects("5.0.0", "img"))["items"]
     assert "isolated" not in _cage_objects("5.0.0", "img") and \
         "posture.acme.io/tier" not in _cage_objects("5.0.0", "img"), \
         "the probe must not name a rung: a tier this file typed would be an assertion, not a " \
         "measurement of where the cage puts an unlabelled workload"
+    _reference_ns = next(o for o in _objects if o["kind"] == "Namespace"
+                         and o["metadata"]["name"] == CAGE_REFERENCE_NS)
+    _reference_pod = next(o for o in _objects if o["kind"] == "Pod"
+                          and o["metadata"]["namespace"] == CAGE_REFERENCE_NS)
+    _fallclosed_pod = next(o for o in _objects if o["kind"] == "Pod"
+                           and o["metadata"]["namespace"] == CAGE_FALLCLOSED_NS)
+    assert "policy-as-versioned.dev/governed" not in _reference_ns["metadata"]["labels"] \
+        and not (_reference_pod["metadata"].get("labels") or {}), \
+        "the reference is an unclaimed pod in a Namespace that declares nothing (ticket 152 Q6)"
+    assert _fallclosed_pod["metadata"]["labels"]["policy-as-versioned.dev/policy-version"] == "5.0.0"
     assert CAGE_TIER_NAME.match("cage-tier-5-0-0") and not CAGE_TIER_NAME.match("cage-tier")
 
     # Fact 6's verdict. `caged` marks a workload the cage really wrote to; without it nothing
@@ -1625,36 +1882,55 @@ def selfcheck() -> int:
         {**_touched, "waiting_reasons": ["ContainerCreating", "ImagePullBackOff"]}, True) is False
 
     class _CageFixture(Cluster):
-        """A cluster that answers only what fact 7 asks, from a table. No kubectl, no network.
+        """A cluster that answers only what facts 6 and 7 ask, from a table. No kubectl, no network.
 
-        Six branches, and five of them are the ways a green must not be earned. The one that
-        matters most is `control=False`: a pod that reaches nothing because the cluster is broken
-        must never read the same as a pod that reaches nothing because the cage holds.
+        Each knob below is one way a green must not be earned. The one that matters most is
+        `reference=False`: a pod that reaches nothing because the cluster is broken must never read
+        the same as a pod that reaches nothing because the cage holds.
         """
 
-        def __init__(self, *, control: bool, caged: bool, exec_runs: bool = True,
-                     netpol: bool = True):
+        def __init__(self, *, reference: bool, caged: bool, exec_runs: bool = True,
+                     netpol: bool = True, rules: int = 0, types: tuple = ("Ingress", "Egress"),
+                     lowest: int = -10000, classes: bool = True, reference_netpol: bool = False):
             super().__init__("fixture")
             self.reachable = True
-            self.control, self.caged = control, caged
+            self.reference, self.caged = reference, caged
             self.exec_runs, self.netpol = exec_runs, netpol
+            self.rules, self.types = rules, list(types)
+            self.lowest, self.classes, self.reference_netpol = lowest, classes, reference_netpol
+            self.deleted: list[tuple] = []
 
         def get(self, *args: str) -> dict | None:
             if args[-1] == "kubernetes":
                 return {"spec": {"clusterIP": "10.96.0.1"}}
+            if "priorityclasses.scheduling.k8s.io" in args:
+                if not self.classes:
+                    return None
+                return {"items": [{"metadata": {"name": "cage-baseline-5-0-0"}, "value": -10},
+                                  {"metadata": {"name": "cage-isolated-5-0-0"}, "value": self.lowest},
+                                  {"metadata": {"name": "system-cluster-critical"},
+                                   "value": 2000000000}]}
             if "networkpolicies.networking.k8s.io" in args:
                 if args[1] == CAGE_FALLCLOSED_NS and self.netpol:
                     return {"items": [{"metadata": {"name": "cage-reach-isolated"},
                                        "spec": {"podSelector": {"matchLabels":
                                                 {"posture.acme.io/tier": "isolated"}},
+                                                "policyTypes": self.types,
+                                                "egress": [{"to": [{"podSelector": {}}]}] * self.rules}}]}
+                if args[1] == CAGE_REFERENCE_NS and self.reference_netpol:
+                    return {"items": [{"metadata": {"name": "select-everything"},
+                                       "spec": {"podSelector": {},
                                                 "policyTypes": ["Ingress", "Egress"]}}]}
                 return {"items": []}
             return None
 
         def run(self, *args: str, stdin: str | None = None) -> tuple[int, str]:
+            if args[0] == "delete":
+                self.deleted.append(args)
+                return 0, ""
             if not self.exec_runs:
                 return 1, "error: unable to upgrade connection: container not found"
-            reached = self.control if args[1] == CAGE_CONTROL_NS else self.caged
+            reached = self.reference if args[1] == CAGE_REFERENCE_NS else self.caged
             return (0 if reached else 1), f"{CAGE_RC_MARKER}{0 if reached else 1}"
 
     class _ExpressionCageFixture(_CageFixture):
@@ -1669,46 +1945,177 @@ def selfcheck() -> int:
             return listing
 
     _bottom = {"namespace": CAGE_FALLCLOSED_NS, "tier": "isolated", "caged": "true",
-               "phase": "Running", "ready": True, "containers": ["app", "waf-sidecar"]}
-    _loose = {"namespace": CAGE_CONTROL_NS, "tier": "baseline", "caged": "true",
-              "phase": "Running", "ready": True, "containers": ["app"]}
+               "priority": -10000, "priority_class": "cage-isolated-5-0-0",
+               "phase": "Running", "ready": True, "containers": ["app", "waf-sidecar"],
+               "labels": {"policy-as-versioned.dev/policy-version": "5.0.0",
+                          "posture.acme.io/tier": "isolated", "posture.acme.io/caged": "true"}}
+    _reference = {"namespace": CAGE_REFERENCE_NS, "tier": "", "caged": "", "priority": None,
+                  "priority_class": "", "phase": "Running", "ready": True, "containers": ["app"],
+                  "labels": {}}
     _common = {"policy_version_in_force": "5.0.0", "probe_image": "stand-in",
-               "fall_closed_namespace": CAGE_FALLCLOSED_NS, "control_namespace": CAGE_CONTROL_NS}
+               "fall_closed_namespace": CAGE_FALLCLOSED_NS, "reference_namespace": CAGE_REFERENCE_NS}
     # The polls are real seconds against a real CNI. Here there is neither, and a selfcheck that
-    # slept ninety seconds to prove six branches would stop being run.
+    # slept ninety seconds to prove a dozen branches would stop being run.
     _slept, time.sleep = time.sleep, lambda _s: None
     try:
-        green = _cage_reach_fact(_CageFixture(control=True, caged=False), _bottom, _loose, True, _common)
-        assert green["observed"] is True and "NEITHER" in green["why"]
-        leaks = _cage_reach_fact(_CageFixture(control=True, caged=True), _bottom, _loose, True, _common)
+        green = _cage_reach_fact(_CageFixture(reference=True, caged=False), _bottom, _reference, True, _common)
+        assert green["observed"] is True and "NEITHER" in green["why"] \
+            and "reference workload, which the cage did not select" in green["why"] \
+            and "ladder's bottom by priority (-10000" in green["why"], green["why"]
+        assert "loosest rung" not in green["why"] and green["reference_tier"] == "" \
+            and green["lowest_cage_priority"] == -10000, \
+            "the TRUE sentence names no rung for the reference: it is outside the cage (ticket 152)"
+        leaks = _cage_reach_fact(_CageFixture(reference=True, caged=True), _bottom, _reference, True, _common)
         assert leaks["observed"] is False and leaks["falsifier"] == CAGE_FALSIFIER_IDS[1], \
             "a bottom rung that completes a connection is observed FALSE"
-        broken = _cage_reach_fact(_CageFixture(control=False, caged=False), _bottom, _loose, True, _common)
+        broken = _cage_reach_fact(_CageFixture(reference=False, caged=False), _bottom, _reference, True, _common)
         assert broken["observed"] is None and broken["falsifier"] == CAGE_FALSIFIER_IDS[2] \
             and "UNMEASURED" in broken["why"], \
-            "a cluster whose control reaches nothing either is unmeasured, never a cage that held"
-        flat = _cage_reach_fact(_CageFixture(control=True, caged=False), _bottom,
-                                {**_loose, "tier": "isolated"}, True, _common)
-        assert flat["observed"] is None and flat["falsifier"] == CAGE_FALSIFIER_IDS[3], \
-            "a cage with no rung below its loosest one has no bottom rung to look at"
-        unexplained = _cage_reach_fact(_CageFixture(control=True, caged=False, netpol=False),
-                                       _bottom, _loose, True, _common)
+            "a cluster whose reference reaches nothing either is unmeasured, never a cage that held"
+        # Ticket 152 Q6 and Q8: the same-rung falsifier is retired, and its place is taken by
+        # `the_cage_selects_the_reference_workload`. A reference the cage does not select carries
+        # no rung, so it can share the fall-closed pod's rung only if the cage stamps it.
+        stamped = _cage_reach_fact(_CageFixture(reference=True, caged=False), _bottom,
+                                   {**_reference, "tier": "isolated", "caged": "true"}, True, _common)
+        assert stamped["observed"] is None and stamped["falsifier"] == CAGE_FALSIFIER_IDS[3] \
+            and "SELECTED the reference" in stamped["why"], \
+            "a tier or caged label on the reference pod is the cage selecting what it must not"
+        selected = _cage_reach_fact(_CageFixture(reference=True, caged=False, reference_netpol=True),
+                                    _bottom, _reference, True, _common)
+        assert selected["observed"] is None and selected["falsifier"] == CAGE_FALSIFIER_IDS[3] \
+            and "select-everything" in selected["why"], \
+            "a NetworkPolicy that selects the reference pod is the cage selecting it"
+        # Ticket 152 Q7: the fall-closed rung must be the ladder's BOTTOM, derived from the cluster.
+        above = _cage_reach_fact(_CageFixture(reference=True, caged=False, lowest=-20000),
+                                 _bottom, _reference, True, _common)
+        assert above["observed"] is None and above["falsifier"] == CAGE_FALSIFIER_IDS[4] \
+            and "above the lowest" in above["why"] and above["lowest_cage_priority"] == -20000, \
+            "a fall-closed pod above the lowest cage- PriorityClass is not on the bottom rung"
+        ruled = _cage_reach_fact(_CageFixture(reference=True, caged=False, rules=1),
+                                 _bottom, _reference, True, _common)
+        assert ruled["observed"] is None and ruled["falsifier"] == CAGE_FALSIFIER_IDS[4] \
+            and "egress rule" in ruled["why"], \
+            "a selecting NetworkPolicy that carries a rule is not a bottom-rung reach policy"
+        one_type = _cage_reach_fact(_CageFixture(reference=True, caged=False, types=("Egress",)),
+                                    _bottom, _reference, True, _common)
+        assert one_type["observed"] is None and one_type["falsifier"] == CAGE_FALSIFIER_IDS[4] \
+            and "not both" in one_type["why"], \
+            "a selecting NetworkPolicy that declares one policy type leaves the other open"
+        unlisted = _cage_reach_fact(_CageFixture(reference=True, caged=False, classes=False),
+                                    _bottom, _reference, True, _common)
+        assert unlisted["observed"] is None and "falsifier" not in unlisted \
+            and "could not be derived" in unlisted["why"], \
+            "a cluster that lists no cage- PriorityClass is a could-not-look, not a falsifier"
+        assert not _cage_bottom(_CageFixture(reference=True, caged=False), {})["why"], \
+            "with no stamped pod there is no rung to place, and fact 6 says what happened to it"
+        unexplained = _cage_reach_fact(_CageFixture(reference=True, caged=False, netpol=False),
+                                       _bottom, _reference, True, _common)
         assert unexplained["observed"] is None and "SELECTS IT" in unexplained["why"], \
             "silence with nothing in the cage selecting the pod may not be credited to the cage"
         expression_only = _cage_reach_fact(
-            _ExpressionCageFixture(control=True, caged=False), _bottom, _loose, True, _common)
+            _ExpressionCageFixture(reference=True, caged=False), _bottom, _reference, True, _common)
         assert expression_only["observed"] is None, \
             "an unevaluated expression selecting only baseline must not attribute isolated " \
             "silence to the cage"
-        unrun = _cage_reach_fact(_CageFixture(control=True, caged=False, exec_runs=False),
-                                 _bottom, _loose, True, _common)
+        unrun = _cage_reach_fact(_CageFixture(reference=True, caged=False, exec_runs=False),
+                                 _bottom, _reference, True, _common)
         assert unrun["observed"] is None and "could not be RUN" in unrun["why"], \
             "an exec that never ran the connect is a could-not-look, not a block"
-        dead = _cage_reach_fact(_CageFixture(control=True, caged=False), _bottom, _loose, False, _common)
+        dead = _cage_reach_fact(_CageFixture(reference=True, caged=False), _bottom, _reference, False, _common)
         assert dead["observed"] is None and "nothing to measure reach from" in dead["why"], \
             "a workload that never ran reaches nothing for a reason that is not the cage"
+
+        # The whole of cage_facts over a fixture that also answers the apply and the pod reads:
+        # both facts TRUE on the bottom rung, both null when the rung is not the bottom (ticket 152,
+        # decided while recording), the reference untouched, and both namespaces deleted.
+        class _LiveFixture(_CageFixture):
+            def get(self, *args: str) -> dict | None:
+                if args[:1] == ("get",) and args[1] == "mutatingpolicies.policies.kyverno.io":
+                    return {"items": [{"metadata": {"name": "cage-tier-5-0-0"},
+                                       "status": {"conditionStatus": {"ready": True}}}]}
+                if len(args) == 5 and args[2:4] == ("get", "pod"):
+                    labels = dict(_bottom["labels"]) if args[1] == CAGE_FALLCLOSED_NS else {}
+                    return {"metadata": {"name": CAGE_POD, "namespace": args[1], "labels": labels},
+                            "spec": {"priorityClassName": "cage-isolated-5-0-0" if labels else "",
+                                     "priority": -10000 if labels else None,
+                                     "containers": [{"name": "app", "image": "stand-in"}]},
+                            "status": {"phase": "Running",
+                                       "conditions": [{"type": "Ready", "status": "True"},
+                                                      {"type": "PodScheduled", "status": "True"}]}}
+                return super().get(*args)
+
+            def run(self, *args: str, stdin: str | None = None) -> tuple[int, str]:
+                if args[0] == "apply":
+                    return 0, "namespace/x created\npod/cage-probe created"
+                return super().run(*args, stdin=stdin)
+
+        _live = _LiveFixture(reference=True, caged=False)
+        six, seven = cage_facts(_live, "stand-in")
+        assert six["observed"] is True and seven["observed"] is True \
+            and "lowest `cage-` PriorityClass" in six["why"], (six["why"], seven["why"])
+        assert any(CAGE_REFERENCE_NS in d and CAGE_FALLCLOSED_NS in d for d in _live.deleted), \
+            "both probe namespaces are deleted, whatever happened"
+        six, seven = cage_facts(_LiveFixture(reference=True, caged=False, lowest=-20000), "stand-in")
+        assert six["observed"] is None and seven["observed"] is None \
+            and six["falsifier"] == seven["falsifier"] == CAGE_FALSIFIER_IDS[4], \
+            "when the fall-closed rung is not the ladder's bottom, facts 6 and 7 both read null"
     finally:
         time.sleep = _slept
+
+    # Ticket 152 Q4 (ticket 161 item 1): a sample older than the newest registration reads
+    # could-not-look on facts 6 and 7, and the line names the commit. Until this, the two facts
+    # were dropped from the score and the sample could print PASS on five.
+    def _rec(ts: str, f6=True, f7=True, why: str = "looked") -> dict:
+        facts = {f: {"observed": True, "why": "ok"} for f in FACT_IDS}
+        facts[CAGE_FACT_IDS[0]] = {"observed": f6, "why": why}
+        facts[CAGE_FACT_IDS[1]] = {"observed": f7, "why": why}
+        return {"ts": ts, "run": "1", "cluster": "fixture", "source": "fixture-composed",
+                "facts": facts, "falsifiers": {FALSIFIER_IDS[1]: {"fired": False}}}
+    _reg = dt.datetime(2026, 9, 26, 12, 0, tzinfo=dt.timezone.utc)
+    _how = "registered by 0123456789ab at 2026-09-26T12:00:00+00:00 on refs/remotes/origin/main"
+    _old = _rec("2026-09-26T09:00:00Z")
+    rc, out = _score([_old], [_old], _old["ts"], _reg, _how)
+    assert rc == 3 and "0123456789ab" in "\n".join(out) and out[-1].startswith("SKIP:") \
+        and CAGE_FACT_IDS[0] in out[-1] and CAGE_FACT_IDS[1] in out[-1] \
+        and "not yet asked" in out[-1], \
+        "a sample older than the registration must read could-not-look on the cage facts, " \
+        "never PASS on five"
+    rc, out = _score([_old], [_old], _old["ts"], None, "no commit registers it")
+    assert rc == 3 and CAGE_FACT_IDS[0] in out[-1], \
+        "a registration that cannot be established leaves both cage facts could-not-look"
+    _new = _rec("2026-09-26T13:00:00Z")
+    rc, out = _score([_old, _new], [_new], _new["ts"], _reg, _how)
+    assert rc == 0 and out[-1].startswith("PASS: all seven"), out[-1]
+    # grade's SKIP line names each null fact and its reason (ticket 152 Q10).
+    _n1 = _rec("2026-09-27T13:00:00Z", f7=None, why="the cage selected the reference")
+    rc, out = _score([_new, _n1], [_n1], _n1["ts"], _reg, _how)
+    assert rc == 3 and CAGE_FACT_IDS[1] in out[-1] and "the cage selected the reference" in out[-1] \
+        and CAGE_FACT_IDS[0] not in out[-1], out[-1]
+    # Ticket 152 Q10: null on the three newest samples since the registration is a FAIL that names
+    # the fact and its reason. Two are a wait; a null that clears stays a could-not-look; samples
+    # from before the registration do not count; a record with no such fact is null.
+    _n2 = _rec("2026-09-28T13:00:00Z", f7=None, why="the cage selected the reference")
+    _n3 = _rec("2026-09-29T13:00:00Z", f7=None, why="the cage selected the reference")
+    fired = lambda lines: any(f"FALSIFIER FIRED: {CAGE_FALSIFIER_IDS[5]}" in l for l in lines)  # noqa: E731
+    rc, out = _score([_old, _n1], [_n1], _n1["ts"], _reg, _how)
+    assert rc == 3 and not fired(out), "one null sample since the registration is a wait"
+    rc, out = _score([_old, _new, _n1, _n2], [_n2], _n2["ts"], _reg, _how)
+    assert rc == 3 and not fired(out), "two null samples since the registration are a wait"
+    rc, out = _score([_old, _new, _n1, _n2, _n3], [_n3], _n3["ts"], _reg, _how)
+    assert rc == 1 and fired(out) and out[-1].startswith("FAIL:") \
+        and CAGE_FALSIFIER_IDS[5] in out[-1] and CAGE_FACT_IDS[1] in out[-1] \
+        and "the cage selected the reference" in out[-1], out[-1]
+    _o2 = _rec("2026-09-26T08:00:00Z", f7=None, why="old")
+    _o3 = _rec("2026-09-26T07:00:00Z", f7=None, why="old")
+    rc, out = _score([_o3, _o2, _old, _n1], [_n1], _n1["ts"], _reg, _how)
+    assert rc == 3 and not fired(out), "samples from before the registration do not count"
+    _n3ok = _rec("2026-09-29T13:00:00Z")
+    rc, out = _score([_new, _n1, _n2, _n3ok], [_n3ok], _n3ok["ts"], _reg, _how)
+    assert rc == 0 and not fired(out), "a null that clears on the next sample is not a fall"
+    _bare = {**_rec("2026-09-30T13:00:00Z"),
+             "facts": {f: {"observed": True, "why": "ok"} for f in FACT_IDS}}
+    rc, out = _score([_n1, _n2, _bare], [_bare], _bare["ts"], _reg, _how)
+    assert rc == 1 and fired(out), "a record taken after the registration with no cage fact is null"
 
     # The registration moves when the QUESTION moves, and the section is the unit.
     _win = open(WINDOW).read()
@@ -1727,8 +2134,8 @@ def selfcheck() -> int:
 
     # Review F-02, red-first: a CLUSTER-WIDE outage may never score as a cage that held. Nothing
     # in this fixture is the cage's doing -- both pods get the same answer -- so `true` is wrong
-    # for every outage length. Before the control was read first and the silence made to persist,
-    # an outage clearing at any exec from 3 to 12 came back true.
+    # for every outage length. Before the reference was read first and the silence made to
+    # persist, an outage clearing at any exec from 3 to 12 came back true.
     class _Outage(Cluster):
         """Nothing reaches until the Nth exec of the run; from then on everything does."""
 
@@ -1740,6 +2147,8 @@ def selfcheck() -> int:
         def get(self, *args: str) -> dict | None:
             if args[-1] == "kubernetes":
                 return {"spec": {"clusterIP": "10.96.0.1"}}
+            if "priorityclasses.scheduling.k8s.io" in args:
+                return {"items": [{"metadata": {"name": "cage-isolated-5-0-0"}, "value": -10000}]}
             if "networkpolicies.networking.k8s.io" in args:
                 if args[1] == CAGE_FALLCLOSED_NS:
                     return {"items": [{"metadata": {"name": "cage-reach-isolated"},
@@ -1759,7 +2168,7 @@ def selfcheck() -> int:
     _slept2, time.sleep = time.sleep, lambda _s: None
     try:
         for _n in range(1, 41):
-            _got = _cage_reach_fact(_Outage(_n), _bottom, _loose, True, _common)["observed"]
+            _got = _cage_reach_fact(_Outage(_n), _bottom, _reference, True, _common)["observed"]
             assert _got is not True, (
                 f"a cluster-wide outage clearing at exec {_n} scored as a cage that held: a pod "
                 f"that reaches nothing because the cluster is broken must never read the same as "
@@ -1782,24 +2191,28 @@ def selfcheck() -> int:
     assert cage_section_text("cage_behaviour_sample:\n  q: one\n") \
         == cage_section_text("cage_behaviour_sample:\n  q: one\n\n\n# appended later\n"), \
         "a blank line before an append is not a rewritten question"
-    # And the real file: the whole pre-registration is inside the bound, both ids and all four
+    # And the real file: the whole pre-registration is inside the bound, both ids and all six
     # falsifiers, so nothing that matters was cut off by tightening it.
     _real = cage_section_text(_win)
     assert all(i in _real for i in CAGE_FACT_IDS + CAGE_FALSIFIER_IDS), \
         "the bounded section must still contain the whole pre-registration it registers"
 
     # A registration that cannot be read is a could-not-look, and says which ref it looked at.
-    _when, _how = cage_registration("refs/remotes/origin/no-such-ref-for-a-selfcheck")
-    assert _when is None and "no-such-ref-for-a-selfcheck" in _how, \
+    _when, _how_not = cage_registration("refs/remotes/origin/no-such-ref-for-a-selfcheck")
+    assert _when is None and "no-such-ref-for-a-selfcheck" in _how_not, \
         "an unreadable served ref must leave the cage facts unscored, never quietly passed"
 
     # a hand-typed sample is a rehearsal (ADR-0023, D4) whatever it says about itself.
     assert sample_provenance(SAMPLES, [{"run": "typed-by-hand"}]), \
         "a sample whose run is not an Actions run id must never be graded"
     print(f"ok  three falsifiers declared; verdict is tri-state; {len(sources())} sources read "
-          f"from gitops/; fact 2 grades the identity; a hand-typed sample is refused; the two cage facts are pre-registered in "
-          f"window.yaml, a cage that refuses or leaks is observed false, and a cluster "
-          f"whose control reaches nothing either is unmeasured rather than a cage that held")
+          f"from gitops/; fact 2 grades the identity; a hand-typed sample is refused; the two cage "
+          f"facts and their six falsifiers are pre-registered in window.yaml; a cage that refuses "
+          f"or leaks is observed false; a reference the cage selects, a fall-closed rung that is "
+          f"not the ladder's bottom, and a cluster whose reference reaches nothing either are each "
+          f"unmeasured rather than a cage that held; a sample older than the registration reads "
+          f"could-not-look on facts 6 and 7; and a cage fact null on {CAGE_UNMEASURED_SAMPLES} "
+          f"samples since the registration is a fall")
     return 0
 
 
