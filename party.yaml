@@ -27,7 +27,7 @@ inherits:
   - { party: platform, kind: implementations, version: "4.0.0", since: '2026-08-28' }
   - { party: nist,     kind: controls,        version: "1.1.0", since: '2026-08-28' }
   - { party: ico,      kind: feed, name: penalty-schema,    version: "v3", since: '2026-08-28' }
-  - { party: feeds,    kind: feed, name: threat-register,   version: "v1", since: '2026-08-28' }
+  - { party: feeds,    kind: feed, name: threat-register,   version: "v2", since: '2026-08-28' }
   # Eco-system ticket 84: the CVE feed the feeds publisher carries (cve/v2, the newest
   # directory it publishes). Priced through platform's converter as the feed's headline
   # entry. The publisher has cut no cve/vX.Y.Z tag yet, so until it does this pin is an
