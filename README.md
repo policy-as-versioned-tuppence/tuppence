@@ -69,17 +69,26 @@ the tests above.
 
 ## Twin sweep observations
 
-The daily twin sweep runs the existing emitter with `--check` and appends its
-actual result to `observations/twin-sweep.jsonl`, signed by the workflow identity.
-It records the actual hub/adopter commits and the existing twin pin. The hub
-loader remains the same compatibility-checked dependency the emitter already
-uses; a moving hub checkout is never described as a signed twin release.
+The daily twin sweep runs the existing emitter with `--check` in a read-only
+job, at the hub commit `twin/PIN.yaml` pins (`hub_commit`, moved only by a
+reviewed pull request; the signed `twin/v0.1.0` tag replaces it once it is cut),
+and hands the one observation line to a writer job as an artifact (eco-system
+ticket 143, ADR-0031). The writer has no hub checkout and runs no program from
+the checkout: it validates every path and every field of the handoff against
+this checkout's own pin, then appends the line to `observations/twin-sweep.jsonl`,
+signed by the workflow identity. The line records the actual hub and adopter
+commits and the twin pin. The hub loader remains the same compatibility-checked
+dependency the emitter already uses; a hub checkout is never described as a
+signed twin release. Every download the sweep makes is pinned by hash.
 
-Exit0 means the existing render matches. Exit1 means a changed render needs
-review; this clock does not create a feed or its publishing contract. Exit3
-records the named missing instruments, then leaves the workflow non-green. Today
-those instruments are a signed size valuation and an admissible causal edge.
-The observation is signed and appended before the final result is reported.
+Exit0 means the existing render matches. Exit1 with the emitter's own `--check`
+sentence means a changed render needs review; this clock does not create a feed
+or its publishing contract. Exit1 without it (a loader refusal with a traceback,
+a `REFUSED` line) is recorded as `could_not_render`, a render that could not be
+made, never a move. Exit3 records the named missing instruments. Each of the
+last three leaves the workflow non-green. Today the missing instruments are a
+signed size valuation and an admissible causal edge. The observation is signed
+and appended before the final result is reported.
 No amount, frequency, forecast, owner declaration or action is supplied by this
 clock. Propose-only and the Article22 floor are unchanged.
 

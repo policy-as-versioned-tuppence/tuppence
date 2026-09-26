@@ -3,68 +3,242 @@ name: twin-sweep
 # Tickets28/64, ADR-0024: observe the existing overlay, never invent the
 # instruments it lacks. A changed render needs review; this clock creates no
 # publishing contract, no feed, and no enactment (propose-only / Article22).
-# The hub loader still uses the existing twin/PIN.yaml compatibility check;
-# its actual checkout SHA is recorded rather than calling main a signed tag.
+#
+# TWO JOBS, NOT ONE (eco-system ticket 143; ADR-0031 point 4). Until this the
+# one job ran the hub's twin code under `contents: write`, and it checked the hub
+# out at `main`: whatever landed on another party's default branch ran here with
+# this repository's write token. Now:
+#
+#   twin   holds `contents: read` and nothing else. It checks tuppence out, reads
+#          the hub commit twin/PIN.yaml names, checks the hub out at exactly that
+#          commit, runs the emitter through .github/scripts/twin-sweep.py, and
+#          hands ONE artifact to the writer: the observation line. It pushes
+#          nothing and cannot.
+#   write  holds the write token. It has no hub checkout and runs no program from
+#          any checkout: inline shell, git and jq only, so the hub's
+#          verify/schedules/schedules.py reads every line it executes. It refuses
+#          the artifact by name unless it is exactly one observation line of the
+#          right shape for this run, this repository and the pinned hub commit,
+#          and only then appends it, commits gitsign-signed, pushes as before,
+#          and then re-raises the recorded result: a could-not-look or a render
+#          that could not be made leaves the run non-green, exactly as before.
+#
+# THE PIN. twin/PIN.yaml names the hub commit whose twin code renders this
+# overlay. tuppence moves it by a reviewed pull request, never by a clock. When
+# the signed `twin/v0.1.0` tag exists, the tag replaces the commit in the pin and
+# in the checkout below. The emitter's own check that `twin_version` is the hub's
+# twin/VERSION stays as it was.
+#
+# EVERY DOWNLOAD IS PINNED BY HASH (ADR-0031 point 4): each `uses:` names a full
+# commit, with its version beside it; pip installs from a hash-pinned
+# requirements file; gitsign is the checksummed binary the shared action pins,
+# read from that action and installed by inline shell.
 on:
   schedule:
     - cron: '17 7 * * *'
   workflow_dispatch: {}
 
+# The default for every job. The twin job runs the twin code under this and no
+# more; the write job declares its own, below, and is the only job that can push.
 permissions:
-  contents: write
-  id-token: write
+  contents: read
 
 # One observation instrument, not permission to alter other declarations.
 env:
   OBSERVATION_LANE: observations/twin-sweep.jsonl
 
 jobs:
-  sweep:
+  # --- the twin job: reads, records, hands off; pushes nothing ------------------
+  twin:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
+        # Every twin step runs inside tuppence's checkout, under the hub checkout
+        # at the path clone-estate.sh assembles, because the emitter finds the
+        # `twin` package by walking upwards from the overlay. The first three
+        # steps set that layout up and name their own working directory, because
+        # this one does not exist yet.
         working-directory: hub/.estate-clone/tuppence
     steps:
-      - uses: actions/checkout@v4
+      # tuppence first, at the top of the workspace: the pin has to be read before
+      # the hub can be checked out at it, and actions/checkout empties a directory
+      # that is not already a checkout of the same repository, so nesting tuppence
+      # under hub/ before hub/ exists would lose it.
+      - name: checkout tuppence, whose twin/PIN.yaml names the twin code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          path: adopter
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: read the hub commit twin/PIN.yaml names
+        id: pin
+        working-directory: adopter
+        run: |
+          set -euo pipefail
+          if [ "$(grep -c '^hub_commit:' twin/PIN.yaml)" != 1 ]; then
+            echo "::error::twin/PIN.yaml must carry exactly one hub_commit line"
+            exit 1
+          fi
+          commit="$(sed -n 's/^hub_commit:[[:space:]]*\([0-9a-f]\{40\}\)[[:space:]]*$/\1/p' twin/PIN.yaml)"
+          if ! [[ "${commit}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::twin/PIN.yaml hub_commit is not a full 40-hex commit"
+            exit 1
+          fi
+          echo "hub_commit=${commit}" >> "$GITHUB_OUTPUT"
+          echo "ok  twin/PIN.yaml pins the twin code at policy-as-versioned-flux@${commit}"
+
+      - name: checkout the hub at that commit, and at nothing else
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: policy-as-versioned-flux/policy-as-versioned-flux
           path: hub
-          ref: main
+          ref: ${{ steps.pin.outputs.hub_commit }}
           fetch-depth: 1
-      - uses: actions/checkout@v4
-        with:
-          path: hub/.estate-clone/tuppence
-          ref: ${{ github.event.repository.default_branch }}
-          fetch-depth: 0
-      - name: Install pinned observation signer outside the checkout
-        id: install
-        # Scheduled write jobs use inline shell so the schedule grader can
-        # inspect their containment. Read the shared action's authoritative
-        # pin; do not duplicate its version/checksum here.
+          persist-credentials: false
+
+      - name: put tuppence where the emitter finds the twin package, and prove the hub is at the pin
+        working-directory: ${{ github.workspace }}
+        env:
+          HUB_COMMIT: ${{ steps.pin.outputs.hub_commit }}
         run: |
           set -euo pipefail
-          pip install --quiet pyyaml
-          python3 - <<'PY'
-          from pathlib import Path
-          import subprocess, yaml
-          action = Path('.github/actions/install-gitsign')
-          pin = yaml.safe_load((action / 'action.yml').read_text())['runs']['steps'][0]['env']
-          subprocess.run(['bash', str(action / 'install.sh'), pin['GITSIGN_VERSION'],
-                          pin['GITSIGN_SHA256']], check=True)
-          PY
+          mkdir -p hub/.estate-clone
+          mv adopter hub/.estate-clone/tuppence
+          head="$(git -C hub rev-parse HEAD)"
+          if [ "${head}" != "${HUB_COMMIT}" ]; then
+            echo "::error::the hub checkout is at ${head}, not at the pinned ${HUB_COMMIT}"
+            exit 1
+          fi
+          echo "ok  twin code is policy-as-versioned-flux@${head}, the commit twin/PIN.yaml names"
+
+      - name: install the twin job's one package, hash-pinned
+        run: |
+          set -euo pipefail
+          pip install --quiet --require-hashes -r .github/requirements/twin-sweep.txt
+
       - name: Verify the observation and containment instrument
         run: |
-          pip install --quiet pyyaml
+          set -euo pipefail
           python3 -m unittest discover -s tests -p test_twin_clock.py
+
+      # The record is written into the handoff, not into the checkout: the writer
+      # appends it once it has validated every field.
       - name: Observe the emitter result, including missing instruments
         id: observe
+        env:
+          HANDOFF: ${{ runner.temp }}/handoff
         run: |
           set -euo pipefail
           python3 .github/scripts/twin-sweep.py record \
             --at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --run-id "$GITHUB_RUN_ID" \
             --hub-ref "$(git -C "$GITHUB_WORKSPACE/hub" rev-parse HEAD)" \
-            --adopter-ref "$(git rev-parse HEAD)"
+            --adopter-ref "$(git rev-parse HEAD)" \
+            --handoff "${HANDOFF}"
+
+      - name: hand the observation to the writer
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: twin-sweep-handoff
+          path: ${{ runner.temp }}/handoff
+          if-no-files-found: error
+          retention-days: 7
+
+  # --- the write job: no hub checkout, no program from any checkout --------------
+  write:
+    needs: twin
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: take the handoff from the twin job (this run's artifact, nothing else)
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: twin-sweep-handoff
+          path: ${{ runner.temp }}/handoff
+
+      - name: checkout tuppence, the only checkout this job has
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      # Every path and every shape, before anything is written. A file the twin
+      # job may not hand over fails the run by name; so does a line that does not
+      # name this run, this repository, this feed, a recorded state, the commit
+      # twin/PIN.yaml pins (read from THIS checkout, not from the artifact) or a
+      # commit this repository has.
+      - name: validate the handoff -- every path and every shape, before anything is written
+        id: handoff
+        env:
+          HANDOFF: ${{ runner.temp }}/handoff
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::the handoff is refused: $*"; exit 1; }
+          while IFS= read -r f; do
+            [ "${f}" = "observation.jsonl" ] || fail "${f} is not the observation, and this clock hands over nothing else"
+          done < <(cd "${HANDOFF}" && find . -type f | sed 's|^\./||' | LC_ALL=C sort)
+          obs="${HANDOFF}/observation.jsonl"
+          [ -f "${obs}" ] || fail "no observation.jsonl"
+          [ -s "${obs}" ] || fail "observation.jsonl is empty"
+          [ "$(tail -c1 "${obs}" | wc -l | tr -d ' ')" = 1 ] || fail "observation.jsonl lacks its final newline"
+          lines="$(wc -l < "${obs}" | tr -d ' ')"
+          [ "${lines}" = 1 ] || fail "observation.jsonl carries ${lines} line(s), not exactly one"
+          jq -e 'type == "object"' "${obs}" >/dev/null || fail "the observation is not one JSON object"
+          keys="$(jq -r 'keys | join(" ")' "${obs}")"
+          [ "${keys}" = "adopter_ref detail emitter_exit feed hub_ref moved org run status swept_at twin_pin" ] || fail "the observation carries the keys [${keys}]"
+          jq -e --arg run "${GITHUB_RUN_ID}" '.run == $run' "${obs}" >/dev/null || fail "the observation names run $(jq -r .run "${obs}") and this is run ${GITHUB_RUN_ID}"
+          jq -e '.org == "tuppence" and .feed == "forward-intel"' "${obs}" >/dev/null || fail "the observation is not tuppence's forward-intel line"
+          jq -e '.swept_at | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")' "${obs}" >/dev/null || fail "swept_at is not a UTC timestamp"
+          jq -e '.status | IN("unchanged", "review_required", "could_not_look", "could_not_render")' "${obs}" >/dev/null || fail "status $(jq -r .status "${obs}") is not a state this clock records"
+          jq -e '.emitter_exit | IN(0, 1, 3)' "${obs}" >/dev/null || fail "emitter_exit $(jq -c .emitter_exit "${obs}") is not one of the emitter's exits"
+          jq -e '(.moved | type) | IN("boolean", "null")' "${obs}" >/dev/null || fail "moved is neither a boolean nor null"
+          jq -e '.detail | type == "string"' "${obs}" >/dev/null || fail "detail is not text"
+          jq -e '.adopter_ref | test("^[0-9a-f]{40}$")' "${obs}" >/dev/null || fail "adopter_ref is not a full commit"
+          adopter_ref="$(jq -r .adopter_ref "${obs}")"
+          git cat-file -e "${adopter_ref}^{commit}" 2>/dev/null || fail "adopter_ref ${adopter_ref} is not a commit this repository has"
+          pin="$(sed -n 's/^hub_commit:[[:space:]]*\([0-9a-f]\{40\}\)[[:space:]]*$/\1/p' twin/PIN.yaml)"
+          [[ "${pin}" =~ ^[0-9a-f]{40}$ ]] || fail "twin/PIN.yaml in this checkout carries no hub_commit"
+          jq -e --arg pin "${pin}" '.hub_ref == $pin and .twin_pin.hub_commit == $pin' "${obs}" >/dev/null || fail "hub_ref $(jq -r .hub_ref "${obs}") is not the pinned policy-as-versioned-flux@${pin}"
+          echo "emitter_exit=$(jq -r .emitter_exit "${obs}")" >> "$GITHUB_OUTPUT"
+          echo "ok  the handoff is one $(jq -r .status "${obs}") observation line for run ${GITHUB_RUN_ID}"
+
+      # The version and digest come from the one shared action, read as data;
+      # its install.sh is a program from the checkout, so the download is inline.
+      - name: Install pinned observation signer outside the checkout
+        id: install
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^[[:space:]]*GITSIGN_VERSION:[[:space:]]*//p' .github/actions/install-gitsign/action.yml)"
+          digest="$(sed -n 's/^[[:space:]]*GITSIGN_SHA256:[[:space:]]*//p' .github/actions/install-gitsign/action.yml)"
+          [[ "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::no single GITSIGN_VERSION in the shared action"; exit 1; }
+          [[ "${digest}" =~ ^[0-9a-f]{64}$ ]] || { echo "::error::no single GITSIGN_SHA256 in the shared action"; exit 1; }
+          curl -fsSL -o "${RUNNER_TEMP}/gitsign" "https://github.com/sigstore/gitsign/releases/download/v${version}/gitsign_${version}_linux_amd64"
+          printf '%s  %s\n' "${digest}" "${RUNNER_TEMP}/gitsign" | sha256sum -c -
+          mkdir -p "${RUNNER_TEMP}/gitsign-bin"
+          install -m 755 "${RUNNER_TEMP}/gitsign" "${RUNNER_TEMP}/gitsign-bin/gitsign"
+          rm -f "${RUNNER_TEMP}/gitsign"
+          echo "${RUNNER_TEMP}/gitsign-bin" >> "$GITHUB_PATH"
+
+      - name: Append the one validated observation line, and only ever append
+        id: observe
+        env:
+          HANDOFF: ${{ runner.temp }}/handoff
+        run: |
+          set -euo pipefail
+          mkdir -p observations
+          if [ -s observations/twin-sweep.jsonl ] && [ "$(tail -c1 observations/twin-sweep.jsonl | wc -l | tr -d ' ')" != 1 ]; then
+            echo "::error::observations/twin-sweep.jsonl lacks a final newline; refusing to repair history"
+            exit 1
+          fi
+          cat "${HANDOFF}/observation.jsonl" >> observations/twin-sweep.jsonl
+          echo "recorded=true" >> "$GITHUB_OUTPUT"
+
       - name: the observation cage -- no declaration may leave the checkout
         if: always()
         run: |
@@ -90,6 +264,7 @@ jobs:
             echo "$outside"
             exit 1
           fi
+
       - name: Sign and append the observation before reporting the result
         id: sign
         if: success() && steps.observe.outputs.recorded == 'true'
@@ -100,8 +275,18 @@ jobs:
             -c user.email="twin-sweep@policy-as-versioned-tuppence.invalid" \
             commit -S -m "twin sweep: record the emitter observation [skip ci]"
           git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      # The recorded result, re-raised after the line has landed: exit 0 for an
+      # unchanged render, 1 for a changed render or a render that could not be
+      # made, 3 for a named missing instrument. Inline, from the validated line,
+      # because this job runs no program from the checkout.
       - name: Preserve the recorded could-not-look or review-required result
         id: result
         if: always() && steps.observe.outputs.recorded == 'true'
+        env:
+          HANDOFF: ${{ runner.temp }}/handoff
         run: |
-          python3 .github/scripts/twin-sweep.py gate --run-id "$GITHUB_RUN_ID"
+          set -euo pipefail
+          jq -r '"\(.status): \(.detail)"' "${HANDOFF}/observation.jsonl"
+          code="$(jq -r .emitter_exit "${HANDOFF}/observation.jsonl")"
+          case "${code}" in 0|1|3) exit "${code}" ;; *) exit 1 ;; esac
