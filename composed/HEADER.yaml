@@ -621,7 +621,7 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: 65b663036064ca9c76d339b133615a3055e76b074a84d1726ddf3e6752bf3846
+  after: 45b99ef8e72985b14cfc011fa115d6a5df35f30892e295a184e6e95048610937
   before:
     header:
       parents:
@@ -1247,8 +1247,7 @@ comparison-inputs:
       source: feeds
       name: cve
       proposed_tier: isolated
-      hole:
-        status: closed
+      hole: null
     - kind: twin
       source: twin
       name: forward-intel
