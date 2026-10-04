@@ -621,14 +621,14 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: 303325d93d77d4af1a8ac12400b372434e8c4abf9792b48b039f55c71c2c6db7
+  after: 65b663036064ca9c76d339b133615a3055e76b074a84d1726ddf3e6752bf3846
   before:
     header:
       parents:
       - party: platform
         kind: implementations
-        version: 4.0.0
-        sha: 557c1538fe022c784ea4ffb345c92d2e4b11fe71
+        version: 5.0.0
+        sha: 703eff6aee959843c4160aa54fd03413f62858cc
       - party: nist
         kind: controls
         version: 1.1.0
@@ -641,13 +641,13 @@ comparison-inputs:
       - party: feeds
         kind: feed
         name: threat-register
-        version: v1
-        sha: 50a0b330a730f4f9ee9520561b0c05c8be4c9268
+        version: v4
+        sha: 37dfe4a2de50f1a1fd7aeb6348d819373188e0e6
       - party: feeds
         kind: feed
         name: cve
-        version: v2
-        sha: ddace466f0cc410f228aeff3b4c5704eeea15a30
+        version: v3
+        sha: 37dfe4a2de50f1a1fd7aeb6348d819373188e0e6
       baseline: MODERATE
       holes:
       - ac-1
@@ -678,7 +678,6 @@ comparison-inputs:
       - ac-21
       - ac-22
       - ac-3
-      - ac-4
       - ac-5
       - ac-6.1
       - ac-6.10
@@ -1244,17 +1243,22 @@ comparison-inputs:
       name: threat-register
       proposed_tier: isolated
       hole: null
-    - kind: supersede
-      source: feeds
-      name: threat-register
-      proposed_tier: null
-      hole: null
     - kind: feed
       source: feeds
       name: cve
       proposed_tier: isolated
       hole:
-        status: recorded
+        status: closed
+    - kind: twin
+      source: twin
+      name: forward-intel
+      proposed_tier: isolated
+      hole: null
+    - kind: agent-cage
+      source: platform
+      name: twin-agent
+      proposed_tier: baseline
+      hole: null
     - kind: switching
       source: ico
       name: penalty-schema

@@ -6,23 +6,16 @@ ADR-0021 (the seam). The twin emits a **scenario**; the estate annualises it wit
 versioned selection policy picks the tier. So this script carries no frequency, no *selected* tier
 and -- ever -- no recommended action.
 
-WHAT IS DIFFERENT HERE FROM DRIFTWOOD'S COPY, and it is the whole point of eco-system ticket 64.
-driftwood can emit: its party artefact signs a `size.turnover`, so its perspective carries an
-amount, and it holds one grade-2 causal edge from its own dated incident record, so an impact may
-enter the pound. This institution can do neither today:
+Ticket 144 records the native GBP turnover and filing date on `party.yaml`; the perspective
+re-derives its cash flow from that fact through its declared share and periods. The institution's
+own `pricing_threshold` is read from the party artefact. Grade-3 comparable published work remains
+grade 3 and is admitted only where that actual declaration permits it; no comparable regulatory
+event becomes this institution's observed incident.
 
-  1. `party.yaml` publishes no `size:` block at all, so no valuation can derive from a signed
-     party fact and the perspective declares its cash flow with no amount (schema: a valuation
-     outside the pricing threshold may not carry one).
-  2. the one causal edge reaching the declared cash flow is graded 3 -- arithmetic on a comparable
-     firm's published regulatory record, which is "published work, not observed here" -- and the
-     ladder's `path_admission_threshold` is 2.
-
-So this script REFUSES with exit 3, could-not-look, and names both reasons. It does not emit an
-empty feed, it does not fall back to a default, and it does not price the anchor as though it were
-a measurement. The day the owner signs a size and this institution's own dated record produces a
-grade-1 or grade-2 edge, the same script emits the same payload shape driftwood's does, with no
-edit: the price is gated on the artefacts, not on which repository the file sits in.
+The native and reporting currencies are both GBP, so this valuation uses no FX rate. A foreign
+currency amount would require the pinned, signature-verified FX envelope for the exact filing
+month. Missing money, an inadmissible grade, or a missing dated instrument is named as CANNOT LOOK
+with exit 3. A complete admitted overlay emits the closed scenario shape without choosing a tier.
 
 Deterministic. The same overlay in gives byte-identical output, on any machine and at any time:
 
@@ -63,11 +56,10 @@ ORG = "tuppence"
 
 # The publisher's own declaration. A release bumps these two lines and `forward-intel/bump.yaml`
 # in the same PR a human merges -- they are not derived from the overlay, which is exactly why a
-# re-emit at any hour of any day produces the same bytes. There is no `v1/feed.json` in this
-# repository yet and there will not be one until this script stops refusing: a version number
-# beside an unemitted feed would be a release nobody cut.
+# re-emit at any hour of any day produces the same bytes. The stored v1 source is derived by this
+# producer; authentic signed consumption still requires the ordinary adopter release workflow.
 VERSION = "1.0.0"
-PUBLISHED_AT = "2026-09-04T00:00:00Z"
+PUBLISHED_AT = "2026-10-04T00:00:00Z"
 HORIZON = 1  # years; ticket 08: "horizon is one year and is stated in the payload"
 
 CLAIM_INCLUDED = ["uk-gdpr", "fca-principle-3"]
@@ -142,8 +134,8 @@ def check_twin_pin() -> str:
 def ladder() -> list[str]:
     """The cage rungs this overlay prices a response for.
 
-    driftwood reads these from its own versioned `selection-policy` package. This repository ships
-    no such package, so the rungs are declared in `twin/ladder.yaml`, which also records which
+    This producer reads the rungs declared in `twin/ladder.yaml`, independently of the estate's
+    versioned `selection-policy` package. The ladder also records which
     platform release published them. Declared in one place and read here, rather than spelled a
     second time in this file: a second spelling is a list that silently stops matching.
     """

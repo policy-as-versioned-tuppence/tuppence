@@ -2903,15 +2903,6 @@
       "currency": "GBP",
       "amount": null,
       "priced_by": null
-    },
-    {
-      "source": "nist",
-      "control_id": "ac-4",
-      "status": "closed",
-      "perspective": "tuppence",
-      "currency": "GBP",
-      "amount": null,
-      "priced_by": null
     }
   ],
   "ungoverned": [
@@ -3067,9 +3058,9 @@
         "currency": "GBP"
       },
       "name": "threat-register",
-      "old_version": "v1",
+      "old_version": "v4",
       "new_version": "v4",
-      "old_price": 222574.31190283748,
+      "old_price": 326139.1251644838,
       "new_price": 326139.1251644838,
       "old_tier": "isolated",
       "proposed_tier": "isolated",
@@ -3106,11 +3097,11 @@
         "currency": "GBP"
       },
       "name": "cve",
-      "old_version": "v2",
+      "old_version": "v3",
       "new_version": "v3",
-      "old_price": null,
+      "old_price": 437107.3377948303,
       "new_price": 437107.3377948303,
-      "old_tier": null,
+      "old_tier": "isolated",
       "proposed_tier": "isolated",
       "changed": false,
       "lef": [
@@ -3120,8 +3111,6 @@
       ],
       "lef_basis": "Apache/Log4j2 CVSS 10.0 (critical), epss=0.99999. Source: CISA KEV; NVD CVE-2021-44228; FIRST EPSS 2026-10-03. headline entry CVE-2021-44228 of 2 (largest mode-product entry, mode lef x mode lm -- an ordinal proxy, not fair.py's PERT expectation; ticket 75 Q4); not priced by this line: CVE-2021-45046. Scanned intersection 2; 7 scanned CVE(s) outside the pinned feed carry no amount.",
       "proposed_as": "label",
-      "old_absence_only": true,
-      "old_could_not_look": "No scanned CVE is in the pinned KEV feed; 9 scanned CVE(s) outside it are named absences carrying no amount.",
       "priced_cve": "CVE-2021-44228",
       "absences": [
         {
@@ -3170,18 +3159,7 @@
         "tag": "cve/v3.0.0",
         "detail": "tag cve/v3.0.0 on the feeds checkout carries a signature block"
       },
-      "hole": {
-        "kind": "untagged-pin",
-        "source": "feeds",
-        "name": "cve",
-        "version": "v3",
-        "perspective": "tuppence",
-        "currency": "GBP",
-        "status": "closed",
-        "amount": 437107.3377948303,
-        "priced_by": "feeds cve@v3: the exposure the pin prices, read off a feed no signed tag carries",
-        "detail": "tag cve/v3.0.0 on the feeds checkout carries a signature block; the hole the last signed artefact recorded is closed"
-      },
+      "hole": null,
       "publisher_observation_scope": "Publisher tags were observed when this artefact was composed; the recorded observation is replayed offline and during verification. It does not establish the publisher's current newest major. A fresh composition with the publisher present refreshes it.",
       "superseded": {
         "state": "current",
@@ -3211,7 +3189,7 @@
         "isolated": 1683965.6618212715
       },
       "curve_hash": "sha256:b5dd65073f162cd3427be4668de3a4f7ec32547a48a9515b7bfc7f24a609888d",
-      "shock": "An exfiltration of the account and transaction record store suppresses fee income for a quarter.\nTHE TRIPLE IS AN ANCHOR, NOT A MEASUREMENT, and it is graded 3 for exactly that reason. This institution has no incident of its own to measure, so the three numbers are arithmetic on a comparable UK challenger bank's own published regulatory record, nested from the narrowest reading to the widest:\n\n  min  0.0640 = 28,959,426 / 452,800,000\n  mode 0.0698 = 28,959,426 / 414,814,000\n  max  0.0987 = 40,959,426 / 414,814,000\n\n28,959,426 GBP is the financial penalty in the FCA's Final Notice against Starling Bank Limited of 2024-09-27 (reference 730166), and 40,959,426 GBP is the same notice's figure before the 30% stage-one settlement discount. 452,800,000 GBP is the revenue the same notice states at 2.1 for 2023; 414,814,000 GBP is Total Income for the year ended 2023-03-31 in that bank's own audited Annual Report 2023, a different metric on a different reporting convention. Sources and the discrepancy are recorded in the hub's .scratch/ecosystem/research/94-studied-firms.md.\nWhat it is NOT: a conduct penalty is not a suppression of fee income, and that firm is not this one. Grade 3 on the published ladder is \"an established mechanism from published work, not observed here\", which is precisely the claim being made. Grade 3 is OUTSIDE the ladder's path_admission_threshold of 2, so no impact enters this perspective's pound through this edge and emit-forward-intel.py refuses to emit a priced payload while it is the only causal edge here. A grade-1 or grade-2 replacement is this institution's own dated incident record, and a regrade event has to record who moved it and why (twin/evidence.py).",
+      "shock": "An exfiltration of the account and transaction record store suppresses fee income for a quarter.\nTHE TRIPLE IS AN ANCHOR, NOT A MEASUREMENT, and it is graded 3 for exactly that reason. This institution has no incident of its own to measure, so the three numbers are arithmetic on a comparable UK challenger bank's own published regulatory record, nested from the narrowest reading to the widest:\n\n  min  0.0640 = 28,959,426 / 452,800,000\n  mode 0.0698 = 28,959,426 / 414,814,000\n  max  0.0987 = 40,959,426 / 414,814,000\n\n28,959,426 GBP is the financial penalty in the FCA's Final Notice against Starling Bank Limited of 2024-09-27 (reference 730166), and 40,959,426 GBP is the same notice's figure before the 30% stage-one settlement discount. 452,800,000 GBP is the revenue the same notice states at 2.1 for 2023; 414,814,000 GBP is Total Income for the year ended 2023-03-31 in that bank's own audited Annual Report 2023, a different metric on a different reporting convention. Sources and the discrepancy are recorded in the hub's .scratch/ecosystem/research/94-studied-firms.md.\nWhat it is NOT: a conduct penalty is not a suppression of fee income, and that firm is not this one. Grade 3 on the published ladder is \"an established mechanism from published work, not observed here\", which is precisely the claim being made. The institution's party artefact declares pricing_threshold: 3, so this unchanged grade is admissible at that declared threshold. The cash flow remains derived from its recorded native GBP filing fact; no comparable penalty becomes this institution's incident or a measurement of suppressed fee income. A grade-1 or grade-2 replacement would require this institution's own dated incident record, and a regrade event must record who moved it and why (twin/evidence.py).",
       "horizon": 1,
       "lef": [
         4.0,
@@ -3525,29 +3503,7 @@
       ]
     }
   ],
-  "deltas": [
-    {
-      "kind": "closed-hole",
-      "source": "nist",
-      "control_id": "ac-4",
-      "perspective": "tuppence",
-      "currency": "GBP",
-      "amount": null,
-      "priced_by": null,
-      "detail": "nist:ac-4 was a recorded hole and a claim now covers it; no pinned instrument names a price for it"
-    },
-    {
-      "kind": "closed-untagged-pin",
-      "source": "feeds",
-      "name": "cve",
-      "version": "v3",
-      "perspective": "tuppence",
-      "currency": "GBP",
-      "amount": 437107.3377948303,
-      "priced_by": "feeds cve@v3: the exposure the pin prices, read off a feed no signed tag carries",
-      "detail": "tuppence pins feeds/cve@v3; tag cve/v3.0.0 on the feeds checkout carries a signature block; the hole the last signed artefact recorded is closed; 437107.34 GBP of exposure is again against a signed feed"
-    }
-  ],
+  "deltas": [],
   "floor_change": {
     "schema": 1,
     "before": {

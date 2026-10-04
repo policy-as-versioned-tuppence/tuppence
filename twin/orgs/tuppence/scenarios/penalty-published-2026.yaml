@@ -19,13 +19,10 @@ note: >-
   regulator's own published penalty schema, through composition and `prices[]`; a number for it
   here would be the same fine priced twice by two engines answering the same question (ADR-0021).
 
-  And the honest other half: the consequence this question asks about is NOT PRICED, and for this
-  institution it is unpriced twice over. This overlay carries one causal edge to the declared cash
-  flow and that edge is graded 3, outside the ladder's path admission threshold; and the
-  perspective carries no amount at all, because party.yaml publishes no signed size. Pricing this
-  scenario needs both: a signed size the owner declares, and a graded-1-or-2 causal edge from
-  this institution's own dated record. Until then, read this file as a standing question with a
-  register attached and no number behind it.
+  The declared native filing and share derive the perspective's amount. Both valuation
+  and loss mechanism remain grade 3, admitted by this party's explicit pricing threshold 3.
+  The comparable regulatory record is not this institution's observed incident. Its native GBP cash flow needs no conversion. Grade-5 mitigation remains
+  unpriced; publishing this standing question does not record a new enforcement event.
 affected_parties:
   - id: the-account-holders-the-penalty-is-for
     who: The account holders whose records the penalty would be imposed over, not represented in this model.

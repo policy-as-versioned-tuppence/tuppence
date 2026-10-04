@@ -102,7 +102,6 @@ Source: `composed/evidence.json` → `prices[]`, and `composed/HEADER.yaml` → 
 - **feeds/cve** (switching) — basis: re-composed with this publisher's feed edges dropped
 
 - **ico/penalty-schema** carries 4 priced hole(s) inside that amount: `nist/pl-2` GBP 5,372,385.21, `nist/ra-3` GBP 5,372,385.21, `nist/ca-2` GBP 3,581,590.14, `nist/ir-8` GBP 3,581,590.14
-- **feeds/cve** records a closed priced hole: untagged-pin `feeds/cve@v3` — tag cve/v3.0.0 on the feeds checkout carries a signature block; the hole the last signed artefact recorded is closed, priced at the whole entry (GBP 437,107.34).
 
 **Exposure** — booked under perspective `tuppence` in `GBP`.
 
@@ -142,11 +141,11 @@ Source: `composed/HEADER.yaml` → `baseline`, `selected-controls`, `holes`; `co
 
 - Baseline: **MODERATE**
 - Controls selected: 287
-- Controls with no implementation behind them (`holes[]`): 285 — closed: 1, recorded: 284
-- So 2 of 287 selected controls have an implementation in this artefact. A hole is priced, never refused (ADR-0020).
+- Controls with no implementation behind them (`holes[]`): 284 — recorded: 284
+- So 3 of 287 selected controls have an implementation in this artefact. A hole is priced, never refused (ADR-0020).
 - `refusals[]`: 0
 - `restatements[]`: 0
-- `deltas[]`: 2
+- `deltas[]`: 0
 - `ungoverned[]`: 2
 
 ## 6. What this handbook cannot say
@@ -184,4 +183,4 @@ Two things this page can never tell you, by construction, and neither is a field
 
 ---
 
-Counted from the artefact: 5 publisher(s), 34 installed object(s), 34 recorded member(s), 9 price(s), 287 selected control(s), 285 hole(s), 2 recorded limit(s), 15 named absence(s).
+Counted from the artefact: 5 publisher(s), 34 installed object(s), 34 recorded member(s), 9 price(s), 287 selected control(s), 284 hole(s), 2 recorded limit(s), 15 named absence(s).
