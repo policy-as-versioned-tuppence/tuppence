@@ -193,7 +193,7 @@ def priceable(overlay: Overlay) -> tuple[float, object]:
     perspective = overlay.perspectives[ORG]
     cash_flow = str(perspective["cash_flow"][0])
     values = perspective["values"]
-    admits = evidence.admission_threshold()
+    admits = overlay.pricing_threshold
 
     reasons: list[str] = []
     valuation = values.get(cash_flow) or {}
@@ -213,7 +213,7 @@ def priceable(overlay: Overlay) -> tuple[float, object]:
         )
     else:
         edge = hits[0]
-        if not evidence.may_price(edge.grade):
+        if not evidence.may_price(edge.grade, threshold=overlay.pricing_threshold):
             reasons.append(
                 "the one causal edge to %r (%s) is graded %d, outside the ladder's path admission "
                 "threshold of %d, so no impact may enter this perspective's pound through it"
@@ -253,7 +253,9 @@ def curve(overlay: Overlay, rungs: list[str], impact: float) -> list[dict]:
                 "curve missing a rung reads as a rung nobody would choose, which is a different "
                 "claim from one nobody priced." % tier
             )
-        reduction = float(response["mitigates"]["reduction"]["mode"])
+        reduction = (float(response["mitigates"]["reduction"]["mode"])
+                     if evidence.may_price(int(response["mitigates"]["evidence_grade"]),
+                                           threshold=overlay.pricing_threshold) else 0.0)
         cost = float(response["cost"]["mode"])
         out.append({"account": tier, "net_cost_of_risk": money(impact * (1.0 - reduction) + cost)})
     return out
@@ -275,8 +277,45 @@ def check_ladder_has_a_response(overlay: Overlay, rungs: list[str]) -> None:
         )
 
 
+def valuation_amount(party, value, currency):
+    """A native filing amount reaches GBP only through its pinned, verified dated FX feed."""
+    from twin.valuation import MissingInstrument, rederive
+    native = party.get("size", {}).get("turnover", {}).get("currency")
+    fx = None
+    if native != currency:
+        pin_path = REPO / "gitops/flux-system/gotk-sync-fx.yaml"
+        if not pin_path.exists():
+            raise CannotLook("no pinned signature-verified FX source for the filing date; "
+                             "USD turnover and service fees remain native USD, never labelled GBP")
+        spec = yaml.safe_load(pin_path.read_text())["spec"]
+        pin = spec["ref"]
+        feeds = HUB / ".estate-clone/feeds"
+        try:
+            commit = subprocess.check_output(["git", "-C", str(feeds), "rev-parse", pin["tag"] + "^{commit}"], text=True).strip()
+            if commit != pin["commit"] or not str(pin["tag"]).startswith("fx/v"):
+                raise CannotLook("FX pin tag and commit do not describe the same FX release")
+            subprocess.run(["gitsign", "verify-tag", pin["tag"],
+                "--certificate-identity-regexp=^https://github\\.com/policy-as-versioned-feeds/feeds/\\.github/workflows/cut-release\\.yml@refs/heads/(main|release/[0-9]+\\.[0-9]+\\.x)$",
+                "--certificate-oidc-issuer=https://token.actions.githubusercontent.com"],
+                cwd=feeds, check=True, capture_output=True)
+            version = str(pin["tag"]).split("/v", 1)[1].split(".", 1)[0]
+            raw = subprocess.check_output(["git", "-C", str(feeds), "show", pin["commit"] + ":fx/v" + version + "/feed.json"], text=True)
+            fx = json.loads(raw)
+            if "illustrative" in str(fx["payload"].get("note", "")).lower():
+                raise CannotLook("the pinned FX release declares illustrative rates; no observed currency instrument")
+        except (OSError, subprocess.CalledProcessError, KeyError, ValueError) as exc:
+            raise CannotLook("FX signature/rate instrument could not be read: " + str(exc)) from exc
+    try:
+        return rederive(party, value, currency, fx=fx)
+    except MissingInstrument as exc:
+        raise CannotLook(str(exc)) from exc
+
+
 def payload(overlay: Overlay, currency: str, party: dict, rungs: list[str]) -> dict:
     base, edge = priceable(overlay)
+    cash_flow = str(overlay.perspectives[ORG]["cash_flow"][0])
+    valuation_reading = valuation_amount(party, overlay.perspectives[ORG]["values"][cash_flow], currency)
+    base = float(valuation_reading["amount"])
     elasticity = edge.causal["elasticity"]
     lm = [money(base * float(elasticity[k])) for k in ("min", "mode", "max")]
 
@@ -297,6 +336,8 @@ def payload(overlay: Overlay, currency: str, party: dict, rungs: list[str]) -> d
 
     return {
         "perspective": ORG,
+        "valuation": valuation_reading,
+        "rests_on_grade": max(edge.grade, int(overlay.perspectives[ORG]["values"][str(overlay.perspectives[ORG]["cash_flow"][0])]["evidence_grade"])),
         "shock": str(overlay.edges[edge.id]["note"]).strip(),
         "horizon": HORIZON,
         "lef": None,
@@ -336,7 +377,7 @@ def render() -> str:
         )
     with tempfile.TemporaryDirectory() as tmp:
         repo = ModelRepo.open(stage(Path(tmp) / "mirror"))
-        overlay = Overlay.load(repo, ORG)
+        overlay = Overlay.load(repo, ORG, pricing_threshold=evidence.declared_threshold(party))
         check_ladder_has_a_response(overlay, rungs)
         return json.dumps(envelope(payload(overlay, currency, party, rungs)), indent=2,
                           ensure_ascii=False) + "\n"

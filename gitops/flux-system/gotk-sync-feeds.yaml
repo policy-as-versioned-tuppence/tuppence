@@ -7,7 +7,7 @@
 # renamed it, `ecosystem/thin-slice`, which stopped existing and killed the clock at
 # fetch. A branch is not a pinned, signed dependency (NORTH-STAR section 2), and there
 # was nowhere in this repository that said which version of feeds this party consumes.
-# party.yaml declares the pin as feed/threat-register at "v1"; this file is the {tag, commit}
+# party.yaml declares the pin as feed/threat-register at "v4"; this file is the {tag, commit}
 # pair that declaration resolves to, and .github/workflows/*.yml read `ref:` out of it.
 #
 # It is a VERIFIED SOURCE ONLY and gates nothing -- the same standing gotk-sync-nist.yaml
@@ -31,8 +31,8 @@ spec:
   interval: 5m
   url: https://github.com/policy-as-versioned-feeds/feeds
   ref:
-    tag: threat-register/v1.0.0
-    commit: 69c89b0732a0c9e4e6013d2656d755c5d916a815
-    # The commit this tag resolved to when the pin was written (2026-09-04),
+    tag: threat-register/v4.0.0
+    commit: 974e73514e0d8d4cad2e6906acf51d1cc27028b3
+    # The commit this tag resolved to when adopted (2026-10-04),
     # read off the publisher's real remote. Bumped as a PAIR by the Renovate
     # customManager in renovate.json -- never by hand, never a moving branch.

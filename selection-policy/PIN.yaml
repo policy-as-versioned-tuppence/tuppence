@@ -1,0 +1,12 @@
+# The pinned version of this repo's own selection policy.
+#
+# The party schema forbids unknown keys, so this pin cannot live on party.yaml, and Renovate's
+# git-refs customManagers in ../renovate.json track another repository's {tag, commit} pair --
+# there is no second repository here to track, because this package is in-repo. So the pin lives
+# here, in one file, and the composed artefact reads it: `composed/HEADER.yaml` records which
+# policy version selected the tier, and the proposal PR names the same version beside the curve
+# hash. See README.md.
+#
+# Bumping it: raise VERSION and this line in the same PR as the rule change, and let
+# cut-release.yml sign the tag.
+policy_version: 1.1.0

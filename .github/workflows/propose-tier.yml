@@ -313,6 +313,35 @@ jobs:
             --as-of "${{ steps.recompose.outputs.as_of }}" \
             | tee "${RUNNER_TEMP}/proposals.json"
 
+      - name: inventory -- propose only a changed served-image CVE id set (ADR-0035)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: policy-as-versioned-tuppence/tuppence
+          PROPOSAL_KIND: inventory
+          TRIVY_VERSION: 0.69.3
+          TRIVY_SHA256: 1816b632dfe529869c740c0913e36bd1629cb7688bd5634f4a858c1d57c88b75
+        run: |
+          set -euo pipefail
+          # This feature rolls out through the independently verified tools tag.
+          # A pre-feature tag keeps the clock readable until its reviewed pin move.
+          if [ ! -f platform-tools/wargamer/inventory.py ]; then
+            echo "LIMIT: pinned tools tag predates inventory; first inventory and tools pin move are pending"
+            exit 0
+          fi
+          archive="${RUNNER_TEMP}/trivy.tar.gz"
+          curl --fail --location --retry 3 "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" -o "${archive}"
+          echo "${TRIVY_SHA256}  ${archive}" | sha256sum --check --strict
+          mkdir -p "${RUNNER_TEMP}/trivy"
+          tar -xzf "${archive}" -C "${RUNNER_TEMP}/trivy" trivy
+          python3 platform-tools/wargamer/inventory.py scan --adopter-dir tuppence             --scanner "${RUNNER_TEMP}/trivy/trivy" --out "${RUNNER_TEMP}/inventory.json"
+          python3 platform-tools/wargamer/inventory.py propose --adopter-dir tuppence             --org tuppence --candidate "${RUNNER_TEMP}/inventory.json"             --prior-proposals "${RUNNER_TEMP}/proposals.json" --out "${RUNNER_TEMP}/inventory-proposals.json"
+          python3 - "${RUNNER_TEMP}/proposals.json" "${RUNNER_TEMP}/inventory-proposals.json" <<'PYCOMBINE'
+          import json, sys
+          from pathlib import Path
+          path = Path(sys.argv[1])
+          path.write_text(json.dumps(json.loads(path.read_text()) + json.loads(Path(sys.argv[2]).read_text())))
+          PYCOMBINE
+
       # --- the proposal commit verifies against this workflow's own identity ---
       # Not a claim: `gitsign verify` reads the certificate off each branch this
       # run actually wrote and checks it against EXPECTED_PROPOSAL_IDENTITY_REGEXP

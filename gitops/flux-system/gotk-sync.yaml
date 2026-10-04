@@ -18,10 +18,10 @@ spec:
   interval: 1m
   url: https://github.com/policy-as-versioned-tuppence/tuppence
   ref:
-    tag: v1.0.0
-    commit: 9862d846332031d7cb5cf38894d3b0ed321928df
+    tag: v3.0.1
+    commit: d8dead25e0e5e275172640b1a637562e45edb15d
     # commit pinned at release (belt-and-braces immutability, ADR-0001) --
-    # the resolved SHA tuppence's own v1.0.0 tag points to. Not covered by the
+    # the resolved SHA tuppence's own signed v3.0.1 apps release points to. Not covered by the
     # Renovate customManagers in renovate.json (those track nist and platform
     # only); a self-pin bump is a reviewed PR that moves both fields together.
 ---

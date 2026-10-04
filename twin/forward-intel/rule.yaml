@@ -1,0 +1,10 @@
+# What "changed" means for driftwood's forward-intel feed (ADR-0019; decided D2). The twin's
+# scheduled sweep re-emits from the overlay and opens a PR only when the change clears this
+# threshold; anything below it appends one line to observations/forward-intel.jsonl on the
+# observations branch and commits nothing signed (D1: a clock appends observations, never
+# declarations).
+#
+# Flat key: value only -- parsed with the standard library, no pyyaml on the runner.
+changed_when: "the shock, the perspective, the currency or the register changes, or any curve or lm number moves by more than 10%"
+entries: curve
+numeric_tolerance: 0.10

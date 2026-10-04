@@ -17,11 +17,11 @@
       "name": "penalty-schema",
       "perspective": "tuppence",
       "currency": "GBP",
-      "uncaged_amount": 9039791.01976426,
+      "uncaged_amount": 17907950.696925685,
       "before_tier": null,
       "after_tier": "isolated",
       "before_residual": null,
-      "after_residual": 180795.82039528535,
+      "after_residual": 358159.013938514,
       "residual_delta": null
     },
     {
@@ -30,11 +30,11 @@
       "name": "threat-register",
       "perspective": "tuppence",
       "currency": "GBP",
-      "uncaged_amount": 222574.31190283748,
+      "uncaged_amount": 326139.1251644838,
       "before_tier": null,
       "after_tier": "isolated",
       "before_residual": null,
-      "after_residual": 4451.486238056754,
+      "after_residual": 6522.782503289682,
       "residual_delta": null
     },
     {
@@ -43,11 +43,24 @@
       "name": "cve",
       "perspective": "tuppence",
       "currency": "GBP",
-      "uncaged_amount": 241549.84018780073,
+      "uncaged_amount": 437107.3377948303,
       "before_tier": null,
       "after_tier": "isolated",
       "before_residual": null,
-      "after_residual": 4830.996803756019,
+      "after_residual": 8742.146755896614,
+      "residual_delta": null
+    },
+    {
+      "source": "twin",
+      "kind": "twin",
+      "name": "forward-intel",
+      "perspective": "tuppence",
+      "currency": "GBP",
+      "uncaged_amount": 84198283.0910635,
+      "before_tier": null,
+      "after_tier": "isolated",
+      "before_residual": null,
+      "after_residual": 1683965.6618212715,
       "residual_delta": null
     }
   ],

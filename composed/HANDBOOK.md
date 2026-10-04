@@ -10,11 +10,11 @@ Source: `composed/HEADER.yaml` → `parents[]`. Each row is a publisher this art
 
 | publisher | kind | feed name | version | commit |
 | --- | --- | --- | --- | --- |
-| platform | implementations | — | 4.0.0 | `557c1538fe022c784ea4ffb345c92d2e4b11fe71` |
+| platform | implementations | — | 5.0.0 | `703eff6aee959843c4160aa54fd03413f62858cc` |
 | nist | controls | — | 1.1.0 | `33a05df1f5241bca6ffbc1c69a70075cdb7a5819` |
 | ico | feed | penalty-schema | v3 | `e1fb8eb5663e50088b13d872a4e44112476f516e` |
-| feeds | feed | threat-register | v1 | `50a0b330a730f4f9ee9520561b0c05c8be4c9268` |
-| feeds | feed | cve | v2 | `ddace466f0cc410f228aeff3b4c5704eeea15a30` |
+| feeds | feed | threat-register | v4 | `37dfe4a2de50f1a1fd7aeb6348d819373188e0e6` |
+| feeds | feed | cve | v3 | `37dfe4a2de50f1a1fd7aeb6348d819373188e0e6` |
 
 ## 2. What is actually installed
 
@@ -22,25 +22,42 @@ Source: the object files under `composed/`, and `composed/evidence.json` → `me
 
 | object | kind | policy version | does | inherited from | source path |
 | --- | --- | --- | --- | --- | --- |
-| `cage-netpol-bottom-rung` | GeneratingPolicy | — (not versioned) | generates (1), evaluates | platform@4.0.0 | `distribution/versions.yaml (rendered from the array, ticket 89)` |
-| `cage-isolated` | PriorityClass | — (not versioned) | nothing this page can read | platform@4.0.0 | `distribution/versions.yaml (static, ticket 89)` |
-| `governed-namespace-requires-claim` | MutatingPolicy | — (not versioned) | mutates (4) | platform@4.0.0 | `distribution/versions.yaml (static, ADR-0014)` |
-| `governed-namespace-cage-holds` | MutatingPolicy | — (not versioned) | mutates (1) | platform@4.0.0 | `distribution/versions.yaml (static, ticket 89)` |
-| `governed-namespace-unclaimed-report` | ValidatingPolicy | — (not versioned) | refuses (1) | platform@4.0.0 | `distribution/versions.yaml (static, ticket 89)` |
-| `policy-version-orphan-cage-holds` | MutatingPolicy | — (not versioned) | mutates (1) | platform@4.0.0 | `distribution/versions.yaml (rendered from the array, ticket 89)` |
-| `policy-version-orphan-cage` | MutatingPolicy | — (not versioned) | mutates (4) | platform@4.0.0 | `distribution/versions.yaml (rendered from the array, ticket 89)` |
-| `policy-version-orphan-guard` | ValidatingPolicy | — (not versioned) | refuses (1) | platform@4.0.0 | `distribution/versions.yaml (rendered from the array)` |
-| `cage-baseline-5-0-0` | PriorityClass | 5.0.0 | nothing this page can read | platform@4.0.0 | `distribution/policies/v5.0.0/priorityclasses.yaml` |
-| `cage-isolated-5-0-0` | PriorityClass | 5.0.0 | nothing this page can read | platform@4.0.0 | `distribution/policies/v5.0.0/priorityclasses.yaml` |
-| `cage-netpol-5-0-0` | GeneratingPolicy | 5.0.0 | generates (1), evaluates | platform@4.0.0 | `distribution/policies/v5.0.0/cage-netpol.yaml` |
-| `cage-quarantine-5-0-0` | PriorityClass | 5.0.0 | nothing this page can read | platform@4.0.0 | `distribution/policies/v5.0.0/priorityclasses.yaml` |
-| `cage-restricted-5-0-0` | PriorityClass | 5.0.0 | nothing this page can read | platform@4.0.0 | `distribution/policies/v5.0.0/priorityclasses.yaml` |
-| `cage-tier-5-0-0` | MutatingPolicy | 5.0.0 | mutates (2) | platform@4.0.0 | `distribution/policies/v5.0.0/cage-tier.yaml` |
-| `posture-trust-boundary-5-0-0` | ValidatingPolicy | 5.0.0 | refuses (1) | platform@4.0.0 | `distribution/policies/v5.0.0/posture-trust-boundary.yaml` |
-| `require-nonroot-5-0-0` | ValidatingPolicy | 5.0.0 | refuses (1) | platform@4.0.0 | `distribution/policies/v5.0.0/require-nonroot.yaml` |
-| `stamp-posture-5-0-0` | MutatingPolicy | 5.0.0 | mutates (1) | platform@4.0.0 | `distribution/policies/v5.0.0/stamp-posture.yaml` |
+| `cage-netpol-bottom-rung` | GeneratingPolicy | — (not versioned) | generates (1), evaluates | platform@5.0.0 | `distribution/versions.yaml (rendered from the array, ticket 89)` |
+| `cage-isolated` | PriorityClass | — (not versioned) | nothing this page can read | platform@5.0.0 | `distribution/versions.yaml (static, ticket 89)` |
+| `governed-namespace-requires-claim` | MutatingPolicy | — (not versioned) | mutates (4) | platform@5.0.0 | `distribution/versions.yaml (static, ADR-0014)` |
+| `governed-namespace-cage-holds` | MutatingPolicy | — (not versioned) | mutates (1) | platform@5.0.0 | `distribution/versions.yaml (static, ticket 89)` |
+| `governed-namespace-unclaimed-report` | ValidatingPolicy | — (not versioned) | refuses (1) | platform@5.0.0 | `distribution/versions.yaml (static, ticket 89)` |
+| `policy-version-orphan-cage-holds` | MutatingPolicy | — (not versioned) | mutates (1) | platform@5.0.0 | `distribution/versions.yaml (rendered from the array, ticket 89)` |
+| `policy-version-orphan-cage` | MutatingPolicy | — (not versioned) | mutates (4) | platform@5.0.0 | `distribution/versions.yaml (rendered from the array, ticket 89)` |
+| `policy-version-orphan-guard` | ValidatingPolicy | — (not versioned) | refuses (1) | platform@5.0.0 | `distribution/versions.yaml (rendered from the array)` |
+| `cage-baseline-5-0-0` | PriorityClass | 5.0.0 | nothing this page can read | platform@5.0.0 | `distribution/policies/v5.0.0/priorityclasses.yaml` |
+| `cage-isolated-5-0-0` | PriorityClass | 5.0.0 | nothing this page can read | platform@5.0.0 | `distribution/policies/v5.0.0/priorityclasses.yaml` |
+| `cage-netpol-5-0-0` | GeneratingPolicy | 5.0.0 | generates (1), evaluates | platform@5.0.0 | `distribution/policies/v5.0.0/cage-netpol.yaml` |
+| `cage-quarantine-5-0-0` | PriorityClass | 5.0.0 | nothing this page can read | platform@5.0.0 | `distribution/policies/v5.0.0/priorityclasses.yaml` |
+| `cage-restricted-5-0-0` | PriorityClass | 5.0.0 | nothing this page can read | platform@5.0.0 | `distribution/policies/v5.0.0/priorityclasses.yaml` |
+| `cage-tier-5-0-0` | MutatingPolicy | 5.0.0 | mutates (2) | platform@5.0.0 | `distribution/policies/v5.0.0/cage-tier.yaml` |
+| `posture-trust-boundary-5-0-0` | ValidatingPolicy | 5.0.0 | refuses (1) | platform@5.0.0 | `distribution/policies/v5.0.0/posture-trust-boundary.yaml` |
+| `require-nonroot-5-0-0` | ValidatingPolicy | 5.0.0 | refuses (1) | platform@5.0.0 | `distribution/policies/v5.0.0/require-nonroot.yaml` |
+| `stamp-posture-5-0-0` | MutatingPolicy | 5.0.0 | mutates (1) | platform@5.0.0 | `distribution/policies/v5.0.0/stamp-posture.yaml` |
+| `cage-baseline-6-0-0` | PriorityClass | 6.0.0 | nothing this page can read | platform@5.0.0 | `distribution/policies/v6.0.0/priorityclasses.yaml` |
+| `cage-isolated-6-0-0` | PriorityClass | 6.0.0 | nothing this page can read | platform@5.0.0 | `distribution/policies/v6.0.0/priorityclasses.yaml` |
+| `cage-netpol-6-0-0` | GeneratingPolicy | 6.0.0 | generates (1), evaluates | platform@5.0.0 | `distribution/policies/v6.0.0/cage-netpol.yaml` |
+| `cage-quarantine-6-0-0` | PriorityClass | 6.0.0 | nothing this page can read | platform@5.0.0 | `distribution/policies/v6.0.0/priorityclasses.yaml` |
+| `cage-restricted-6-0-0` | PriorityClass | 6.0.0 | nothing this page can read | platform@5.0.0 | `distribution/policies/v6.0.0/priorityclasses.yaml` |
+| `cage-tier-6-0-0` | MutatingPolicy | 6.0.0 | mutates (2) | platform@5.0.0 | `distribution/policies/v6.0.0/cage-tier.yaml` |
+| `posture-trust-boundary-6-0-0` | ValidatingPolicy | 6.0.0 | refuses (1) | platform@5.0.0 | `distribution/policies/v6.0.0/posture-trust-boundary.yaml` |
+| `require-nonroot-6-0-0` | ValidatingPolicy | 6.0.0 | refuses (1) | platform@5.0.0 | `distribution/policies/v6.0.0/require-nonroot.yaml` |
+| `stamp-posture-6-0-0` | MutatingPolicy | 6.0.0 | mutates (1) | platform@5.0.0 | `distribution/policies/v6.0.0/stamp-posture.yaml` |
+| `cage-baseline-7-0-0` | PriorityClass | 7.0.0 | nothing this page can read | platform@5.0.0 | `distribution/policies/v7.0.0/priorityclasses.yaml` |
+| `cage-isolated-7-0-0` | PriorityClass | 7.0.0 | nothing this page can read | platform@5.0.0 | `distribution/policies/v7.0.0/priorityclasses.yaml` |
+| `cage-netpol-7-0-0` | GeneratingPolicy | 7.0.0 | generates (1), evaluates | platform@5.0.0 | `distribution/policies/v7.0.0/cage-netpol.yaml` |
+| `cage-quarantine-7-0-0` | PriorityClass | 7.0.0 | nothing this page can read | platform@5.0.0 | `distribution/policies/v7.0.0/priorityclasses.yaml` |
+| `cage-restricted-7-0-0` | PriorityClass | 7.0.0 | nothing this page can read | platform@5.0.0 | `distribution/policies/v7.0.0/priorityclasses.yaml` |
+| `cage-tier-7-0-0` | MutatingPolicy | 7.0.0 | mutates (2) | platform@5.0.0 | `distribution/policies/v7.0.0/cage-tier.yaml` |
+| `require-nonroot-7-0-0` | ValidatingPolicy | 7.0.0 | refuses (1) | platform@5.0.0 | `distribution/policies/v7.0.0/require-nonroot.yaml` |
+| `stamp-posture-7-0-0` | MutatingPolicy | 7.0.0 | mutates (1) | platform@5.0.0 | `distribution/policies/v7.0.0/stamp-posture.yaml` |
 
-17 object(s) in the artefact; `members[]` records 17: `cage-baseline`, `cage-isolated`, `cage-netpol`, `cage-quarantine`, `cage-restricted`, `cage-tier`, `posture-trust-boundary`, `stamp-posture`, `require-nonroot`, `policy-version-orphan-guard`, `governed-namespace-requires-claim`, `policy-version-orphan-cage`, `policy-version-orphan-cage-holds`, `governed-namespace-cage-holds`, `governed-namespace-unclaimed-report`, `cage-netpol-bottom-rung`, `cage-isolated`.
+34 object(s) in the artefact; `members[]` records 34: `cage-baseline`, `cage-isolated`, `cage-netpol`, `cage-quarantine`, `cage-restricted`, `cage-tier`, `posture-trust-boundary`, `stamp-posture`, `require-nonroot`, `cage-baseline`, `cage-isolated`, `cage-netpol`, `cage-quarantine`, `cage-restricted`, `cage-tier`, `posture-trust-boundary`, `stamp-posture`, `require-nonroot`, `cage-baseline`, `cage-isolated`, `cage-netpol`, `cage-quarantine`, `cage-restricted`, `cage-tier`, `stamp-posture`, `require-nonroot`, `policy-version-orphan-guard`, `governed-namespace-requires-claim`, `policy-version-orphan-cage`, `policy-version-orphan-cage-holds`, `governed-namespace-cage-holds`, `governed-namespace-unclaimed-report`, `cage-netpol-bottom-rung`, `cage-isolated`.
 
 ## 3. The cage you land in
 
@@ -48,55 +65,61 @@ Source: `composed/HEADER.yaml` → `governed-namespaces`, `ungoverned-namespaces
 
 - Governed namespaces (1): `tuppence`
 - Ungoverned namespaces (2): `openbao`, `tuppence-reset`
-- Tier(s) the pricing proposes (1): `isolated`
+- The tier was chosen by selection-policy version **1.1.0**.
+- Tier(s) the pricing proposes (2): `baseline`, `isolated`
 - `cages[]` entries: 0
 
 ## 4. What this costs, and to whom
 
-Source: `composed/evidence.json` → `prices[]`, and `composed/HEADER.yaml` → `exposure`. Amounts are rounded to two decimals from the field named in each row; every one carries the perspective it is booked under and the currency it is booked in. An entry the composition could not price carries its reason instead of a number, and is named in section 6. In the *proposed tier* column, `—` means the entry's kind (`premium`, `switching`, `supersede`) proposes no tier by construction; a feed entry with no `proposed_tier` is named absent.
+Source: `composed/evidence.json` → `prices[]`, and `composed/HEADER.yaml` → `exposure`. Amounts are rounded to two decimals from the field named in each row; every one carries the perspective it is booked under and the currency it is booked in. An entry the composition could not price carries its reason instead of a number, and is named in section 6. In the *proposed tier* column, `—` means the entry's kind (`premium`, `switching`, `supersede`) proposes no tier by construction; a feed entry with no `proposed_tier` is named absent. An `agent-cage` entry prices the twin agent's cage (ADR-0031): the tier in its row is the twin agent's own rung, for the subject the row names, never the Namespace's, and the Namespace fold does not read it.
 
 | priced by | kind | name | perspective | currency | amount | moved | proposed tier |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| ico | feed | penalty-schema | tuppence | GBP | GBP 9,039,791.02 | no | isolated |
-| ico | supersede | penalty-schema | tuppence | GBP | GBP 0.00 | no | — |
-| feeds | feed | threat-register | tuppence | GBP | GBP 222,574.31 | no | isolated |
-| feeds | supersede | threat-register | tuppence | GBP | GBP 4,268.55 | no | — |
-| feeds | feed | cve | tuppence | GBP | GBP 241,549.84 | no | isolated |
-| ico | switching | penalty-schema | tuppence | GBP | GBP 9,039,791.02 | no | — |
-| feeds | switching | threat-register | tuppence | GBP | GBP 464,124.15 | no | — |
-| feeds | switching | cve | tuppence | GBP | GBP 464,124.15 | no | — |
+| ico | feed | penalty-schema | tuppence | GBP | GBP 17,907,950.70 | no | isolated |
+| ico | supersede | penalty-schema | tuppence | GBP | GBP 1,128,446.21 | no | — |
+| feeds | feed | threat-register | tuppence | GBP | GBP 326,139.13 | no | isolated |
+| feeds | feed | cve | tuppence | GBP | GBP 437,107.34 | no | isolated |
+| twin | twin | forward-intel | tuppence | GBP | GBP 84,198,283.09 | no | isolated |
+| platform | agent-cage | twin-agent | tuppence | GBP | GBP 18.70 | no | baseline |
+| ico | switching | penalty-schema | tuppence | GBP | GBP 17,907,950.70 | no | — |
+| feeds | switching | threat-register | tuppence | GBP | could not look (section 6) | no | — |
+| feeds | switching | cve | tuppence | GBP | could not look (section 6) | no | — |
 
 - **ico/penalty-schema** — Publisher tags were observed when this artefact was composed; the recorded observation is replayed offline and during verification. It does not establish the publisher's current newest major. A fresh composition with the publisher present refreshes it.
-- **ico/penalty-schema** — basis: lm sourced from ICO (Information Commissioner's Office) real public fines (UK GDPR / Data Protection Act 2018 s157). warn/deny lef are editorial (schema doesn't carry frequency). Not sized to any subscriber: priced at the statutory cap.
-- **ico/penalty-schema supersede** — clock starts 2026-09-10; priced as of 2026-09-08. zero (as_of 2026-09-08 precedes the tag day 2026-09-10): the signed artefact's as-of is its newest signed input; only a re-composition --as-of a later day (the scheduled proposer's) grows this line; the pinned checkout carries no directory for v4.0.0, so the newer major's content is unread here: this line is priced from the signed tags alone, and no retirement to v4 is proposed until the ico pin reaches a commit that carries it
+- **ico/penalty-schema** — basis: lm sourced from ICO (Information Commissioner's Office) real public fines (UK GDPR / Data Protection Act 2018 s157). warn/deny lef are editorial (schema doesn't carry frequency). Scaled to a subscriber turnover of 861,741,000.00 GBP.
+- **ico/penalty-schema supersede** — clock starts 2026-09-10; priced as of 2026-10-03. the pinned checkout carries no directory for v4.0.0, so the newer major's content is unread here: this line is priced from the signed tags alone, and no retirement to v4 is proposed until the ico pin reaches a commit that carries it
 - **ico/penalty-schema** (supersede) — basis: the pinned line's own amount x (eol_ramp(since, as_of) - 1): the surcharge the feeds module's EOL ramp puts on a version its publisher has superseded, +1x per year behind and capped at +4x, where `since` is the day the newer major's signing tag was cut; zero on that day, printed with both dates, and never summed into the exposure the line itself is already in
 - **feeds/threat-register** — Publisher tags were observed when this artefact was composed; the recorded observation is replayed offline and during verification. It does not establish the publisher's current newest major. A fresh composition with the publisher present refreshes it.
-- **feeds/threat-register** — basis: payment-fraud / account-takeover via API abuse (fintech, FCA/PCI, availability+fraud flavour). lef sourced from DBIR financial-sector base rate + card-scheme fraud-loss reporting, editorial midpoint. MAGNITUDE UNSOURCED: the impact per event (5000.0, 25000.0, 90000.0) GBP is not in payload version v1, which predates the publisher's `lm_gbp` field; it is this converter's frozen copy of the adopter-keyed table that used to live in the SUBSCRIBER's own code (platform/feeds/to_fair_scenario.py THREAT_LM_GBP). From major 3 the number and its basis are in the payload. A named could-not-look (eco-system ticket 79 item 4), never a bare number.
-- **feeds/threat-register supersede** — clock starts 2026-09-01; priced as of 2026-09-08. 
-- **feeds/threat-register** (supersede) — basis: the pinned line's own amount x (eol_ramp(since, as_of) - 1): the surcharge the feeds module's EOL ramp puts on a version its publisher has superseded, +1x per year behind and capped at +4x, where `since` is the day the newer major's signing tag was cut; zero on that day, printed with both dates, and never summed into the exposure the line itself is already in
+- **feeds/threat-register** — basis: payment-fraud / account-takeover via API abuse (fintech, FCA/PCI, availability+fraud flavour). Frequency basis (editorial, read 2026-09-09): Annual loss-event frequency for this institution's headline threat. DBIR financial-sector base rate + 2026 UK fintech ATO-uptick roundup, editorial midpoint COULD NOT LOOK: the DBIR publishes sector breach-frequency ranges, not a rate for one named institution, and no run of this estate has counted events for these three. Editorial midpoints, labelled as such. Magnitude basis (editorial, read 2026-09-09): Impact per payment-fraud / account-takeover event for a UK fintech: direct fraud loss plus reimbursement, higher per event than retail PII and far below a health record. COULD NOT LOOK: no run of this estate has counted per-event losses for any institution in this register, and none of the three publishes one. These are the publisher's editorial bands, moved here from platform/feeds/to_fair_scenario.py's THREAT_LM_GBP unchanged so that the move itself moves no price. What would close it: a per-sector per-event loss figure with a published source and a date, or an institution's own signed incident cost.
 - **feeds/cve** — Publisher tags were observed when this artefact was composed; the recorded observation is replayed offline and during verification. It does not establish the publisher's current newest major. A fresh composition with the publisher present refreshes it.
-- **feeds/cve** — basis: istio/istiod CVSS 9.8 (critical), epss=0.55. Source: GHSA-yyyy (illustrative, shape-accurate to a real istiod RCE class). headline entry CVE-2024-8888-istiod of 4 (largest mode-product entry, mode lef x mode lm -- an ordinal proxy, not fair.py's PERT expectation; ticket 75 Q4); not priced by this line: CVE-2024-1234-envoy, CVE-2023-4567-curl, CVE-2023-9999-openssl.
+- **feeds/cve** — basis: Apache/Log4j2 CVSS 10.0 (critical), epss=0.99999. Source: CISA KEV; NVD CVE-2021-44228; FIRST EPSS 2026-10-03. headline entry CVE-2021-44228 of 2 (largest mode-product entry, mode lef x mode lm -- an ordinal proxy, not fair.py's PERT expectation; ticket 75 Q4); not priced by this line: CVE-2021-45046. Scanned intersection 2; 7 scanned CVE(s) outside the pinned feed carry no amount.
+- **twin/forward-intel** — basis: payment-fraud / account-takeover via API abuse (fintech, FCA/PCI, availability+fraud flavour). Frequency basis (editorial, read 2026-09-09): Annual loss-event frequency for this institution's headline threat. DBIR financial-sector base rate + 2026 UK fintech ATO-uptick roundup, editorial midpoint COULD NOT LOOK: the DBIR publishes sector breach-frequency ranges, not a rate for one named institution, and no run of this estate has counted events for these three. Editorial midpoints, labelled as such. Magnitude basis (editorial, read 2026-09-09): Impact per payment-fraud / account-takeover event for a UK fintech: direct fraud loss plus reimbursement, higher per event than retail PII and far below a health record. COULD NOT LOOK: no run of this estate has counted per-event losses for any institution in this register, and none of the three publishes one. These are the publisher's editorial bands, moved here from platform/feeds/to_fair_scenario.py's THREAT_LM_GBP unchanged so that the move itself moves no price. What would close it: a per-sector per-event loss figure with a published source and a date, or an institution's own signed incident cost.
+- **twin/forward-intel** — rests on evidence grade 3, the weakest grade behind the twin's price (its propagation path, its valuation and the path that admits it to the cash flow; ADR-0032)
+- **platform/twin-agent** — basis: Frequency basis (published, read 2026-09-26): Annual frequency with which a marketplace action this institution's scheduled twin sweep runs by floating tag is compromised at that tag, taken as the frequency the sweep's write credential is misused. N x C / M with N = 1 (actions/checkout@v4, the one distinct marketplace action the served twin-sweep.yml references, read at tuppence origin/main 5deffe6 on 2026-09-26); C = 2 for the min and the mode (the marketplace actions CISA's alert of 2025-03-18 names as compromised in 2025: tj-actions/changed-files, CVE-2025-30066, used in over 23,000 repositories per StepSecurity's 2025-03-14 report, and reviewdog/action-setup, CVE-2025-30154) and 7 for the max (those two plus the five downstream reviewdog actions Wiz named on 2025-03-17 as compromised through action-setup: action-shellcheck, action-composite-template, action-staticcheck, action-ast-grep, action-typos); M = 23,757 marketplace actions counted over four months by Chaiwut and Nikiforakis (IEEE SecDev 2025). 8.42e-05 to 0.000295 events a year. Grade 3 on the estate's evidence ladder: published work, not observed here. COULD NOT LOOK: No publisher counts credential MISUSE after a compromise, so this rate counts every published compromise of a floating-tag marketplace action as a misuse of the sweep's token: an upper bound for that door, and the only door with a published count. Not in the rate: the hub checkout at `main` and `pip install pyyaml`, dependencies the served sweep runs unpinned today (eco-system ticket 143 pins both by hash, and hash-pinning closes the floating-tag door this rate counts); a maintainer's own compromised account pushing a workflow (GhostAction, GitGuardian, 2025-09-05: 327 users, 817 repositories, 3,325 secrets), which is a human credential, not the scheduled agent's; and a pwn request on the repository's own workflow (the Nx s1ngularity entry point, 2025-08-26). The count is one year's (2025): no second year is counted, so the min and mode are the two actions with a CVE and the max the seven Wiz names. No run of this estate has observed a misuse. What would close it: an institution's own dated incident record (grade 2), or a published per-repository annual rate of CI credential misuse.
+- **platform/twin-agent** (`agent-cage`, subject `twin-agent`) — a rung for the twin agent, not the Namespace: `baseline`, picked by selection-policy version 1.1.0 over residuals derived from `platform-twin-agent-table@1.0.0` (baseline GBP 18.70, restricted GBP 18.70, quarantine GBP 18.70, isolated GBP 0.00). Loss magnitude: the gap between this party's residual at `baseline` and at `isolated` on its own twin line (GBP 57,254,832.50 a year) over the gate's detection window of 1.0 day(s) (the hub's .github/workflows/truth.yml `schedule: cron: '47 5 * * *'` (once a day), read 2026-09-26 at policy-as-versioned-flux/policy-as-versioned-flux origin/main 9c3b1f22). Frequency: threat-register@v4. Run cost GBP 0.00 at every rung, outside the selection. The rung is what the twin-sweep writer job reads (eco-system ticket 143 item 4).
 - **ico/penalty-schema** (switching) — basis: re-composed with this publisher's feed edges dropped
 - **feeds/threat-register** (switching) — basis: re-composed with this publisher's feed edges dropped
 - **feeds/cve** (switching) — basis: re-composed with this publisher's feed edges dropped
 
-- **ico/penalty-schema** carries 4 priced hole(s) inside that amount: `nist/pl-2` GBP 2,711,937.31, `nist/ra-3` GBP 2,711,937.31, `nist/ca-2` GBP 1,807,958.20, `nist/ir-8` GBP 1,807,958.20
-- **feeds/cve** is itself a priced hole: untagged-pin `feeds/cve@v2` — no signed tag cve/v2.x.y (or v2.x.y) exists on the feeds parent's checkout, which carries 3 tag(s) of its own, priced at the whole entry (GBP 241,549.84).
+- **ico/penalty-schema** carries 4 priced hole(s) inside that amount: `nist/pl-2` GBP 5,372,385.21, `nist/ra-3` GBP 5,372,385.21, `nist/ca-2` GBP 3,581,590.14, `nist/ir-8` GBP 3,581,590.14
+- **feeds/cve** records a closed priced hole: untagged-pin `feeds/cve@v3` — tag cve/v3.0.0 on the feeds checkout carries a signature block; the hole the last signed artefact recorded is closed, priced at the whole entry (GBP 437,107.34).
 
 **Exposure** — booked under perspective `tuppence` in `GBP`.
 
-- Total: GBP 9,503,915.17
+- Total: GBP 102,869,480.25
   - What this number is: an ordinal, auditable comparison under one perspective; not an expected annual loss.
   - Every figure under this section is derived from published feeds through published converters, and is reproducible from the signed inputs named beside it -- that is what AUDITABLE means here. What it is NOT: the loss-event frequencies and several loss magnitudes it rests on are editorial bands carrying a named could-not-look rather than counted rates (ico penalty-schema major 4, feeds threat-register major 3), so the total is usable for COMPARING one version, one pin or one control set against another under this one perspective, and not as a number to reserve against. Totals under two different perspectives are two balance sheets and are never added (ADR-0021). Ticket 75 Q4 (a), eco-system ticket 79 item 10.
-- Aggregate of the selected-tier residuals: GBP 190,078.30 against a tolerance of GBP 15,000.00 -- BREACHES the declared aggregate.
-  - `penalty-schema` at tier `isolated`: GBP 180,795.82
-  - `threat-register` at tier `isolated`: GBP 4,451.49
-  - `cve` at tier `isolated`: GBP 4,831.00
+- Aggregate of the selected-tier residuals: GBP 2,057,389.61 against a tolerance of GBP 15,000.00 -- BREACHES the declared aggregate.
+  - `penalty-schema` at tier `isolated`: GBP 358,159.01
+  - `threat-register` at tier `isolated`: GBP 6,522.78
+  - `cve` at tier `isolated`: GBP 8,742.15
+  - `forward-intel` at tier `isolated`: GBP 1,683,965.66
 - Attachment: GBP 15,000.00
-- Regimes (3):
-  - `uk-gdpr` from ico feed `penalty-schema` v3: GBP 9,039,791.02, 4 control(s) named
-  - `threat-register` from feeds feed `threat-register` v1: GBP 222,574.31, 0 control(s) named
-  - `cve` from feeds feed `cve` v2: GBP 241,549.84, 0 control(s) named
+- Regimes (4):
+  - `uk-gdpr` from ico feed `penalty-schema` v3: GBP 17,907,950.70, 4 control(s) named
+  - `threat-register` from feeds feed `threat-register` v4: GBP 326,139.13, 0 control(s) named
+  - `cve` from feeds feed `cve` v3: GBP 437,107.34, 0 control(s) named
+  - `forward-intel` from twin feed `forward-intel` 1.0.0: GBP 84,198,283.09, 0 control(s) named
 
 ### Floor comparison
 
@@ -106,9 +129,10 @@ Floor: **unknown → absent**. floor-only counterfactual at current publisher, s
 
 Could not look: previous floor was not recorded; absence of history is not an absent floor.
 
-- ico/penalty-schema: unknown → isolated; retained residual unknown → GBP 180,795.82; delta unknown.
-- feeds/threat-register: unknown → isolated; retained residual unknown → GBP 4,451.49; delta unknown.
-- feeds/cve: unknown → isolated; retained residual unknown → GBP 4,831.00; delta unknown.
+- ico/penalty-schema: unknown → isolated; retained residual unknown → GBP 358,159.01; delta unknown.
+- feeds/threat-register: unknown → isolated; retained residual unknown → GBP 6,522.78; delta unknown.
+- feeds/cve: unknown → isolated; retained residual unknown → GBP 8,742.15; delta unknown.
+- twin/forward-intel: unknown → isolated; retained residual unknown → GBP 1,683,965.66; delta unknown.
 
 Instrument: `platform-cage-tiers@1.0.0`. selection evidence, not an enacted Namespace tier; platform reductions are self-declared calibration, not measured effectiveness.
 
@@ -118,11 +142,11 @@ Source: `composed/HEADER.yaml` → `baseline`, `selected-controls`, `holes`; `co
 
 - Baseline: **MODERATE**
 - Controls selected: 287
-- Controls with no implementation behind them (`holes[]`): 285 — recorded: 285
+- Controls with no implementation behind them (`holes[]`): 285 — closed: 1, recorded: 284
 - So 2 of 287 selected controls have an implementation in this artefact. A hole is priced, never refused (ADR-0020).
 - `refusals[]`: 0
 - `restatements[]`: 0
-- `deltas[]`: 0
+- `deltas[]`: 2
 - `ungoverned[]`: 2
 
 ## 6. What this handbook cannot say
@@ -138,17 +162,26 @@ Source: `composed/evidence.json` → `limits[]`, plus every field this render lo
 
 One recorded limit is deliberately not stated above: `publisher-clone-absent` records which publisher clones the run that re-derived this artefact could read, which is a fact about that run and not about the artefact; a page that stated it could not re-render byte-identically with a publisher absent, and re-rendering with a publisher absent is what `composition.py verify` holds this page to (ticket 45). `composed/evidence.json` records it in full.
 
-**6 field(s) this render looked for in the artefact and did not find.** Where a field is absent this page states nothing in its place — no default prose, no zero (ADR-0020: a missing instrument refuses; it is never invented).
+**15 field(s) this render looked for in the artefact and did not find.** Where a field is absent this page states nothing in its place — no default prose, no zero (ADR-0020: a missing instrument refuses; it is never invented).
 
 - `spec of cage-isolated` (in `composed/bottom-rung-priorityclass.yaml`) — this object declares no mutation, validation or generation this page can read
 - `spec of cage-baseline-5-0-0` (in `composed/policies/v5.0.0/cage-baseline.yaml`) — this object declares no mutation, validation or generation this page can read
 - `spec of cage-isolated-5-0-0` (in `composed/policies/v5.0.0/cage-isolated.yaml`) — this object declares no mutation, validation or generation this page can read
 - `spec of cage-quarantine-5-0-0` (in `composed/policies/v5.0.0/cage-quarantine.yaml`) — this object declares no mutation, validation or generation this page can read
 - `spec of cage-restricted-5-0-0` (in `composed/policies/v5.0.0/cage-restricted.yaml`) — this object declares no mutation, validation or generation this page can read
-- `selection-policy` (in `composed/HEADER.yaml`) — no versioned rule is recorded as having chosen the tier, so this page names none
+- `spec of cage-baseline-6-0-0` (in `composed/policies/v6.0.0/cage-baseline.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-isolated-6-0-0` (in `composed/policies/v6.0.0/cage-isolated.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-quarantine-6-0-0` (in `composed/policies/v6.0.0/cage-quarantine.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-restricted-6-0-0` (in `composed/policies/v6.0.0/cage-restricted.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-baseline-7-0-0` (in `composed/policies/v7.0.0/cage-baseline.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-isolated-7-0-0` (in `composed/policies/v7.0.0/cage-isolated.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-quarantine-7-0-0` (in `composed/policies/v7.0.0/cage-quarantine.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of cage-restricted-7-0-0` (in `composed/policies/v7.0.0/cage-restricted.yaml`) — this object declares no mutation, validation or generation this page can read
+- `prices[7].amount` (in `composed/evidence.json`) — feeds/threat-register could not be priced: missing instrument: twin/forward-intel/v1/feed.json supplies no lef and its derived_from names 0 subscribed feeds that price one (none); a borrowed frequency has to be named, not guessed at
+- `prices[8].amount` (in `composed/evidence.json`) — feeds/cve could not be priced: missing instrument: twin/forward-intel/v1/feed.json supplies no lef and its derived_from names 0 subscribed feeds that price one (none); a borrowed frequency has to be named, not guessed at
 
 Two things this page can never tell you, by construction, and neither is a field of the artefact: whether the rules above are the **right** rules, and whether a human read and accepted the change that produced them. The first is the editorial review ([ADR-0007](https://github.com/policy-as-versioned-flux/policy-as-versioned-flux/blob/main/docs/adr/0007-agent-assisted-editorial-governance.md)); the second is the pull request this artefact arrived in.
 
 ---
 
-Counted from the artefact: 5 publisher(s), 17 installed object(s), 17 recorded member(s), 8 price(s), 287 selected control(s), 285 hole(s), 2 recorded limit(s), 6 named absence(s).
+Counted from the artefact: 5 publisher(s), 34 installed object(s), 34 recorded member(s), 9 price(s), 287 selected control(s), 285 hole(s), 2 recorded limit(s), 15 named absence(s).
