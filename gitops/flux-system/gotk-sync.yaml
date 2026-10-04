@@ -44,6 +44,14 @@ spec:
   # from the gitops/ directory itself, so gitops/ IS that repo's root -- and up.sh applies its own
   # inline Kustomization with ./apps for exactly that reason, so this line does not touch the
   # touring demo.
+  # Apps wait for every signed composed route to report Flux Ready.
+  # Ready establishes reconciliation order; actual webhook mutation remains
+  # a separate cluster observation, not a guarantee from this dependency.
+  dependsOn:
+    - name: composed-v5-0-0
+    - name: composed-v6-0-0
+    - name: composed-v7-0-0
+    - name: composed-machinery
   path: ./gitops/apps
   prune: true   # prune-on-retire: remove what git no longer declares
   wait: true    # health-gate the reconcile

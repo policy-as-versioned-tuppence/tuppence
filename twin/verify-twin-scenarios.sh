@@ -131,13 +131,21 @@ else:
     # on the absent half only would pass a scenario that priced NOTHING identically to one that
     # priced the value-chain shock. So the artefact has to say in its own words which half it
     # carries.
-    consequence = str(docs[penalty.stem].get("note", "")) + str(docs[penalty.stem].get("question", ""))
-    said = "not yet priced" in consequence.lower() or "not priced" in consequence.lower()
-    out("PASS" if said else "FAIL",
-        "%s says which half of the seam it carries: the consequence is declared and its note says "
-        "in its own words that it is not priced" % penalty.name
-        + ("" if said else "; the note claims neither a price nor the absence of one, so a reader "
-                          "cannot tell the post-penalty value-chain shock is unpriced"))
+    sys.path.insert(0, str(HERE))
+    from scenario_pricing import InvalidDeclaration, validate_consequence
+    party_basis = yaml.safe_load((HERE.parent / "party.yaml").read_text()) or {}
+    org_dir = HERE / "orgs" / ORG
+    perspectives = [yaml.safe_load(p.read_text()) or {}
+                    for p in sorted((org_dir / "perspectives").glob("*.yaml"))]
+    edges = [yaml.safe_load(p.read_text()) or {}
+             for p in sorted((org_dir / "edges").glob("*.yaml"))]
+    try:
+        basis = validate_consequence(docs[penalty.stem], perspectives, edges,
+                                     (party_basis.get("appetite") or {}).get("pricing_threshold"))
+    except InvalidDeclaration as exc:
+        out("FAIL", "%s consequence declaration: %s" % (penalty.name, exc))
+    else:
+        out("PASS", "%s: %s" % (penalty.name, basis))
 
 # 5. the supply-shock headline is a scenario here and never a news-feed entry (amendment C13).
 shock = [n for n, d in docs.items() if str(d.get("class")) == "supply-shock"]
