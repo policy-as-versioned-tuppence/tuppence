@@ -1,6 +1,6 @@
 {
   "apps_source": {
-    "commit": "d8dead25e0e5e275172640b1a637562e45edb15d",
+    "commit": "f575dc12de130c444d98a831de0ca21fd68b9c46",
     "path": "gitops/apps",
     "repository": "https://github.com/policy-as-versioned-tuppence/tuppence",
     "signature": {
@@ -9,11 +9,11 @@
       "identity": "https://github.com/policy-as-versioned-tuppence/tuppence/.github/workflows/cut-release.yml@refs/heads/main",
       "issuer": "https://token.actions.githubusercontent.com",
       "rekor": true,
-      "rekor_entry": "https://rekor.sigstore.dev/api/v1/log/entries?logIndex=3075511590",
-      "tlog_index": "3075511590"
+      "rekor_entry": "https://rekor.sigstore.dev/api/v1/log/entries?logIndex=3077499916",
+      "tlog_index": "3077499916"
     },
-    "tag": "v3.0.1",
-    "tag_object": "bc6ee99a1cda20e9fe0365feb25c3086aad7f5a5"
+    "tag": "v4.0.0",
+    "tag_object": "17070ad568397bb7c394f80cb0d51ebcf560089e"
   },
   "binding": "The complete exact tagged apps graph and primary reports reproduce images.json; no release or cluster activation is asserted.",
   "cached_database_unchanged": true,
