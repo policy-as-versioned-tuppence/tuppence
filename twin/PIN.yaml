@@ -7,9 +7,18 @@
 #
 # `tag_cut: false` because the tag does not exist yet. A signed tag is cut by a release workflow
 # with gitsign, never locally, so until the owner dispatches that workflow, `world_ref` in
-# orgs/<org>/meta.yaml is the only pin with bytes behind it. When the tag lands, flip this and
+# orgs/<org>/meta.yaml pins the world bytes and hub_commit pins the published producer code. When the tag lands, flip this and
 # let Renovate's git-refs datasource bump twin_version and twin_tag together, exactly as
 # gitops/platform/platform-pin.yaml is bumped today.
 twin_version: 0.1.0
 twin_tag: twin/v0.1.0
 tag_cut: false
+
+# The hub commit whose `twin` package renders this overlay (eco-system ticket 143; ADR-0031
+# point 4). twin-sweep.yml's read-only twin job checks the hub out at exactly this commit and
+# refuses to run if the checkout it got is any other. Until 2026-09-26 the sweep checked the hub
+# out at `main`, so whatever landed on another party's default branch ran here with this
+# repository's write token. This repository moves the commit by a reviewed pull request, never by
+# a clock. When the signed `twin/v0.1.0` tag is cut, the tag replaces the commit here and in the
+# checkout, and `tag_cut` above flips.
+hub_commit: 5bc47331a536476f3580542be794908f5053f816

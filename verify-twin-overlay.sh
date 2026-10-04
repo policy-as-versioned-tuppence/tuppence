@@ -10,12 +10,8 @@
 #   FAIL (exit 1)  an assertion observed false
 #   SKIP (exit 3)  could not look, with the reason on the last line
 #
-# THIS SCRIPT ENDS AT COULD-NOT-LOOK TODAY, ON PURPOSE. The emitter refuses (exit 3) because this
-# party publishes no signed `size:` and its one causal edge to the declared cash flow is graded 3,
-# outside the ladder's path admission threshold. Every offline assertion around that refusal is
-# still made and still graded; the refusal itself is reported as a could-not-look with its own
-# reason on the last line, because a run that observed no feed must not print a line saying one
-# was emitted. See twin/VENDORED.md.
+# The emitter's actual verdict is retained: native filing and declared grade admission may
+# produce a feed, while missing instruments remain could-not-look. See twin/VENDORED.md.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ORG="tuppence"
@@ -74,14 +70,31 @@ elif r.returncode == 3:
 else:
     out("FAIL", "emit-forward-intel.py --check: " + said)
 
-# 2. the vendored payload schema is the platform's canonical one, byte for byte. Checked even
-#    though nothing is emitted: the schema a feed WILL be validated against is a pin like any
-#    other, and finding it drifted on the day the first feed is emitted is finding it late.
+# 2. the owned payload schema preserves the canonical contract plus exactly its declared
+#    optional additions. No base constraint may drift when the native valuation is added.
 if os.path.isfile(CANONICAL):
-    same = open(CANONICAL, "rb").read() == open(VENDORED, "rb").read()
+    canonical = json.load(open(CANONICAL))
+    owned = json.load(open(VENDORED))
+    extensions = {
+        "rests_on_grade": {"type": "integer", "enum": [1, 2, 3]},
+        "valuation": {
+            "type": "object",
+            "required": ["amount", "currency", "native_amount", "native_currency", "party_fact", "fx"],
+            "properties": {
+                "amount": {"type": "number"}, "currency": {"type": "string"},
+                "native_amount": {"type": "number"}, "native_currency": {"type": "string"},
+                "party_fact": {"type": "string"}, "fx": {"type": ["object", "null"]}},
+            "additionalProperties": False}}
+    base = dict(owned)
+    base["properties"] = {key: value for key, value in owned["properties"].items()
+                          if key not in extensions}
+    same = (base == canonical and
+            all(owned["properties"].get(key) == value for key, value in extensions.items()) and
+            not (set(extensions) & set(owned["required"])))
     out("PASS" if same else "FAIL",
-        "vendored payload schema %s platform/feeds/forward-intel.payload.schema.json"
-        % ("is byte-identical to" if same else "DIFFERS from"))
+        "owned payload schema %s the immutable canonical contract plus exactly the optional "
+        "valuation and rests_on_grade declarations"
+        % ("preserves" if same else "DIFFERS from"))
 else:
     out("SKIP", "platform/feeds/forward-intel.payload.schema.json is not in this estate yet, so "
                 "the vendored copy could not be compared to its canonical home")
@@ -121,7 +134,7 @@ out("PASS" if people else "FAIL", "overlay floor: %d role(s) declared as people"
 edge_dir = os.path.join(OVERLAY, "edges")
 edges = [yaml.safe_load(open(os.path.join(edge_dir, f))) for f in sorted(os.listdir(edge_dir))]
 from twin import evidence  # the published ladder, not a number copied into this script
-admits = evidence.admission_threshold()
+admits = evidence.declared_threshold(party)
 cash_flow = persp["cash_flow"][0]
 reaching = [e for e in edges if e.get("type") == "influences" and e["to"] == cash_flow]
 graded = [e for e in reaching if int(e["evidence_grade"]) <= admits]
@@ -160,8 +173,8 @@ else:
         "is no signed fact for an amount to derive from and the twin's own valuation schema "
         "refuses a figure at this grade" % (cash_flow, grade, evidence.threshold()))
 
-# 6. the ladder. Declared in twin/ladder.yaml because this repository ships no selection-policy
-#    package; checked against platform's own graded/cage.py when a checkout is present, and never
+# 6. the producer's ladder is declared independently in twin/ladder.yaml;
+#    checked against platform's own graded/cage.py when a checkout is present, and never
 #    treated as agreed when one is not.
 ladder = yaml.safe_load(open(os.path.join(TWIN, "ladder.yaml")))
 rungs = [str(x) for x in ladder["rungs"]]

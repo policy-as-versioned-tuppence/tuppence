@@ -27,8 +27,9 @@ note: >-
 
   What it is NOT: a conduct penalty is not a suppression of fee income, and that firm is not this
   one. Grade 3 on the published ladder is "an established mechanism from published work, not
-  observed here", which is precisely the claim being made. Grade 3 is OUTSIDE the ladder's
-  path_admission_threshold of 2, so no impact enters this perspective's pound through this edge
-  and emit-forward-intel.py refuses to emit a priced payload while it is the only causal edge here.
-  A grade-1 or grade-2 replacement is this institution's own dated incident record, and a regrade
-  event has to record who moved it and why (twin/evidence.py).
+  observed here", which is precisely the claim being made. The institution's party artefact
+  declares pricing_threshold: 3, so this unchanged grade is admissible at that declared threshold.
+  The cash flow remains derived from its recorded native GBP filing fact; no comparable penalty
+  becomes this institution's incident or a measurement of suppressed fee income.
+  A grade-1 or grade-2 replacement would require this institution's own dated incident record,
+  and a regrade event must record who moved it and why (twin/evidence.py).

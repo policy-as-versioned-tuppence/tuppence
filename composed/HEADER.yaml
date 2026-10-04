@@ -6,8 +6,8 @@ policy-as-versioned.dev/composed: true
 parents:
 - party: platform
   kind: implementations
-  version: 4.0.0
-  sha: 557c1538fe022c784ea4ffb345c92d2e4b11fe71
+  version: 5.0.0
+  sha: 703eff6aee959843c4160aa54fd03413f62858cc
 - party: nist
   kind: controls
   version: 1.1.0
@@ -20,14 +20,18 @@ parents:
 - party: feeds
   kind: feed
   name: threat-register
-  version: v1
-  sha: 50a0b330a730f4f9ee9520561b0c05c8be4c9268
+  version: v4
+  sha: 37dfe4a2de50f1a1fd7aeb6348d819373188e0e6
 - party: feeds
   kind: feed
   name: cve
-  version: v2
-  sha: ddace466f0cc410f228aeff3b4c5704eeea15a30
+  version: v3
+  sha: 37dfe4a2de50f1a1fd7aeb6348d819373188e0e6
 baseline: MODERATE
+declared-engine:
+  engine: kyverno
+  version: 1.18.2
+  file: gitops/engine/kyverno.yaml
 floor-comparison:
   schema: 1
   before:
@@ -66,7 +70,6 @@ holes:
 - ac-21
 - ac-22
 - ac-3
-- ac-4
 - ac-5
 - ac-6.1
 - ac-6.10
@@ -618,14 +621,14 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: 36b53400d4aa5e8af20da5d9944abbf9c00ba6c4f79d0b41c929de1927ccb6d1
+  after: 65b663036064ca9c76d339b133615a3055e76b074a84d1726ddf3e6752bf3846
   before:
     header:
       parents:
       - party: platform
         kind: implementations
-        version: 4.0.0
-        sha: 557c1538fe022c784ea4ffb345c92d2e4b11fe71
+        version: 5.0.0
+        sha: 703eff6aee959843c4160aa54fd03413f62858cc
       - party: nist
         kind: controls
         version: 1.1.0
@@ -638,13 +641,13 @@ comparison-inputs:
       - party: feeds
         kind: feed
         name: threat-register
-        version: v1
-        sha: 50a0b330a730f4f9ee9520561b0c05c8be4c9268
+        version: v4
+        sha: 37dfe4a2de50f1a1fd7aeb6348d819373188e0e6
       - party: feeds
         kind: feed
         name: cve
-        version: v2
-        sha: ddace466f0cc410f228aeff3b4c5704eeea15a30
+        version: v3
+        sha: 37dfe4a2de50f1a1fd7aeb6348d819373188e0e6
       baseline: MODERATE
       holes:
       - ac-1
@@ -675,7 +678,6 @@ comparison-inputs:
       - ac-21
       - ac-22
       - ac-3
-      - ac-4
       - ac-5
       - ac-6.1
       - ac-6.10
@@ -1241,17 +1243,22 @@ comparison-inputs:
       name: threat-register
       proposed_tier: isolated
       hole: null
-    - kind: supersede
-      source: feeds
-      name: threat-register
-      proposed_tier: null
-      hole: null
     - kind: feed
       source: feeds
       name: cve
       proposed_tier: isolated
       hole:
-        status: recorded
+        status: closed
+    - kind: twin
+      source: twin
+      name: forward-intel
+      proposed_tier: isolated
+      hole: null
+    - kind: agent-cage
+      source: platform
+      name: twin-agent
+      proposed_tier: baseline
+      hole: null
     - kind: switching
       source: ico
       name: penalty-schema
@@ -1280,35 +1287,38 @@ vendored-feeds:
     penalty-schema/v3/feed.json: e23318cb9b580b5e9bde3621720197af08aaceb7510e27b3c20d10b6fe783cda
 - party: feeds
   name: threat-register
-  version: v1
-  path: composed/feeds/feeds/threat-register/v1
-  sha: 50a0b330a730f4f9ee9520561b0c05c8be4c9268
+  version: v4
+  path: composed/feeds/feeds/threat-register/v4
+  sha: 37dfe4a2de50f1a1fd7aeb6348d819373188e0e6
   files:
-    party.yaml: 204f41b1138803ed5a43f7a7f910627d428d9f3ead7232c48b926da62f427e48
-    threat-register/to_fair_scenario.py: 10e2f5b412b09a16ff8bff2e1fe108938c79b25ac20b95b4047b4e17631bcbe7
-    threat-register/v1/feed.json: 50af335e60b247d2a202fa747fd3a2b80c485fc587896dc0ab4841f0e54a8b60
+    party.yaml: 6d5211a16fe5bfbe6bd28fc0f4c876f9de8fca8a2a43d2750a4f855610ee0823
+    threat-register/to_fair_scenario.py: 5b58162dd42404c0afc0ad3d063aeb4cd71a7076baca7ed7f7875e781d509d41
+    threat-register/v4/feed.json: e88332226c882103e469b43770bd177ff10384500825236f2fcdaf11dda168fd
 - party: feeds
   name: cve
-  version: v2
-  path: composed/feeds/feeds/cve/v2
-  sha: ddace466f0cc410f228aeff3b4c5704eeea15a30
+  version: v3
+  path: composed/feeds/feeds/cve/v3
+  sha: 37dfe4a2de50f1a1fd7aeb6348d819373188e0e6
   files:
-    cve/to_fair_scenario.py: 10e2f5b412b09a16ff8bff2e1fe108938c79b25ac20b95b4047b4e17631bcbe7
-    cve/v2/feed.json: 59cea1eb574ce459e839e37f35a1888e90669317df24890c52b008cb6a851595
-    party.yaml: 204f41b1138803ed5a43f7a7f910627d428d9f3ead7232c48b926da62f427e48
+    cve/to_fair_scenario.py: b83f29a6778a53dec94c752f6101a80adeb788a4f1f1d20ac2584a5d6ff34b7b
+    cve/v3/feed.json: bb56231c17a3ba513be0ec15de07b2bcfa438c9047b06edb3a402dac051d28f5
+    party.yaml: 6d5211a16fe5bfbe6bd28fc0f4c876f9de8fca8a2a43d2750a4f855610ee0823
+selection-policy: 1.1.0
 exposure:
   perspective: tuppence
   currency: GBP
   attachment:
     amount: 15000.0
     currency: GBP
-  total: 9503915.171854898
+  total: 102869480.25094849
+  priced_subtotal: 102869480.25094849
+  unpriced_lines: []
   ordinal: an ordinal, auditable comparison under one perspective; not an expected annual loss
   ordinal_basis: 'Every figure under this section is derived from published feeds through published converters, and is reproducible from the signed inputs named beside it -- that is what AUDITABLE means here. What it is NOT: the loss-event frequencies and several loss magnitudes it rests on are editorial bands carrying a named could-not-look rather than counted rates (ico penalty-schema major 4, feeds threat-register major 3), so the total is usable for COMPARING one version, one pin or one control set against another under this one perspective, and not as a number to reserve against. Totals under two different perspectives are two balance sheets and are never added (ADR-0021). Ticket 75 Q4 (a), eco-system ticket 79 item 10.'
   aggregate:
     perspective: tuppence
     currency: GBP
-    selected_tier_residual_total: 190078.30343709813
+    selected_tier_residual_total: 2057389.605018972
     tolerance: 15000.0
     tolerance_currency: GBP
     tolerance_in_reporting_currency: null
@@ -1317,13 +1327,16 @@ exposure:
     lines:
     - name: penalty-schema
       tier: isolated
-      residual: 180795.82039528535
+      residual: 358159.013938514
     - name: threat-register
       tier: isolated
-      residual: 4451.486238056754
+      residual: 6522.782503289682
     - name: cve
       tier: isolated
-      residual: 4830.996803756019
+      residual: 8742.146755896614
+    - name: forward-intel
+      tier: isolated
+      residual: 1683965.6618212715
     not_tiered: []
     basis: 'The sum of what each priced line''s OWN selected tier leaves, through fair.sum_prices, against the ONE annual-aggregate quantity appetite.tolerance declares (ticket 75 Q4). The ladder picks a tier per line against that number, so lines that each fit can breach it together; this is where that shows. Not a refusal: there is no gate (ADR-0020), a breach is priced and shown. Every priced line carries a selected tier.'
   regimes:
@@ -1331,29 +1344,35 @@ exposure:
     source: ico
     feed: penalty-schema
     version: v3
-    amount: 9039791.01976426
+    amount: 17907950.696925685
     controls:
     - source: nist
       id: pl-2
-      amount: 2711937.3059292776
+      amount: 5372385.209077706
     - source: nist
       id: ra-3
-      amount: 2711937.3059292776
+      amount: 5372385.209077706
     - source: nist
       id: ca-2
-      amount: 1807958.203952852
+      amount: 3581590.1393851372
     - source: nist
       id: ir-8
-      amount: 1807958.203952852
+      amount: 3581590.1393851372
   - name: threat-register
     source: feeds
     feed: threat-register
-    version: v1
-    amount: 222574.31190283748
+    version: v4
+    amount: 326139.1251644838
     controls: []
   - name: cve
     source: feeds
     feed: cve
-    version: v2
-    amount: 241549.84018780073
+    version: v3
+    amount: 437107.3377948303
+    controls: []
+  - name: forward-intel
+    source: twin
+    feed: forward-intel
+    version: 1.0.0
+    amount: 84198283.0910635
     controls: []

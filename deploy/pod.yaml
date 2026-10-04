@@ -1,4 +1,4 @@
-# A real tuppence workload manifest, pinned to policy-version 5.0.0 --
+# A real tuppence workload manifest, pinned to policy-version 7.0.0 --
 # platform/shift-left/ci-check.py's target resource (see
 # .github/workflows/shift-left.yml).
 #
@@ -19,7 +19,7 @@
 # OUTPUT (ADR-0022); a tier declared here would be clobbered.
 apiVersion: v1
 kind: Pod
-metadata: { name: payments-svc, labels: { "policy-as-versioned.dev/policy-version": "5.0.0" } }
+metadata: { name: payments-svc, labels: { "policy-as-versioned.dev/policy-version": "7.0.0" } }
 spec:
   securityContext: { runAsNonRoot: true }
   containers: [{ name: c, image: nginx, securityContext: { readOnlyRootFilesystem: true } }]

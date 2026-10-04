@@ -1,0 +1,17 @@
+# The authentic dated FX instrument used by twin/emit-forward-intel.py.
+# This verified-source declaration is outside gitops/apps and installs no policy.
+# A missing conversion date remains a named missing instrument; no rate is extrapolated.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: fx
+  namespace: flux-system
+  annotations:
+    policy-as-versioned.dev/gitsign-identity-regexp: ^https://github\.com/policy-as-versioned-feeds/feeds/\.github/workflows/cut-release\.yml@refs/heads/(main|release/[0-9]+\.[0-9]+\.x)$
+    policy-as-versioned.dev/gitsign-issuer: https://token.actions.githubusercontent.com
+spec:
+  interval: 5m
+  url: https://github.com/policy-as-versioned-feeds/feeds
+  ref:
+    tag: fx/v1.1.0
+    commit: 974e73514e0d8d4cad2e6906acf51d1cc27028b3

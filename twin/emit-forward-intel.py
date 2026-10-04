@@ -6,23 +6,16 @@ ADR-0021 (the seam). The twin emits a **scenario**; the estate annualises it wit
 versioned selection policy picks the tier. So this script carries no frequency, no *selected* tier
 and -- ever -- no recommended action.
 
-WHAT IS DIFFERENT HERE FROM DRIFTWOOD'S COPY, and it is the whole point of eco-system ticket 64.
-driftwood can emit: its party artefact signs a `size.turnover`, so its perspective carries an
-amount, and it holds one grade-2 causal edge from its own dated incident record, so an impact may
-enter the pound. This institution can do neither today:
+Ticket 144 records the native GBP turnover and filing date on `party.yaml`; the perspective
+re-derives its cash flow from that fact through its declared share and periods. The institution's
+own `pricing_threshold` is read from the party artefact. Grade-3 comparable published work remains
+grade 3 and is admitted only where that actual declaration permits it; no comparable regulatory
+event becomes this institution's observed incident.
 
-  1. `party.yaml` publishes no `size:` block at all, so no valuation can derive from a signed
-     party fact and the perspective declares its cash flow with no amount (schema: a valuation
-     outside the pricing threshold may not carry one).
-  2. the one causal edge reaching the declared cash flow is graded 3 -- arithmetic on a comparable
-     firm's published regulatory record, which is "published work, not observed here" -- and the
-     ladder's `path_admission_threshold` is 2.
-
-So this script REFUSES with exit 3, could-not-look, and names both reasons. It does not emit an
-empty feed, it does not fall back to a default, and it does not price the anchor as though it were
-a measurement. The day the owner signs a size and this institution's own dated record produces a
-grade-1 or grade-2 edge, the same script emits the same payload shape driftwood's does, with no
-edit: the price is gated on the artefacts, not on which repository the file sits in.
+The native and reporting currencies are both GBP, so this valuation uses no FX rate. A foreign
+currency amount would require the pinned, signature-verified FX envelope for the exact filing
+month. Missing money, an inadmissible grade, or a missing dated instrument is named as CANNOT LOOK
+with exit 3. A complete admitted overlay emits the closed scenario shape without choosing a tier.
 
 Deterministic. The same overlay in gives byte-identical output, on any machine and at any time:
 
@@ -63,11 +56,10 @@ ORG = "tuppence"
 
 # The publisher's own declaration. A release bumps these two lines and `forward-intel/bump.yaml`
 # in the same PR a human merges -- they are not derived from the overlay, which is exactly why a
-# re-emit at any hour of any day produces the same bytes. There is no `v1/feed.json` in this
-# repository yet and there will not be one until this script stops refusing: a version number
-# beside an unemitted feed would be a release nobody cut.
+# re-emit at any hour of any day produces the same bytes. The stored v1 source is derived by this
+# producer; authentic signed consumption still requires the ordinary adopter release workflow.
 VERSION = "1.0.0"
-PUBLISHED_AT = "2026-09-04T00:00:00Z"
+PUBLISHED_AT = "2026-10-04T00:00:00Z"
 HORIZON = 1  # years; ticket 08: "horizon is one year and is stated in the payload"
 
 CLAIM_INCLUDED = ["uk-gdpr", "fca-principle-3"]
@@ -142,8 +134,8 @@ def check_twin_pin() -> str:
 def ladder() -> list[str]:
     """The cage rungs this overlay prices a response for.
 
-    driftwood reads these from its own versioned `selection-policy` package. This repository ships
-    no such package, so the rungs are declared in `twin/ladder.yaml`, which also records which
+    This producer reads the rungs declared in `twin/ladder.yaml`, independently of the estate's
+    versioned `selection-policy` package. The ladder also records which
     platform release published them. Declared in one place and read here, rather than spelled a
     second time in this file: a second spelling is a list that silently stops matching.
     """
@@ -193,7 +185,7 @@ def priceable(overlay: Overlay) -> tuple[float, object]:
     perspective = overlay.perspectives[ORG]
     cash_flow = str(perspective["cash_flow"][0])
     values = perspective["values"]
-    admits = evidence.admission_threshold()
+    admits = overlay.pricing_threshold
 
     reasons: list[str] = []
     valuation = values.get(cash_flow) or {}
@@ -213,7 +205,7 @@ def priceable(overlay: Overlay) -> tuple[float, object]:
         )
     else:
         edge = hits[0]
-        if not evidence.may_price(edge.grade):
+        if not evidence.may_price(edge.grade, threshold=overlay.pricing_threshold):
             reasons.append(
                 "the one causal edge to %r (%s) is graded %d, outside the ladder's path admission "
                 "threshold of %d, so no impact may enter this perspective's pound through it"
@@ -253,7 +245,9 @@ def curve(overlay: Overlay, rungs: list[str], impact: float) -> list[dict]:
                 "curve missing a rung reads as a rung nobody would choose, which is a different "
                 "claim from one nobody priced." % tier
             )
-        reduction = float(response["mitigates"]["reduction"]["mode"])
+        reduction = (float(response["mitigates"]["reduction"]["mode"])
+                     if evidence.may_price(int(response["mitigates"]["evidence_grade"]),
+                                           threshold=overlay.pricing_threshold) else 0.0)
         cost = float(response["cost"]["mode"])
         out.append({"account": tier, "net_cost_of_risk": money(impact * (1.0 - reduction) + cost)})
     return out
@@ -275,8 +269,45 @@ def check_ladder_has_a_response(overlay: Overlay, rungs: list[str]) -> None:
         )
 
 
+def valuation_amount(party, value, currency):
+    """A native filing amount reaches GBP only through its pinned, verified dated FX feed."""
+    from twin.valuation import MissingInstrument, rederive
+    native = party.get("size", {}).get("turnover", {}).get("currency")
+    fx = None
+    if native != currency:
+        pin_path = REPO / "gitops/flux-system/gotk-sync-fx.yaml"
+        if not pin_path.exists():
+            raise CannotLook("no pinned signature-verified FX source for the filing date; "
+                             "USD turnover and service fees remain native USD, never labelled GBP")
+        spec = yaml.safe_load(pin_path.read_text())["spec"]
+        pin = spec["ref"]
+        feeds = HUB / ".estate-clone/feeds"
+        try:
+            commit = subprocess.check_output(["git", "-C", str(feeds), "rev-parse", pin["tag"] + "^{commit}"], text=True).strip()
+            if commit != pin["commit"] or not str(pin["tag"]).startswith("fx/v"):
+                raise CannotLook("FX pin tag and commit do not describe the same FX release")
+            subprocess.run(["gitsign", "verify-tag", pin["tag"],
+                "--certificate-identity-regexp=^https://github\\.com/policy-as-versioned-feeds/feeds/\\.github/workflows/cut-release\\.yml@refs/heads/(main|release/[0-9]+\\.[0-9]+\\.x)$",
+                "--certificate-oidc-issuer=https://token.actions.githubusercontent.com"],
+                cwd=feeds, check=True, capture_output=True)
+            version = str(pin["tag"]).split("/v", 1)[1].split(".", 1)[0]
+            raw = subprocess.check_output(["git", "-C", str(feeds), "show", pin["commit"] + ":fx/v" + version + "/feed.json"], text=True)
+            fx = json.loads(raw)
+            if "illustrative" in str(fx["payload"].get("note", "")).lower():
+                raise CannotLook("the pinned FX release declares illustrative rates; no observed currency instrument")
+        except (OSError, subprocess.CalledProcessError, KeyError, ValueError) as exc:
+            raise CannotLook("FX signature/rate instrument could not be read: " + str(exc)) from exc
+    try:
+        return rederive(party, value, currency, fx=fx)
+    except MissingInstrument as exc:
+        raise CannotLook(str(exc)) from exc
+
+
 def payload(overlay: Overlay, currency: str, party: dict, rungs: list[str]) -> dict:
     base, edge = priceable(overlay)
+    cash_flow = str(overlay.perspectives[ORG]["cash_flow"][0])
+    valuation_reading = valuation_amount(party, overlay.perspectives[ORG]["values"][cash_flow], currency)
+    base = float(valuation_reading["amount"])
     elasticity = edge.causal["elasticity"]
     lm = [money(base * float(elasticity[k])) for k in ("min", "mode", "max")]
 
@@ -297,6 +328,8 @@ def payload(overlay: Overlay, currency: str, party: dict, rungs: list[str]) -> d
 
     return {
         "perspective": ORG,
+        "valuation": valuation_reading,
+        "rests_on_grade": max(edge.grade, int(overlay.perspectives[ORG]["values"][str(overlay.perspectives[ORG]["cash_flow"][0])]["evidence_grade"])),
         "shock": str(overlay.edges[edge.id]["note"]).strip(),
         "horizon": HORIZON,
         "lef": None,
@@ -336,7 +369,7 @@ def render() -> str:
         )
     with tempfile.TemporaryDirectory() as tmp:
         repo = ModelRepo.open(stage(Path(tmp) / "mirror"))
-        overlay = Overlay.load(repo, ORG)
+        overlay = Overlay.load(repo, ORG, pricing_threshold=evidence.declared_threshold(party))
         check_ladder_has_a_response(overlay, rungs)
         return json.dumps(envelope(payload(overlay, currency, party, rungs)), indent=2,
                           ensure_ascii=False) + "\n"

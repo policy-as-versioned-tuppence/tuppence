@@ -33,8 +33,9 @@ the emitter's deterministic mirror, or it refuses again.
 
 **The tag.** `twin/v0.1.0` is prefixed because the hub repository is not only the twin. It does
 not exist yet: a signed tag is cut by a release workflow with gitsign, never on a laptop, so until
-the owner dispatches that workflow, `world_ref` is the only pin with bytes behind it and
-`PIN.yaml` carries `tag_cut: false`.
+the owner dispatches that workflow, `PIN.yaml` carries `tag_cut: false`. Its full
+`hub_commit` pins genuinely published producer code, while `world_ref` pins the vendored
+world bytes independently.
 
 Re-vendoring is a two-line job:
 
@@ -48,49 +49,47 @@ Re-vendoring is a two-line job:
 Every causal edge in this estate carries an `evidence_grade` and a written basis. The prior
 beliefs in the reference map carry neither, because the `world_models` schema has no grade field:
 they are floats typed into `twin/fixtures.py` by whoever added the scenario class. Vendoring puts
-them inside this repository's own signed tree, where they read like measured facts. They reach no
-price here, because nothing in this overlay reaches a price at all (below). Read every number in
-that file as an authored prior.
+them inside this repository's own signed tree, where they read like measured facts. The forward-intel producer does not read those authored priors: its money comes from the
+declared native filing, causal edge and response mechanisms. Read every number in that file as
+an authored prior, not an observed frequency.
 
-## This overlay is COMPLETE and UNPRICED, and that is the finding, not a gap
+## The declared financial and evidence instruments
 
-`emit-forward-intel.py` exits **3, could-not-look**, and names two missing instruments (ADR-0020):
+Tuppence's declared turnover and payment-fee share derive its native GBP cash flow.
+The perspective reports in GBP too, so no FX conversion is needed.
 
-1. `party.yaml` for this party publishes **no `size:` block at all**. driftwood's perspective
-   derives its amount from its signed `size.turnover`; there is no signed fact here to derive
-   from, so the valuation on the declared cash flow carries no amount. The twin's `valuation`
-   schema enforces this from the other side: a grade outside the pricing threshold may not carry
-   an amount at all.
-2. The one causal edge reaching the declared cash flow is graded **3**, because its elasticity
-   triple is arithmetic on a comparable firm's own published regulatory record rather than this
-   institution's own dated incident. The ladder's `path_admission_threshold` is 2, so no impact
-   may enter this perspective's pound through it.
+Both the valuation and the loss mechanism retain evidence grade 3: published comparable
+work, **not observed here**. The party explicitly declares `pricing_threshold: 3`, which
+admits that grade without a regrade event. Grade-5 mitigation remains unpriced. The producer
+borrows the subscribed threat-register frequency explicitly; the comparable enforcement
+record is no claim that this institution experienced that event.
 
-Both are named in the refusal, both at once, so that fixing one does not turn up the other a month
-later. Signing a `size:` block is the owner's act (money, ADR-0025 point 6); a grade-1 or grade-2
-edge is this institution's own dated record plus a regrade event saying who moved it and why.
-Until both exist there is **no `forward-intel/v1/feed.json` in this repository, no `rule.yaml`,
-no `bump.yaml` and no `publishes[]` record for the feed** -- a discovery record for a feed nobody
-emitted is a claim with nothing behind it.
+The first forward-intel v1 envelope is authored on 2026-10-04. Its ordinary publisher rule,
+bump and discovery declaration are reviewed with the source. Local emission is not an
+authentic signed release, delivered application, or scheduled live observation.
 
 ## `forward-intel/payload.schema.json`
 
-The canonical home is `platform/feeds/forward-intel.payload.schema.json`, and the copy here is a
-byte-for-byte vendoring of it. It is vendored beside the (not yet emitted) feed for two reasons:
+This is the adopter's owned schema for its forward-intel envelope. Its base is the
+immutable `platform/feeds/forward-intel.payload.schema.json` at authenticated tools
+v5.0.0 (`703eff6aee959843c4160aa54fd03413f62858cc`). It preserves every canonical
+property, requirement and type. Ticket 144 adds exactly two optional declarations:
+`rests_on_grade` (integer grades 1–3) and `valuation` (the native amount/currency,
+party fact, reporting amount/currency and nullable dated FX record). No inherited
+constraint is removed and the closed property set remains closed.
 
-1. a feed envelope's `payload_schema` is resolved **inside the publishing repository**
-   (`verify/feed-contract/feed_contract.py`), so a path into another repo cannot validate; and
-2. a departing adopter must be able to re-derive its prices offline from this checkout alone
-   (spec.md, "A departing adopter").
-
-`verify-twin-overlay.sh` byte-compares the two copies whenever the platform one is present, and
-says it could not look when it is not. It never treats absence as agreement.
+The active schema is an owned extension, not a byte-for-byte vendored copy. It lives
+inside this publishing repository because the envelope resolves `payload_schema`
+here, and the feed can be validated offline from these self-contained bytes.
+`verify-twin-overlay.sh` checks the complete canonical base semantically and the
+exact two optional additions against the materialized authentic platform schema.
+It reports could-not-look if that parent is absent; absence never proves agreement.
 
 ## `ladder.yaml` -- the rungs, and why they are not read from a selection policy
 
-driftwood ships a versioned `selection-policy` package and reads its rungs from it. This
-repository ships none; authoring one is ticket 25's shape and not ticket 64's. So the rungs are
-declared in `ladder.yaml`, which records the platform release that published them
+This repository also ships a versioned `selection-policy` package. Its forward-intel
+producer reads its curve rungs from the separate `ladder.yaml` declaration; it does not select
+a delivered tier. The ladder records the platform release that published the rungs
 (`graded/cage.py`, `ORDER`, TABLE_VERSION 1.0.0, at platform v2.0.1) and is checked against that
 release's own module when a platform checkout is present.
 

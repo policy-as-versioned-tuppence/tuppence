@@ -1,0 +1,40 @@
+{
+  "converter": "threat-register/to_fair_scenario.py",
+  "converter_from": "feeds",
+  "feed_path": "threat-register/v4/feed.json",
+  "files": {
+    "party.yaml": "6d5211a16fe5bfbe6bd28fc0f4c876f9de8fca8a2a43d2750a4f855610ee0823",
+    "threat-register/to_fair_scenario.py": "5b58162dd42404c0afc0ad3d063aeb4cd71a7076baca7ed7f7875e781d509d41",
+    "threat-register/v4/feed.json": "e88332226c882103e469b43770bd177ff10384500825236f2fcdaf11dda168fd"
+  },
+  "invocation": [
+    "threat",
+    "tuppence"
+  ],
+  "kind": "feed",
+  "name": "threat-register",
+  "party": "feeds",
+  "party_artefact": "party.yaml",
+  "payload_version_key": "feed_version",
+  "published_at": "2026-09-26",
+  "publisher_observation": {
+    "name": "threat-register",
+    "newer": null,
+    "party": "feeds",
+    "pin_signature": {
+      "detail": "tag threat-register/v4.0.0 on the feeds checkout carries a signature block",
+      "state": "signed",
+      "tag": "threat-register/v4.0.0"
+    },
+    "schema": 1,
+    "sha": "37dfe4a2de50f1a1fd7aeb6348d819373188e0e6",
+    "superseded": {
+      "detail": "no signed tag of the form threat-register/vN.x.y with N > 4 on the feeds checkout, so the pinned v4 is the newest published major",
+      "state": "current"
+    },
+    "version": "v4"
+  },
+  "scenario_sha256": "39b75a99f70133cb6cdfdb7a1d1ab057a5908786c866f6a5637e81dde1ed96d4",
+  "sha": "37dfe4a2de50f1a1fd7aeb6348d819373188e0e6",
+  "version": "v4"
+}
