@@ -301,6 +301,7 @@ jobs:
           git -C tuppence config gpg.format x509
           git -C tuppence config gpg.x509.program gitsign
           git -C tuppence config commit.gpgsign true
+          git -C tuppence config gitsign.rekorMode offline
           # The rejection ledger is DERIVED from this repo's own closed-unmerged
           # proposal PRs (ADR-0024); there is no rejections.json anywhere any
           # more, and no adopter reads platform's fixture as its own. When
@@ -350,6 +351,8 @@ jobs:
       # `${{ runner.temp }}` holds the proposer's own JSON: writing it into the
       # repository would trip the observation cage below, and rightly.
       - name: verify the proposal commit's signature and identity (ticket 78)
+        env:
+          GITSIGN_REKOR_MODE: offline
         run: |
           set -euo pipefail
           out="${RUNNER_TEMP}/proposals.json"

@@ -63,6 +63,7 @@
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 python3 -m unittest discover -s "$here/.github/tests" -p test_release_signing.py
+python3 -m unittest discover -s "$here/.github/tests" -p test_proposal_signing.py
 platform_repo="${PLATFORM_REPO:-${here}/../platform}"
 [ -d "${platform_repo}/.git" ] || { echo "FAIL: no platform clone at ${platform_repo} (set PLATFORM_REPO=)" >&2; exit 1; }
 command -v cosign >/dev/null 2>&1 || {
