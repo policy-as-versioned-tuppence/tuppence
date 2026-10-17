@@ -36,22 +36,22 @@ def selfcheck() -> int:
     for non_failure in ("skip", "pass"):
         collision = {"uuid": fail["uuid"], "props": [{"name": "result", "value": non_failure}]}
         for observations in ([fail, passed, collision], [collision, passed, fail]):
-            view = copy.deepcopy(assessment)
+            view: dict = copy.deepcopy(assessment)
             view["assessment-results"]["results"][0]["observations"] = observations
             assert missing_risks(view, []) == ["failed-observation"], \
                 f"same-ID {non_failure} must not hide failure in either observation order"
             assert missing_risks(view, [risk]) == [], "a real risk still resolves a duplicate-ID failure"
             view["assessment-results"]["results"][0]["findings"][0]["target"]["status"]["state"] = "satisfied"
             assert missing_risks(view, []) == [], "a satisfied finding creates no missing risk"
-        without_failure = copy.deepcopy(assessment)
+        without_failure: dict = copy.deepcopy(assessment)
         without_failure["assessment-results"]["results"][0]["observations"] = [collision, passed]
         assert missing_risks(without_failure, []) == [], "non-failure-only observations need no risk"
-    unlinked = copy.deepcopy(assessment)
+    unlinked: dict = copy.deepcopy(assessment)
     unlinked["assessment-results"]["results"][0]["observations"].append({"uuid": "unlinked", "props": None})
     assert missing_risks(unlinked, []) == ["failed-observation"], "unlinked properties are not interpreted"
     unlinked["assessment-results"]["results"][0]["observations"][-1]["props"] = 42
     assert missing_risks(unlinked, []) == ["failed-observation"], "unlinked malformed properties are not interpreted"
-    malformed = copy.deepcopy(assessment)
+    malformed: dict = copy.deepcopy(assessment)
     malformed["assessment-results"]["results"][0]["observations"].append({"props": [{"name": "result", "value": "skip"}]})
     try:
         missing_risks(malformed, [])
