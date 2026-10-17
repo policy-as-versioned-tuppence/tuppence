@@ -1,0 +1,65 @@
+# Datastore team's Crossplane claims (real-estate epic, ticket 08). Moved
+# out of fleet's platform-planted infrastructure/c2p/cloud-exemplars.yaml
+# into this team's own repo -- cloud resources requested by the team that
+# needs them, under its own policy version, not planted by the platform.
+# Content and OSCAL-relevant behaviour unchanged from the exemplars they
+# replace.
+#
+# S3 (sc-28) is a Deny gate -- "pass-only by construction" (ADR-0009): a
+# non-compliant bucket can never exist on-cluster to report on, so only a
+# compliant claim is possible here, by design, not an oversight.
+apiVersion: s3.aws.m.upbound.io/v1beta1
+kind: BucketServerSideEncryptionConfiguration
+metadata:
+  name: datastore-s3-compliant
+  namespace: default
+  labels:
+    mycompany.com/policy-version: "2.2.0"
+    department: data
+spec:
+  forProvider:
+    region: eu-west-1
+    bucketSelector:
+      matchLabels:
+        testing.upbound.io/example-name: mybucket
+    rule:
+      - applyServerSideEncryptionByDefault:
+          sseAlgorithm: AES256
+---
+# RDS (cp-10) is Audit -- both states can legitimately coexist permanently,
+# unlike the Deny-gated S3 claim above. Two instances (compliant +
+# noncompliant) so the OSCAL panel has a real not-satisfied finding to
+# report, same as before the move.
+apiVersion: rds.aws.m.upbound.io/v1beta1
+kind: Instance
+metadata:
+  name: datastore-rds-compliant
+  namespace: default
+  labels:
+    mycompany.com/policy-version: "2.2.0"
+    department: data
+spec:
+  forProvider:
+    region: eu-west-1
+    engine: postgres
+    instanceClass: db.t3.micro
+    allocatedStorage: 20
+    username: demo
+    multiAz: true
+---
+apiVersion: rds.aws.m.upbound.io/v1beta1
+kind: Instance
+metadata:
+  name: datastore-rds-noncompliant
+  namespace: default
+  labels:
+    mycompany.com/policy-version: "2.2.0"
+    department: data
+spec:
+  forProvider:
+    region: eu-west-1
+    engine: postgres
+    instanceClass: db.t3.micro
+    allocatedStorage: 20
+    username: demo
+    multiAz: false
