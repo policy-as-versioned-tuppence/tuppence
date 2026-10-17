@@ -1,0 +1,55 @@
+# Datastore claims lifted from the immutable source in INCUMBENT.json.
+# Resource names, specs and non-claim labels are preserved. The namespace and
+# policy claim bind this workload to Tuppence; admission mutations are separate.
+# No provider controller, ProviderConfig, credentials or AWS resource is created.
+apiVersion: s3.aws.m.upbound.io/v1beta1
+kind: BucketServerSideEncryptionConfiguration
+metadata:
+  name: datastore-s3-compliant
+  namespace: tuppence
+  labels:
+    department: data
+    policy-as-versioned.dev/policy-version: 5.0.0
+spec:
+  forProvider:
+    region: eu-west-1
+    bucketSelector:
+      matchLabels:
+        testing.upbound.io/example-name: mybucket
+    rule:
+    - applyServerSideEncryptionByDefault:
+        sseAlgorithm: AES256
+---
+apiVersion: rds.aws.m.upbound.io/v1beta1
+kind: Instance
+metadata:
+  name: datastore-rds-compliant
+  namespace: tuppence
+  labels:
+    department: data
+    policy-as-versioned.dev/policy-version: 5.0.0
+spec:
+  forProvider:
+    region: eu-west-1
+    engine: postgres
+    instanceClass: db.t3.micro
+    allocatedStorage: 20
+    username: demo
+    multiAz: true
+---
+apiVersion: rds.aws.m.upbound.io/v1beta1
+kind: Instance
+metadata:
+  name: datastore-rds-noncompliant
+  namespace: tuppence
+  labels:
+    department: data
+    policy-as-versioned.dev/policy-version: 5.0.0
+spec:
+  forProvider:
+    region: eu-west-1
+    engine: postgres
+    instanceClass: db.t3.micro
+    allocatedStorage: 20
+    username: demo
+    multiAz: false

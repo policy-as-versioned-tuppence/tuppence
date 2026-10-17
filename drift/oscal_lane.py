@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import datetime as dt
 import importlib.util
 import json
@@ -176,6 +177,67 @@ def load(path: Path, name: str):
     return module
 
 
+def component_inputs(sampler, base: dict) -> tuple[dict, dict, list[dict]]:
+    """Read cloud mapping and members only from the actually selected composed tag.
+
+    The signed composed artefact carries the identity-verified cloud parent and
+    its control claims. Current worktree files cannot activate a future mapping.
+    """
+    tag = sampler.rc.pinned_tag()
+    def read(path: str) -> str | None:
+        return sampler._git_output('show', tag + ':' + path)
+    header = yaml.safe_load(read('composed/HEADER.yaml') or '{}')
+    if not header.get('cloud-package'):
+        return base, {}, []
+    raw = read('composed/CLOUD-PARENT.json')
+    if not raw:
+        raise ValueError('cloud component parent is missing from the selected signed composition')
+    parent = json.loads(raw)
+    if (parent.get('party'), parent.get('kind'), parent.get('name')) != ('platform', 'implementations', 'cloud'):
+        raise ValueError('cloud component parent names a different package')
+    version = parent.get('version', '')
+    if not re.fullmatch(r'\d+\.\d+\.\d+', version) or parent.get('tag') != 'cloud/v' + version or not re.fullmatch(r'[0-9a-f]{40}', parent.get('sha', '')):
+        raise ValueError('cloud component parent has no immutable package pin')
+    if header.get('cloud-package') != parent:
+        raise ValueError('cloud component parent differs from the signed composition header')
+    directory = 'composed/cloud/v' + version
+    text = read(directory + '/component-definition.json')
+    if not text:
+        raise ValueError('cloud component-definition is missing from the selected signed composition')
+    cloud = json.loads(text)
+    if cloud['component-definition']['metadata']['version'] != version:
+        raise ValueError('cloud component-definition version differs from its parent')
+    combined = copy.deepcopy(base)
+    combined['component-definition']['components'].extend(cloud['component-definition']['components'])
+    mappings: dict[str, str] = {}
+    for component in combined['component-definition']['components']:
+        for implementation in component.get('control-implementations', []):
+            for requirement in implementation.get('implemented-requirements', []):
+                for prop in requirement.get('props', []):
+                    if prop.get('name') == 'Check_Id':
+                        name, control = prop['value'], requirement['control-id']
+                        if name in mappings and mappings[name] != control:
+                            raise ValueError('cloud control mapping conflicts with the pinned Pod mapping: ' + name)
+                        mappings[name] = control
+    membership = yaml.safe_load(read(directory + '/kustomization.yaml') or '{}')
+    policies = {}
+    for filename in membership.get('resources', []):
+        if Path(filename).name != filename or not filename.endswith('.yaml'):
+            raise ValueError('cloud policy membership escapes its signed directory')
+        doc = yaml.safe_load(read(directory + '/' + filename) or '{}')
+        metadata = doc.get('metadata') or {}
+        if (doc.get('kind') not in ('ValidatingPolicy', 'MutatingPolicy')
+                or metadata.get('annotations', {}).get('policy-as-versioned.dev/inherited-from') != 'platform@' + parent['sha']
+                or metadata.get('labels', {}).get('policy-as-versioned.dev/cloud-package-version') != version):
+            raise ValueError('cloud policy differs from its declared signed parent')
+        policies[f"{doc['apiVersion']}/{doc['kind']}/{metadata['name']}"] = doc
+    if not policies:
+        raise ValueError('cloud policy membership is empty in the signed composition')
+    return combined, policies, [{'party': 'platform', 'name': 'cloud', 'tag': parent['tag'],
+                               'sha': parent['sha'], 'composed_tag': tag,
+                               'component_definition': directory + '/component-definition.json'}]
+
+
 def collect(context: str, platform: Path) -> dict:
     sampler = load(HERE / "five-facts.py", "five_facts_instrument")
     cluster = sampler.Cluster(context)
@@ -199,19 +261,22 @@ def collect(context: str, platform: Path) -> dict:
         # tree. Both UUID joins and risk derivation must use this verified pin.
         converter.cage = load(platform / "graded/cage.py", "pinned_cage")
         comp = json.loads((platform / "oscal/component-definition.json").read_text())
-        mapping = converter.check_to_control(comp)
         served = sampler.rc.render(sampler.rc.pinned_tag())
-        policy_names = {re.sub(r"-\d+-\d+-\d+$", "", d["metadata"]["name"])
-                        for d in served.values() if d.get("kind", "").endswith("Policy")}
-        row["mapped_served_policy_count"] = len(policy_names.intersection(mapping))
-        row["served_policy_count"] = len(policy_names)
-        row["unmapped_served_policies"] = sorted(policy_names - set(mapping))
         if read_errors:
             row["why"] = "PolicyReport API could not be read: " + "; ".join(read_errors)
             return row
         if not reports:
             row["why"] = "no PolicyReport existed on the lane cluster before teardown"
             return row
+        comp, cloud_policies, sources = component_inputs(sampler, comp)
+        mapping = converter.check_to_control(comp)
+        served.update(cloud_policies)
+        row['cloud_component_sources'] = sources
+        policy_names = {re.sub(r"-\d+-\d+-\d+$", "", d["metadata"]["name"])
+                        for d in served.values() if d.get("kind", "").endswith("Policy")}
+        row["mapped_served_policy_count"] = len(policy_names.intersection(mapping))
+        row["served_policy_count"] = len(policy_names)
+        row["unmapped_served_policies"] = sorted(policy_names - set(mapping))
         assessment = converter.convert(reports, comp)
         assessment["assessment-results"]["metadata"]["last-modified"] = stamp
         for result in assessment["assessment-results"]["results"]:
@@ -229,7 +294,7 @@ def collect(context: str, platform: Path) -> dict:
                                                 if r.get("result") == "fail" and re.sub(r"-\d+-\d+-\d+$", "", r["policy"]) not in mapping})
         row["status"] = "observed"
         row["why"] = f"converted {len(reports)} PolicyReports at the lane's pinned platform tree"
-    except (OSError, ValueError, KeyError, AttributeError, ImportError) as exc:
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, ImportError) as exc:
         row["why"] = f"the pinned converter or its inputs could not be read: {exc}"
     return row
 

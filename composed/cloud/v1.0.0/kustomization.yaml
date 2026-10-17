@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- require-rds-multi-az-5-0-0.yaml
+- require-s3-bucket-encryption-5-0-0.yaml
+- cloud-cage-rds-5-0-0.yaml
+- cloud-cage-s3-5-0-0.yaml

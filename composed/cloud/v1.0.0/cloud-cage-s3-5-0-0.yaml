@@ -1,0 +1,69 @@
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: cloud-cage-s3-5-0-0
+  labels:
+    policy-as-versioned.dev/policy: cloud
+    policy-as-versioned.dev/policy-version: 5.0.0
+    policy-as-versioned.dev/composed-for: tuppence
+    policy-as-versioned.dev/cloud-package-version: 1.0.0
+  annotations:
+    policy-as-versioned.dev/inherited-from: platform@d314b8df0b19c42ea816c0a6ada41913b7940fbe
+    policy-as-versioned.dev/source-path: implementations/cloud/policies/cloud-cage-s3.yaml
+spec:
+  matchConstraints:
+    resourceRules:
+    - apiGroups:
+      - s3.aws.m.upbound.io
+      apiVersions:
+      - v1beta1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - bucketserversideencryptionconfigurations
+  matchConditions:
+  - name: only-this-copy-or-bottom-rung
+    expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('')
+      == '5.0.0' || !(object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('')
+      in ["5.0.0", "6.0.0", "7.0.0"])
+  - name: cloud-population
+    expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('')
+      != '' || (namespaceObject != null && namespaceObject.metadata.?labels['policy-as-versioned.dev/governed'].orValue('')
+      == 'true')
+  - name: spec-change
+    expression: oldObject == null || !has(oldObject.spec) || object.spec != oldObject.spec
+      || object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('')
+      != oldObject.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('')
+      || object.metadata.?labels['posture.acme.io/tier'].orValue('') != oldObject.metadata.?labels['posture.acme.io/tier'].orValue('')
+  variables:
+  - name: claim
+    expression: object.metadata.?labels['policy-as-versioned.dev/policy-version'].orValue('')
+  - name: nsTier
+    expression: "namespaceObject != null && namespaceObject.metadata.?labels['policy-as-versioned.dev/governed'].orValue('')\
+      \ == 'true'\n  ? namespaceObject.metadata.?labels['posture.acme.io/tier'].orValue('')\
+      \ : ''"
+  - name: tier
+    expression: "variables.claim == '5.0.0' && variables.nsTier in ['baseline', 'restricted',\
+      \ 'quarantine', 'isolated']\n  ? variables.nsTier : 'isolated'"
+  - name: dial
+    expression: '{"baseline":{"publiclyAccessible":"false","storageEncrypted":"true","multiAz":"false","backupRetentionPeriod":"1","sseAlgorithm":"AES256"},"restricted":{"publiclyAccessible":"false","storageEncrypted":"true","multiAz":"true","backupRetentionPeriod":"7","sseAlgorithm":"AES256"},"quarantine":{"publiclyAccessible":"false","storageEncrypted":"true","multiAz":"true","backupRetentionPeriod":"35","sseAlgorithm":"AES256"},"isolated":{"publiclyAccessible":"false","storageEncrypted":"true","multiAz":"true","backupRetentionPeriod":"35","sseAlgorithm":"AES256"}}[variables.tier]'
+  mutations:
+  - patchType: JSONPatch
+    jsonPatch:
+      expression: "(!has(object.metadata.labels)\n  ? [JSONPatch{op: 'add', path:\
+        \ '/metadata/labels', value: {}}] : []) +\n[JSONPatch{op: 'add', path: '/metadata/labels/posture.acme.io~1caged',\
+        \ value: 'true'},\n JSONPatch{op: 'add', path: '/metadata/labels/posture.acme.io~1tier',\
+        \ value: string(variables.tier)}]"
+  - patchType: JSONPatch
+    jsonPatch:
+      expression: "!has(object.spec.forProvider) ?\n  [JSONPatch{op: 'add', path:\
+        \ '/spec/forProvider', value: {'rule': [{'applyServerSideEncryptionByDefault':\
+        \ {'sseAlgorithm': variables.dial.sseAlgorithm}}]}}] :\n!has(object.spec.forProvider.rule)\
+        \ || size(object.spec.forProvider.rule) == 0 ?\n  [JSONPatch{op: 'add', path:\
+        \ '/spec/forProvider/rule', value: [{'applyServerSideEncryptionByDefault':\
+        \ {'sseAlgorithm': variables.dial.sseAlgorithm}}]}] :\nobject.spec.forProvider.rule.filter(r,\n\
+        \  !(r.?applyServerSideEncryptionByDefault.?sseAlgorithm.orValue('') in ['AES256',\
+        \ 'aws:kms']))\n  .map(r, JSONPatch{\n    op: 'add',\n    path: '/spec/forProvider/rule/'\
+        \ + string(object.spec.forProvider.rule.indexOf(r)) + '/applyServerSideEncryptionByDefault',\n\
+        \    value: {'sseAlgorithm': variables.dial.sseAlgorithm}\n  })"

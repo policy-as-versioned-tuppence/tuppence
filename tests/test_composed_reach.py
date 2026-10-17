@@ -118,6 +118,43 @@ class Fixture:
         return rc.reach(ref, repo=str(self.dir))
 
 
+class CloudDelivery(unittest.TestCase):
+    def test_signed_cloud_routes_are_reached_and_workloads_are_not_compared_as_policy_bodies(self):
+        fixture = Fixture(self)
+        files = composed_tree(['1.0.0'])
+        files[rc.RESOURCESET_PATH] = composed_set(['1.0.0'])
+        files['composed/CLOUD-PARENT.json'] = '{}\n'
+        cloud_policy = {'apiVersion': 'policies.kyverno.io/v1', 'kind': 'MutatingPolicy',
+                        'metadata': {'name': 'cloud-cage-rds-1-0-0'}, 'spec': {}}
+        workload = {'apiVersion': 'rds.aws.m.upbound.io/v1beta1', 'kind': 'Instance',
+                    'metadata': {'name': 'datastore', 'namespace': 'tuppence'}, 'spec': {}}
+        crd = {'apiVersion': 'apiextensions.k8s.io/v1', 'kind': 'CustomResourceDefinition',
+               'metadata': {'name': 'instances.rds.aws.m.upbound.io'}, 'spec': {}}
+        declarations = []
+        for name, directory, doc in [('crossplane-crds', 'cloud-crds', crd),
+                                      ('cloud-policies', 'cloud/v1.0.0', cloud_policy),
+                                      ('cloud-claims', 'cloud-workload', workload)]:
+            files['composed/' + directory + '/member.yaml'] = yaml.safe_dump(doc)
+            files['composed/' + directory + '/kustomization.yaml'] = 'resources: [member.yaml]\n'
+            declarations.append({'apiVersion': 'kustomize.toolkit.fluxcd.io/v1', 'kind': 'Kustomization',
+                'metadata': {'name': name}, 'spec': {'sourceRef': {'kind': 'GitRepository', 'name': 'tuppence-composed'},
+                                                  'path': './composed/' + directory}})
+        files['gitops/cloud/cloud-delivery.yaml'] = yaml.safe_dump_all(declarations)
+        fixture.tag(files)
+        self.assertEqual(fixture.reach(), [])
+        rendered = rc.render(TAG, repo=str(fixture.dir))
+        self.assertIn(rc.key(cloud_policy), rendered)
+        self.assertNotIn(rc.key(workload), rendered, 'mutated cloud intent has its own admission observer')
+
+    def test_cloud_declarations_do_not_activate_paths_absent_from_the_selected_tag(self):
+        fixture = Fixture(self)
+        files = composed_tree(['1.0.0'])
+        files[rc.RESOURCESET_PATH] = composed_set(['1.0.0'])
+        fixture.tag(files)
+        fixture.write({'gitops/cloud/cloud-delivery.yaml': (ROOT / 'gitops/cloud/cloud-delivery.yaml').read_text()})
+        self.assertEqual(fixture.reach(), [])
+
+
 def kinds(faults):
     return sorted({f.split(":", 1)[0] for f in faults})
 

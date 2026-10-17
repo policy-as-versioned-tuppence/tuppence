@@ -77,6 +77,20 @@
     },
     {
       "customType": "regex",
+      "description": "The separately signed cloud package moves its exact tag and commit together, independently of the Pod policy and compiler pins.",
+      "managerFilePatterns": [
+        "/^gitops/cloud/platform-cloud-pin\\.yaml$/"
+      ],
+      "matchStrings": [
+        "tag: cloud/(?<currentValue>v[0-9.]+)\\s*\\n\\s*commit: (?<currentDigest>[a-f0-9]{40})"
+      ],
+      "datasourceTemplate": "git-refs",
+      "depNameTemplate": "https://github.com/policy-as-versioned-platform/platform",
+      "extractVersionTemplate": "^cloud/(?<version>v[0-9.]+)$",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
       "description": "Ticket 154: the served app release and digest move together and trigger a composition review.",
       "managerFilePatterns": [
         "/^gitops/apps/[^/]+\\.yaml$/"

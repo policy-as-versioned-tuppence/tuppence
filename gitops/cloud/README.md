@@ -13,12 +13,19 @@ routes consume `tuppence-composed`: real vendor CRDs become Established first, p
 claims last. The claims route grades delivery without waiting for impossible AWS reconciliation.
 The current composed self-pin v4.0.1 contains none of these paths. This remains opt-in and unactivated.
 
-After the qualifying signed e2e4 clock record and a platform `cloud/v1.0.0` publication exist,
-use a separately signed compiler release containing the optional cloud adapter, and declare
-`platform-cloud-pin.yaml` with the actual cloud tag and full commit. It has the GitRepository
-shape used by `.github/platform-tools-pin.yaml` and is source data, never applied to a cluster.
-Keep the existing Pod policy parent, its 5/6/7 window and engine 1.18.2 unchanged. Ordinary
-composition now reproduces every cloud path from the identity-verified cloud package.
+The qualifying signed e2e4 record now exists. The compiler pin selects the actually published
+`v5.1.0`, and `platform-cloud-pin.yaml` selects the separately signed `cloud/v1.0.0`, both at
+`d314b8df0b19c42ea816c0a6ada41913b7940fbe`. The cloud pin is source data, never applied to a
+cluster. Renovate tracks its exact tag and commit together. Ordinary verified composition
+reproduces every cloud path while preserving the Pod policy parent, 5/6/7 window and engine
+1.18.2.
+
+This is composition A: it prepares the generated files while leaving the active composed
+self-pin and signature gates unchanged. After a genuine signed composition release contains
+those paths, composition B moves the existing source's tag and commit and adds the three gates
+below atomically. The offline observer and hosted lane select the cloud routes only when the
+actually pinned signed tag carries `CLOUD-PARENT.json`. Prepared worktree files cannot activate
+future routes or OSCAL control mappings.
 
 `prepare.py` can independently render the same cloud-only paths into a temporary directory
 for review. It accepts the actual cloud tag and full SHA; the exact upstream vendor CRDs are

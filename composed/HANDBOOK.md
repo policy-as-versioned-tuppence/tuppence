@@ -24,6 +24,19 @@ Source: the object files under `composed/`, and `composed/evidence.json` → `me
 | --- | --- | --- | --- | --- | --- |
 | `cage-netpol-bottom-rung` | GeneratingPolicy | — (not versioned) | generates (1), evaluates | platform@5.0.0 | `distribution/versions.yaml (rendered from the array, ticket 89)` |
 | `cage-isolated` | PriorityClass | — (not versioned) | nothing this page can read | platform@5.0.0 | `distribution/versions.yaml (static, ticket 89)` |
+| `bucketserversideencryptionconfigurations.s3.aws.m.upbound.io` | CustomResourceDefinition | — (not versioned) | nothing this page can read | — | `composed/cloud-crds/bucketserversideencryptionconfigurations.s3.aws.m.upbound.io.yaml` |
+| `kyverno:cloud-cr-view` | ClusterRole | — (not versioned) | nothing this page can read | — | `composed/cloud-crds/cloud-rbac.yaml` |
+| `instances.rds.aws.m.upbound.io` | CustomResourceDefinition | — (not versioned) | nothing this page can read | — | `composed/cloud-crds/instances.rds.aws.m.upbound.io.yaml` |
+| `None` | Kustomization | — (not versioned) | nothing this page can read | — | `composed/cloud-crds/kustomization.yaml` |
+| `datastore-s3-compliant` | BucketServerSideEncryptionConfiguration | 5.0.0 | nothing this page can read | — | `composed/cloud-workload/claims.yaml` |
+| `datastore-rds-compliant` | Instance | 5.0.0 | nothing this page can read | — | `composed/cloud-workload/claims.yaml` |
+| `datastore-rds-noncompliant` | Instance | 5.0.0 | nothing this page can read | — | `composed/cloud-workload/claims.yaml` |
+| `None` | Kustomization | — (not versioned) | nothing this page can read | — | `composed/cloud-workload/kustomization.yaml` |
+| `cloud-cage-rds-5-0-0` | MutatingPolicy | 5.0.0 | mutates (1) | platform@d314b8df0b19c42ea816c0a6ada41913b7940fbe | `implementations/cloud/policies/cloud-cage-rds.yaml` |
+| `cloud-cage-s3-5-0-0` | MutatingPolicy | 5.0.0 | mutates (2) | platform@d314b8df0b19c42ea816c0a6ada41913b7940fbe | `implementations/cloud/policies/cloud-cage-s3.yaml` |
+| `None` | Kustomization | — (not versioned) | nothing this page can read | — | `composed/cloud/v1.0.0/kustomization.yaml` |
+| `require-rds-multi-az-5-0-0` | ValidatingPolicy | 5.0.0 | refuses (1) | platform@d314b8df0b19c42ea816c0a6ada41913b7940fbe | `implementations/cloud/policies/require-rds-multi-az.yaml` |
+| `require-s3-bucket-encryption-5-0-0` | ValidatingPolicy | 5.0.0 | refuses (1) | platform@d314b8df0b19c42ea816c0a6ada41913b7940fbe | `implementations/cloud/policies/require-s3-bucket-encryption.yaml` |
 | `governed-namespace-requires-claim` | MutatingPolicy | — (not versioned) | mutates (4) | platform@5.0.0 | `distribution/versions.yaml (static, ADR-0014)` |
 | `governed-namespace-cage-holds` | MutatingPolicy | — (not versioned) | mutates (1) | platform@5.0.0 | `distribution/versions.yaml (static, ticket 89)` |
 | `governed-namespace-unclaimed-report` | ValidatingPolicy | — (not versioned) | refuses (1) | platform@5.0.0 | `distribution/versions.yaml (static, ticket 89)` |
@@ -57,7 +70,7 @@ Source: the object files under `composed/`, and `composed/evidence.json` → `me
 | `require-nonroot-7-0-0` | ValidatingPolicy | 7.0.0 | refuses (1) | platform@5.0.0 | `distribution/policies/v7.0.0/require-nonroot.yaml` |
 | `stamp-posture-7-0-0` | MutatingPolicy | 7.0.0 | mutates (1) | platform@5.0.0 | `distribution/policies/v7.0.0/stamp-posture.yaml` |
 
-34 object(s) in the artefact; `members[]` records 34: `cage-baseline`, `cage-isolated`, `cage-netpol`, `cage-quarantine`, `cage-restricted`, `cage-tier`, `posture-trust-boundary`, `stamp-posture`, `require-nonroot`, `cage-baseline`, `cage-isolated`, `cage-netpol`, `cage-quarantine`, `cage-restricted`, `cage-tier`, `posture-trust-boundary`, `stamp-posture`, `require-nonroot`, `cage-baseline`, `cage-isolated`, `cage-netpol`, `cage-quarantine`, `cage-restricted`, `cage-tier`, `stamp-posture`, `require-nonroot`, `policy-version-orphan-guard`, `governed-namespace-requires-claim`, `policy-version-orphan-cage`, `policy-version-orphan-cage-holds`, `governed-namespace-cage-holds`, `governed-namespace-unclaimed-report`, `cage-netpol-bottom-rung`, `cage-isolated`.
+47 object(s) in the artefact; `members[]` records 34: `cage-baseline`, `cage-isolated`, `cage-netpol`, `cage-quarantine`, `cage-restricted`, `cage-tier`, `posture-trust-boundary`, `stamp-posture`, `require-nonroot`, `cage-baseline`, `cage-isolated`, `cage-netpol`, `cage-quarantine`, `cage-restricted`, `cage-tier`, `posture-trust-boundary`, `stamp-posture`, `require-nonroot`, `cage-baseline`, `cage-isolated`, `cage-netpol`, `cage-quarantine`, `cage-restricted`, `cage-tier`, `stamp-posture`, `require-nonroot`, `policy-version-orphan-guard`, `governed-namespace-requires-claim`, `policy-version-orphan-cage`, `policy-version-orphan-cage-holds`, `governed-namespace-cage-holds`, `governed-namespace-unclaimed-report`, `cage-netpol-bottom-rung`, `cage-isolated`.
 
 ## 3. The cage you land in
 
@@ -161,9 +174,18 @@ Source: `composed/evidence.json` → `limits[]`, plus every field this render lo
 
 One recorded limit is deliberately not stated above: `publisher-clone-absent` records which publisher clones the run that re-derived this artefact could read, which is a fact about that run and not about the artefact; a page that stated it could not re-render byte-identically with a publisher absent, and re-rendering with a publisher absent is what `composition.py verify` holds this page to (ticket 45). `composed/evidence.json` records it in full.
 
-**15 field(s) this render looked for in the artefact and did not find.** Where a field is absent this page states nothing in its place — no default prose, no zero (ADR-0020: a missing instrument refuses; it is never invented).
+**24 field(s) this render looked for in the artefact and did not find.** Where a field is absent this page states nothing in its place — no default prose, no zero (ADR-0020: a missing instrument refuses; it is never invented).
 
 - `spec of cage-isolated` (in `composed/bottom-rung-priorityclass.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of bucketserversideencryptionconfigurations.s3.aws.m.upbound.io` (in `composed/cloud-crds/bucketserversideencryptionconfigurations.s3.aws.m.upbound.io.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of kyverno:cloud-cr-view` (in `composed/cloud-crds/cloud-rbac.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of instances.rds.aws.m.upbound.io` (in `composed/cloud-crds/instances.rds.aws.m.upbound.io.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of None` (in `composed/cloud-crds/kustomization.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of datastore-s3-compliant` (in `composed/cloud-workload/claims.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of datastore-rds-compliant` (in `composed/cloud-workload/claims.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of datastore-rds-noncompliant` (in `composed/cloud-workload/claims.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of None` (in `composed/cloud-workload/kustomization.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of None` (in `composed/cloud/v1.0.0/kustomization.yaml`) — this object declares no mutation, validation or generation this page can read
 - `spec of cage-baseline-5-0-0` (in `composed/policies/v5.0.0/cage-baseline.yaml`) — this object declares no mutation, validation or generation this page can read
 - `spec of cage-isolated-5-0-0` (in `composed/policies/v5.0.0/cage-isolated.yaml`) — this object declares no mutation, validation or generation this page can read
 - `spec of cage-quarantine-5-0-0` (in `composed/policies/v5.0.0/cage-quarantine.yaml`) — this object declares no mutation, validation or generation this page can read
@@ -183,4 +205,4 @@ Two things this page can never tell you, by construction, and neither is a field
 
 ---
 
-Counted from the artefact: 5 publisher(s), 34 installed object(s), 34 recorded member(s), 9 price(s), 287 selected control(s), 284 hole(s), 2 recorded limit(s), 15 named absence(s).
+Counted from the artefact: 5 publisher(s), 47 installed object(s), 34 recorded member(s), 9 price(s), 287 selected control(s), 284 hole(s), 2 recorded limit(s), 24 named absence(s).
