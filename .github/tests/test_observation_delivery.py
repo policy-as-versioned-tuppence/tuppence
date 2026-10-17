@@ -6,6 +6,7 @@ live GitHub rights. The shared immutable reviewer is tested in its hub source.
 """
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import tempfile
@@ -38,7 +39,7 @@ class ObservationDelivery(unittest.TestCase):
         doc, body = shell(clock)
         with tempfile.TemporaryDirectory(prefix='observation-transport-') as temporary:
             temp = Path(temporary);root = temp / 'checkout';target = temp / 'remote.git';root.mkdir()
-            env = dict(os.environ, GIT_CONFIG_COUNT='2', GIT_CONFIG_KEY_0='commit.gpgsign',
+            env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_COUNT='2', GIT_CONFIG_KEY_0='commit.gpgsign',
                        GIT_CONFIG_VALUE_0='false', GIT_CONFIG_KEY_1='tag.gpgsign', GIT_CONFIG_VALUE_1='false',
                        GITHUB_REF_NAME=ref or default, DEFAULT_BRANCH=default, OBSERVATION_CLOCK=clock,
                        OBSERVATION_LANE=doc['env']['OBSERVATION_LANE'], GITHUB_RUN_ID='100',
@@ -74,6 +75,23 @@ class ObservationDelivery(unittest.TestCase):
             if declaration:
                 (root / 'party.yaml').write_text('party: changed\n');git('add', 'party.yaml')
             tools = temp / 'bin';tools.mkdir();gh = tools / 'gh'
+            # Observe the actual Git configuration at the real commit call. The
+            # fixture still substitutes signing, never a certificate or log proof.
+            real_git = shutil.which('git')
+            self.assertIsNotNone(real_git)
+            git_probe = tools / 'git'
+            git_probe.write_text(
+                '#!/usr/bin/env python3\n'
+                'import os, subprocess, sys\n'
+                'from pathlib import Path\n'
+                'real_git = ' + repr(real_git) + '\n'
+                'args = sys.argv[1:]\n'
+                'if "commit" in args:\n'
+                '    prefix = args[:args.index("commit")]\n'
+                '    result = subprocess.run([real_git, *prefix, "config", "--get", "gitsign.rekorMode"], capture_output=True, text=True)\n'
+                '    Path(' + repr(str(temp / 'sign-mode')) + ').write_text(result.stdout.strip() or "<unset>")\n'
+                'os.execv(real_git, [real_git, *args])\n')
+            git_probe.chmod(0o755)
             gh.write_text('#!/bin/sh\nset -eu\n' + ('exit 1\n' if refuse_pr else
                 'test "$(git --git-dir=' + str(target) + ' rev-parse refs/heads/' + branch + ')" = "$(git rev-parse HEAD)"\nprintf "%s\\n" "$*" > ' + str(temp / 'pr-called') + '\n'))
             gh.chmod(0o755);env['PATH'] = str(tools) + os.pathsep + env['PATH']
@@ -84,6 +102,8 @@ class ObservationDelivery(unittest.TestCase):
                 self.assertEqual(current, source);self.assertFalse(pending);self.assertFalse((temp / 'pr-called').exists());return
             if declaration:
                 self.assertNotEqual(result.returncode, 0);self.assertEqual(current, source);self.assertFalse(pending);return
+            self.assertEqual((temp / 'sign-mode').read_text(), 'offline',
+                             'the actual signing call must embed its Rekor proof')
             if collision or race:
                 self.assertNotEqual(result.returncode, 0);self.assertEqual(pending, source);self.assertFalse((temp / 'pr-called').exists());return
             self.assertEqual(result.returncode, 1 if refuse_pr else 0, result.stdout + result.stderr)

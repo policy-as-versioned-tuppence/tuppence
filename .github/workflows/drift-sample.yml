@@ -437,7 +437,8 @@ jobs:
           git config gpg.format x509
           git config gpg.x509.program gitsign
           git config commit.gpgsign true
-          git commit -m "drift sample: five facts on an ephemeral cluster [skip ci]"
+          # Embed the signed Rekor proof; discovery must not depend on its search index.
+          git -c gitsign.rekorMode=offline commit -m "drift sample: five facts on an ephemeral cluster [skip ci]"
           # Reviewed inline producer tail. Embed in the adopter workflow AFTER its lane
           # cage has signed the original commit. Do not execute a checkout program with
           # the producer's token. Required caller data: DEFAULT_BRANCH, OBSERVATION_CLOCK,
