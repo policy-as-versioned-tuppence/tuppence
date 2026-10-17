@@ -73,8 +73,8 @@ spec:
   interval: 1m
   url: https://github.com/policy-as-versioned-tuppence/tuppence
   ref:
-    tag: v4.1.0
-    commit: 0fdb1e38ceeadf413bc014ac9846b03122c090c1
+    tag: v4.1.1
+    commit: c962fcdc9274321610205757c01ce61e12f4859c
     # The resolved SHA of the genuine signed v4.1.0 cloud Source A release (2026-10-17).
     # Belt-and-braces immutability, ADR-0001.
 ---
