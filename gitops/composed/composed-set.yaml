@@ -24,10 +24,10 @@
 #     install platform's tree; it installs the artefact its own composition rendered from
 #     platform's and nist's signed parents (composed/HEADER.yaml records those parent SHAs, and
 #     fact 3 of the sample checks the live platform and nist pins against them).
-#   * composed delivery uses the genuine v4.0.1 Composition B release, whose signed tree
-#     binds the apps source and native inventory to Source A v4.0.0. Its complete policy window
-#     is 5.0.0, 6.0.0 and 7.0.0. Apps and inventory stay bound to Source A; this reviewed pointer
-#     moves composed delivery to B. Renovate tracks publisher parents rather than self-pins.
+#   * composed delivery selects the genuine signed v4.1.0 cloud Source A release. The Pod
+#     window remains 5.0.0, 6.0.0 and 7.0.0; apps and native inventory retain their existing
+#     Source A v4.0.0 bindings. This atomic B change moves the composed pointer and adds the
+#     three cloud signature gates together. Renovate tracks publisher parents, not self-pins.
 #   * there is no `spec.verify` here. Flux's GitRepository.spec.verify speaks OpenPGP, and one
 #     signature -- the gitsign tag -- is the only one this estate has (ADR-0023, D3). Verification
 #     at the source boundary is the identity-pinned gitsign-verifying controller of ticket 41,
@@ -66,16 +66,16 @@ metadata:
     # verified with somebody else's identity is observed false rather than merely 'verified'.
     policy-as-versioned.dev/gitsign-identity-regexp: ^https://github\.com/policy-as-versioned-tuppence/tuppence/\.github/workflows/cut-release\.yml@refs/heads/(main|release/[0-9]+\.[0-9]+\.x)$
     policy-as-versioned.dev/gitsign-issuer: https://token.actions.githubusercontent.com
-    policy-as-versioned.dev/gitsign-gates: flux-system/composed-v5-0-0,flux-system/composed-v6-0-0,flux-system/composed-v7-0-0,flux-system/composed-machinery
+    policy-as-versioned.dev/gitsign-gates: flux-system/composed-v5-0-0,flux-system/composed-v6-0-0,flux-system/composed-v7-0-0,flux-system/composed-machinery,flux-system/crossplane-crds,flux-system/cloud-policies,flux-system/cloud-claims
   labels:
     policy-as-versioned.dev/composed-for: tuppence
 spec:
   interval: 1m
   url: https://github.com/policy-as-versioned-tuppence/tuppence
   ref:
-    tag: v4.0.1
-    commit: dbaa026f6510fe5c0042f33f29081f3840ea59c3
-    # The resolved SHA of the genuine signed v4.0.1 Composition B release (2026-10-04).
+    tag: v4.1.0
+    commit: 0fdb1e38ceeadf413bc014ac9846b03122c090c1
+    # The resolved SHA of the genuine signed v4.1.0 cloud Source A release (2026-10-17).
     # Belt-and-braces immutability, ADR-0001.
 ---
 apiVersion: fluxcd.controlplane.io/v1
@@ -96,7 +96,7 @@ spec:
         - { version: "5.0.0" }
         - { version: "6.0.0" }
         - { version: "7.0.0" }
-        # The signed v4.0.1 tree carries all three versions, and its machinery admits exactly
+        # The signed v4.1.0 tree carries all three versions, and its machinery admits exactly
         # this complete window. Current workload declarations claim 7.0.0; the deliberately
         # stale claim in reset/workloads.yaml remains subject to the orphan cage.
   resourcesTemplate: |
