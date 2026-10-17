@@ -329,7 +329,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          # Embed the signed Rekor proof; discovery must not depend on its search index.
           git -c gpg.format=x509 -c gpg.x509.program=gitsign \
+            -c gitsign.rekorMode=offline \
             -c user.name="tuppence twin sweep" \
             -c user.email="twin-sweep@policy-as-versioned-tuppence.invalid" \
             commit -S -m "twin sweep: record the emitter observation [skip ci]"
