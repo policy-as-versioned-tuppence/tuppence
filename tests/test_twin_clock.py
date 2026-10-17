@@ -91,9 +91,11 @@ class TwinClock(unittest.TestCase):
         self.assertIn("needs.twin.outputs.agent_rung != 'isolated'", self.write['if'])
         for step in _steps(self.write):
             run = COMMENT.sub('', str(step.get('run', '')))
-            if 'gh pr create' in run or 'git checkout -b' in run:
-                self.assertIn("steps.cage.outputs.rung == 'baseline'", step['if'])
-                self.assertIn("steps.cage.outputs.rung == 'restricted'", step['if'])
+            self.assertNotIn('git checkout -b', run, 'this clock proposes observations, never declarations')
+            if 'gh pr create' in run:
+                self.assertEqual(step.get('id'), 'sign')
+                self.assertIn('HEAD:"${DELIVERY_BRANCH}"', run)
+                self.assertNotIn('PROPOSAL_PATHS', run)
 
     @classmethod
     def setUpClass(cls):
@@ -279,7 +281,7 @@ class TwinClock(unittest.TestCase):
     # --- the split ----------------------------------------------------------------------------------
     def test_write_job_has_no_hub_checkout_and_runs_inline_shell_only(self):
         self.assertEqual(self.write['needs'], 'twin')
-        self.assertEqual(self.write['permissions'], {'contents': 'write', 'id-token': 'write'})
+        self.assertEqual(self.write['permissions'], {'contents': 'write', 'pull-requests': 'write', 'id-token': 'write'})
         for step in _steps(self.write):
             uses = str(step.get('uses', ''))
             if uses:
@@ -303,7 +305,7 @@ class TwinClock(unittest.TestCase):
         self.assertLess(cage, sign)
         self.assertLess(sign, gate)
         self.assertIn('commit -S', _steps(self.write)[sign]['run'])
-        self.assertNotIn('gh pr', '\n'.join(str(s.get('run', '')) for s in _steps(self.write)))
+        self.assertEqual([i for i,s in enumerate(_steps(self.write)) if 'gh pr create' in str(s.get('run', ''))], [sign])
         cage_shell = _steps(self.write)[cage]['run']
         for fragment in CAGE_SHELL:
             self.assertIn(fragment, cage_shell)
@@ -402,7 +404,7 @@ class TwinClock(unittest.TestCase):
             env = dict(os.environ, GIT_CONFIG_COUNT='3', GIT_CONFIG_KEY_0='commit.gpgsign',
                        GIT_CONFIG_VALUE_0='false', GIT_CONFIG_KEY_1='tag.gpgsign',
                        GIT_CONFIG_VALUE_1='false', GIT_CONFIG_KEY_2='core.hooksPath',
-                       GIT_CONFIG_VALUE_2='/dev/null', GITHUB_REF_NAME='main',
+                       GIT_CONFIG_VALUE_2='/dev/null', GITHUB_REF_NAME='main', DEFAULT_BRANCH='main',
                        OBSERVATION_LANE=self.doc['env']['OBSERVATION_LANE'])
 
             def git(*args):
@@ -443,7 +445,7 @@ class TwinClock(unittest.TestCase):
             first = subprocess.run(['bash', '-e', '-c', body], cwd=root, env=env, capture_output=True, text=True)
             self.assertEqual(first.returncode, 0, first.stderr)
             self.assertEqual((root / 'observations/twin-sweep.jsonl').read_text(), '{"run": "1"}\n')
-            self.assertEqual(out.read_text(), 'recorded=true\n')
+            self.assertEqual(out.read_text(), 'prepared=true\n')
             (handoff / 'observation.jsonl').write_text('{"run": "2"}\n')
             second = subprocess.run(['bash', '-e', '-c', body], cwd=root, env=env, capture_output=True, text=True)
             self.assertEqual(second.returncode, 0, second.stderr)
