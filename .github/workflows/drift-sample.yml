@@ -240,6 +240,16 @@ jobs:
           kubectl --context "${CTX}" -n flux-system rollout status deploy/flux-operator --timeout=180s || true
           kubectl --context "${CTX}" apply -k gitops/composed/
 
+          # The cloud routes use the same signed composed source. Select them
+          # only once its actual tag contains the cloud package; source A can
+          # prepare a future release without pretending the current pin has it.
+          cloud_tag="$(python3 -c 'import sys; sys.path.insert(0, "scripts"); import render_composed as rc; print(rc.pinned_tag())')" || cloud_tag=""
+          if [ -n "$cloud_tag" ] && git cat-file -e "${cloud_tag}:composed/CLOUD-PARENT.json" 2>/dev/null; then
+            kubectl --context "${CTX}" apply -k gitops/cloud/ || true
+          else
+            echo "cloud delivery waits for the selected signed composed tag to carry its package"
+          fi
+
           # ROUND 4 OF THE WAIT ORDER (ticket 107). Rounds 2 and 3 were wrong in the same way:
           # each asked a question before the answer could exist and took the silence for a yes.
           # Round 3 ran the Kustomization enumeration FIRST, so `get kustomizations -o name` ran

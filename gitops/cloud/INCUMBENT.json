@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/policy-as-versioned-flux/datastore",
+  "commit": "988e414eb01c7f768bdd9fc75a0d7e068745a9b3",
+  "path": "claims.yaml",
+  "git_blob": "ad5b2471792cdbea9c317412390252cb3800ffdb",
+  "sha256": "6f6a2a8a217be889cb08cebe0a8151b0b5cf0f7092a2c8005e55fc7a7c576fb3",
+  "source_snapshot": "sources/datastore-claims.yaml",
+  "lift_changes": {
+    "namespace": {
+      "from": "default",
+      "to": "tuppence"
+    },
+    "claim_label": {
+      "from": "mycompany.com/policy-version",
+      "to": "policy-as-versioned.dev/policy-version"
+    },
+    "claim_version": {
+      "from": "2.2.0",
+      "to": "5.0.0"
+    }
+  },
+  "proof_boundary": "declared-resource-fidelity-not-AWS-reconciliation"
+}

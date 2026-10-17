@@ -1,0 +1,11 @@
+# A separately signed cloud package; the accepted Pod policy parent stays unchanged.
+# This is compiler input, not a cluster source or a second policy installation.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: platform-cloud
+spec:
+  url: https://github.com/policy-as-versioned-platform/platform
+  ref:
+    tag: cloud/v1.0.0
+    commit: d314b8df0b19c42ea816c0a6ada41913b7940fbe

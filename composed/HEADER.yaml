@@ -621,7 +621,7 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: d24f456faac58e569863e471391c84d9d42948f1b4b3d1765a63534351b1bec1
+  after: 6cec3e047411e3bbcce244208e0f10932e67bc4489c64b90e5f3f542a9440403
   before:
     header:
       parents:
@@ -1375,3 +1375,34 @@ exposure:
     version: 1.0.0
     amount: 84198283.0910635
     controls: []
+cloud-package:
+  party: platform
+  kind: implementations
+  name: cloud
+  version: 1.0.0
+  tag: cloud/v1.0.0
+  sha: d314b8df0b19c42ea816c0a6ada41913b7940fbe
+  path: implementations/cloud
+  provider_crds:
+  - name: instances.rds.aws.m.upbound.io
+    url: https://raw.githubusercontent.com/crossplane-contrib/provider-upjet-aws/857b535dd0eb9b8242ad9d7c4e54aaa3e4616d60/package/crds/rds.aws.m.upbound.io_instances.yaml
+    sha256: 1ff0f88ac61aaaf4004e6dc41a9a4175bc532924b99a2d0da9e52b9658958897
+    path: rds.aws.m.upbound.io_instances.yaml
+    version: v2.6.0
+    commit: 857b535dd0eb9b8242ad9d7c4e54aaa3e4616d60
+    rendered_sha256: 58bc5d1596106b00f65addecbd594be840dfcbba9464592e9c202ffdeb8d5b14
+  - name: bucketserversideencryptionconfigurations.s3.aws.m.upbound.io
+    url: https://raw.githubusercontent.com/crossplane-contrib/provider-upjet-aws/857b535dd0eb9b8242ad9d7c4e54aaa3e4616d60/package/crds/s3.aws.m.upbound.io_bucketserversideencryptionconfigurations.yaml
+    sha256: 08dcea750d814af6216917691596e73dfd997b4b63630ae4a93cf2b558e7feed
+    path: s3.aws.m.upbound.io_bucketserversideencryptionconfigurations.yaml
+    version: v2.6.0
+    commit: 857b535dd0eb9b8242ad9d7c4e54aaa3e4616d60
+    rendered_sha256: 7ed84792903e69f81fd43efdf0f6a14c5e5f80dfb4645cf1f3a63ea8fb8a2aff
+  incumbent:
+    repository: https://github.com/policy-as-versioned-flux/datastore
+    commit: 988e414eb01c7f768bdd9fc75a0d7e068745a9b3
+    path: claims.yaml
+    git_blob: ad5b2471792cdbea9c317412390252cb3800ffdb
+    sha256: 6f6a2a8a217be889cb08cebe0a8151b0b5cf0f7092a2c8005e55fc7a7c576fb3
+  proof_boundary: admission-only
+  signature_identity: ^https://github\.com/policy-as-versioned-platform/platform/\.github/workflows/cloud-release\.yml@refs/heads/(main|release/[0-9]+\.[0-9]+\.x)$

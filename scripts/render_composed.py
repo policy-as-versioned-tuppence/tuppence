@@ -267,16 +267,21 @@ def expand(repo: str = REPO) -> list[dict]:
     return [d for d in yaml.safe_load_all(text) if isinstance(d, dict) and d.get("kind")]
 
 
-def routes(repo: str = REPO) -> tuple[list[str], list[dict]]:
+def routes(repo: str = REPO, ref: str | None = None) -> tuple[list[str], list[dict]]:
     """(the composed paths the generated Kustomizations reconcile, the objects installed inline)."""
     source, _ = install(repo)
     name = source["metadata"]["name"]
     paths, inline = [], []
-    for doc in expand(repo):
+    declarations = expand(repo)
+    # Cloud is a separately signed package but uses this same composed source.
+    # A new worktree declaration cannot activate paths absent from its actual pin.
+    if _exists('composed/CLOUD-PARENT.json', ref or pinned_tag(repo), repo):
+        declarations.extend(_objects(_read('gitops/cloud/cloud-delivery.yaml', None, repo)))
+    for doc in declarations:
         spec = doc.get("spec") or {}
-        ref = spec.get("sourceRef") or {}
+        source_ref = spec.get("sourceRef") or {}
         if (doc["kind"] == "Kustomization" and str(doc.get("apiVersion", "")).startswith("kustomize.toolkit.fluxcd.io/")
-                and ref.get("kind") == "GitRepository" and ref.get("name") == name):
+                and source_ref.get("kind") == "GitRepository" and source_ref.get("name") == name):
             paths.append(os.path.normpath(str(spec.get("path") or ".")))
         else:
             inline.append(doc)
@@ -384,7 +389,7 @@ def compare(declared: dict, live: dict) -> dict:
 
 def _delivered(ref: str | None, repo: str = REPO) -> list[tuple[str, dict]]:
     """(where it came from, object) for everything the install delivers, in delivery order."""
-    paths, inline = routes(repo)
+    paths, inline = routes(repo, ref)
     out: list[tuple[str, dict]] = []
     for path in paths:
         if broken_files(path, ref, repo):
@@ -406,6 +411,10 @@ def render(ref: str | None = None, repo: str = REPO) -> dict[str, dict]:
     Kustomizations themselves are Flux machinery, not policy, and are not rendered."""
     objects: dict[str, dict] = {}
     for source, doc in _delivered(ref, repo):
+        if source.startswith('composed/cloud-workload/'):
+            # These are workload intents changed by admission, not policy bodies.
+            # The cloud admission observer grades their actual caged fields.
+            continue
         if doc["kind"] == "Kustomization" and str(doc.get("apiVersion", "")).startswith("kustomize.toolkit"):
             continue
         doc = dict(doc)
@@ -439,7 +448,7 @@ def reach(ref: str | None = None, repo: str = REPO) -> list[str]:
     if ref is None:
         ref = pinned_tag(repo)
     array = versions(None, repo)
-    paths, inline = routes(repo)
+    paths, inline = routes(repo, ref)
 
     tree_versions = sorted({p.split("/")[2][1:] for p in _tree(f"{COMPOSED}/policies", ref, repo)
                             if p.count("/") >= 3})

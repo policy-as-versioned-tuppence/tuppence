@@ -8,5 +8,5 @@ metadata:
 spec:
   url: https://github.com/policy-as-versioned-platform/platform
   ref:
-    tag: v5.0.0
-    commit: 703eff6aee959843c4160aa54fd03413f62858cc
+    tag: v5.1.0
+    commit: d314b8df0b19c42ea816c0a6ada41913b7940fbe
