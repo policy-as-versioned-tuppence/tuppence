@@ -268,9 +268,11 @@ class ReadFromWhereItComes(unittest.TestCase):
 
 
 class ThisRepository(unittest.TestCase):
-    def test_this_checkout_expands_one_route_per_version_and_the_machinery(self):
+    def test_this_checkout_expands_pod_machinery_and_signed_cloud_routes(self):
         paths, inline = rc.routes()
-        self.assertEqual(paths, [f"composed/policies/v{v}" for v in rc.versions()] + ["composed"])
+        self.assertEqual(paths, [f"composed/policies/v{v}" for v in rc.versions()] + [
+            "composed", "composed/cloud-crds", "composed/cloud/v1.0.0", "composed/cloud-workload",
+        ])
         self.assertEqual(inline, [])
 
 
