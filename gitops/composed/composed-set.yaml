@@ -24,10 +24,10 @@
 #     install platform's tree; it installs the artefact its own composition rendered from
 #     platform's and nist's signed parents (composed/HEADER.yaml records those parent SHAs, and
 #     fact 3 of the sample checks the live platform and nist pins against them).
-#   * composed delivery selects the genuine signed v4.1.0 cloud Source A release. The Pod
+#   * composed delivery selects the genuine signed v4.1.1 cloud Source B release. The Pod
 #     window remains 5.0.0, 6.0.0 and 7.0.0; apps and native inventory retain their existing
-#     Source A v4.0.0 bindings. This atomic B change moves the composed pointer and adds the
-#     three cloud signature gates together. Renovate tracks publisher parents, not self-pins.
+#     Source A v4.0.0 bindings. All three cloud signature gates remain active together.
+#     Renovate tracks publisher parents, not self-pins.
 #   * there is no `spec.verify` here. Flux's GitRepository.spec.verify speaks OpenPGP, and one
 #     signature -- the gitsign tag -- is the only one this estate has (ADR-0023, D3). Verification
 #     at the source boundary is the identity-pinned gitsign-verifying controller of ticket 41,
@@ -73,9 +73,9 @@ spec:
   interval: 1m
   url: https://github.com/policy-as-versioned-tuppence/tuppence
   ref:
-    tag: v4.1.0
-    commit: 0fdb1e38ceeadf413bc014ac9846b03122c090c1
-    # The resolved SHA of the genuine signed v4.1.0 cloud Source A release (2026-10-17).
+    tag: v4.1.1
+    commit: c962fcdc9274321610205757c01ce61e12f4859c
+    # The resolved SHA of the genuine signed v4.1.1 cloud Source B release (2026-10-17).
     # Belt-and-braces immutability, ADR-0001.
 ---
 apiVersion: fluxcd.controlplane.io/v1
