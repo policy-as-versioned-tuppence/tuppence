@@ -31,6 +31,34 @@ def selfcheck() -> int:
     risk = {"related-observations": [{"observation-uuid": "failed-observation"}]}
     assert missing_risks(assessment, [risk]) == [], "the actual risk resolves the failed observation"
     assert missing_risks(assessment, [{"related-observations": [{"observation-uuid": "somebody-else"}]}]) == ["failed-observation"]
+    # One UUID can be reported by several served versions. A later non-failure
+    # must never hide the failed observation to which this finding points.
+    for non_failure in ("skip", "pass"):
+        collision = {"uuid": fail["uuid"], "props": [{"name": "result", "value": non_failure}]}
+        for observations in ([fail, passed, collision], [collision, passed, fail]):
+            view = copy.deepcopy(assessment)
+            view["assessment-results"]["results"][0]["observations"] = observations
+            assert missing_risks(view, []) == ["failed-observation"], \
+                f"same-ID {non_failure} must not hide failure in either observation order"
+            assert missing_risks(view, [risk]) == [], "a real risk still resolves a duplicate-ID failure"
+            view["assessment-results"]["results"][0]["findings"][0]["target"]["status"]["state"] = "satisfied"
+            assert missing_risks(view, []) == [], "a satisfied finding creates no missing risk"
+        without_failure = copy.deepcopy(assessment)
+        without_failure["assessment-results"]["results"][0]["observations"] = [collision, passed]
+        assert missing_risks(without_failure, []) == [], "non-failure-only observations need no risk"
+    unlinked = copy.deepcopy(assessment)
+    unlinked["assessment-results"]["results"][0]["observations"].append({"uuid": "unlinked", "props": None})
+    assert missing_risks(unlinked, []) == ["failed-observation"], "unlinked properties are not interpreted"
+    unlinked["assessment-results"]["results"][0]["observations"][-1]["props"] = 42
+    assert missing_risks(unlinked, []) == ["failed-observation"], "unlinked malformed properties are not interpreted"
+    malformed = copy.deepcopy(assessment)
+    malformed["assessment-results"]["results"][0]["observations"].append({"props": [{"name": "result", "value": "skip"}]})
+    try:
+        missing_risks(malformed, [])
+    except KeyError:
+        pass
+    else:
+        raise AssertionError("every observation must still carry its UUID")
     # A bare link is not a priced Cage decision. This fixture exercises the collector's
     # validation only; the composer tests bind the real select()/oscal_risk() pair.
     decision = {"action": "Cage", "org": "fixture", "tier": "isolated", "reason": "fixture decision",
@@ -93,14 +121,17 @@ def selfcheck() -> int:
 def missing_risks(assessment: dict, risks: list[dict]) -> list[str]:
     failed = set()
     for result in (assessment.get("assessment-results") or {}).get("results") or []:
-        observations = {o["uuid"]: o for o in result.get("observations") or []}
+        observations: dict[str, list[dict]] = {}
+        for observation in result.get("observations") or []:
+            observations.setdefault(observation["uuid"], []).append(observation)
         for finding in result.get("findings") or []:
             if ((finding.get("target") or {}).get("status") or {}).get("state") != "not-satisfied":
                 continue
             for link in finding.get("related-observations") or []:
                 ident = link["observation-uuid"]
-                obs = observations.get(ident) or {}
-                if any(p.get("name") == "result" and p.get("value") == "fail" for p in obs.get("props") or []):
+                if any(prop.get("name") == "result" and prop.get("value") == "fail"
+                       for observation in observations.get(ident, [])
+                       for prop in observation.get("props") or []):
                     failed.add(ident)
     linked = {link["observation-uuid"] for risk in risks for link in risk.get("related-observations") or []}
     return sorted(failed - linked)
