@@ -202,7 +202,7 @@ five_fact_sample:
 # registration is a fall, not a wait (ticket 152 Q10).
 cage_behaviour_sample:
   schema: drift.cage-behaviour/v2
-  declared_on: '2026-10-03'
+  declared_on: '2026-10-18'
   ticket: >-
     ecosystem 152, which re-registers ecosystem 86's section (delegated, 2026-09-25). Ecosystem 86
     came from ticket 75 Q8 (owner-delegated, the lane branch).

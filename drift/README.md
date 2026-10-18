@@ -96,3 +96,20 @@ three consecutive nulls for the same source and fact read FAIL. A missing row is
 a true or observed false breaks the streak. Samples from different sources cannot stand
 in for each other. `five-facts.py selfcheck`, `served_apps.py selfcheck`, and
 `oscal_lane.py selfcheck` exercise these public instruments before the served cage proof.
+
+**2026-10-18: current cage question re-registered.** The current
+`cage_behaviour_sample` declaration uses `declared_on: '2026-10-18'`. Its previous
+field said 2026-10-03, although the reference question first reached this repo's
+main on 2026-10-04 in [f575dc12](https://github.com/policy-as-versioned-tuppence/tuppence/commit/f575dc12de130c444d98a831de0ca21fd68b9c46).
+That incorrect field, the original landing and every original sample remain
+immutable history; this is a current re-registration, not a backdated correction.
+
+The behavioral question is otherwise unchanged. `five-facts.py` dates its cutoff
+from the actual main commit that changed the whole registered section, including
+its comments; the date field supplies no virtual cutoff. Samples before this
+landing retain their recorded values and attribution but cannot establish PASS
+for facts 6 and 7 under this registration. The three-null fall rule counts only
+new post-registration samples. A genuine subsequent scheduled sample must score
+those facts; a could-not-look is still not done. Facts 1–5 and the workload
+registrations are unchanged, and any real observed FALSE still fails. This dated
+explanation is outside the registered section.
