@@ -96,6 +96,14 @@ jobs:
       - uses: actions/checkout@v4
         with: { path: tuppence, fetch-depth: 0 }
 
+      - name: Install pinned identity verifier
+        uses: ./tuppence/.github/actions/install-gitsign
+
+      - name: Independently pinned compiler tools
+        uses: ./tuppence/.github/actions/platform-tools
+        with:
+          adopter-dir: tuppence
+
       - name: read the platform tag this PR's own head pins
         id: pin
         run: |
@@ -120,18 +128,14 @@ jobs:
           # and driftwood already had this shape; tuppence was the odd one out.
 
       - name: party artefact check (ticket 11) -- schema, pinned tags, baseline mirror
-        # platform/party/party_artefact.py, called through the pinned platform
-        # dependency this job already checked out above -- the same "library,
-        # not a service" shape ci-check.py uses. Refuses if party.yaml is
-        # structurally invalid, if a declared implementations/controls version
-        # disagrees with what gitops/platform/platform-pin.yaml or
-        # gitops/flux-system/gotk-sync-nist.yaml actually pin, or if
-        # gitops/apps/nist-pin-configmap.yaml's baselineName disagrees with
-        # party.yaml's own baseline.
+        # Compiler input validation follows the independently pinned, verified tools.
+        # The accepted platform checkout still supplies the policy/enforcement gates.
+        # This required checker validates the party schema and the existing pin and
+        # baseline mirrors; missing tooling or a refusal fails the job.
         run: |
           set -euo pipefail
           pip install --quiet pyyaml
-          python3 platform/party/party_artefact.py check tuppence/party.yaml --adopter-dir tuppence
+          python3 platform-tools/party/party_artefact.py check tuppence/party.yaml --adopter-dir tuppence
 
       - name: read the engine this repository declares (gitops/engine/kyverno.yaml, ticket 147)
         id: engine
