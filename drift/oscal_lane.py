@@ -236,8 +236,11 @@ def component_inputs(sampler, base: dict) -> tuple[dict, dict, list[dict]]:
     if not text:
         raise ValueError('cloud component-definition is missing from the selected signed composition')
     cloud = json.loads(text)
-    if cloud['component-definition']['metadata']['version'] != version:
-        raise ValueError('cloud component-definition version differs from its parent')
+    # The mapping document's content revision is independent of the package.
+    # The selected composition and exact parent/path still bind its provenance.
+    document_version = cloud['component-definition']['metadata'].get('version')
+    if not isinstance(document_version, str) or not document_version.strip():
+        raise ValueError('cloud component-definition has no nonblank document version')
     combined = copy.deepcopy(base)
     combined['component-definition']['components'].extend(cloud['component-definition']['components'])
     mappings: dict[str, str] = {}

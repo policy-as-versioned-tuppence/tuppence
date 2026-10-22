@@ -17,23 +17,34 @@ spec = importlib.util.spec_from_file_location('cloud_oscal_lane', ROOT / 'drift/
 assert spec is not None and spec.loader is not None
 lane = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(lane)
+UNCHANGED_DOCUMENT_VERSION = object()
 
 
 class CloudOscal(unittest.TestCase):
-    def collect(self, result='fail', fault=None):
+    def collect(self, result='fail', fault=None, document_version=UNCHANGED_DOCUMENT_VERSION):
         platform = Path(os.environ.get('PAVC_TEST_PLATFORM', str(ROOT.parent / 'platform')))
         self.assertTrue((platform / 'oscal/result2oscal.py').is_file(), 'the real pinned converter is required')
         report = {'scope': {'apiVersion': 'rds.aws.m.upbound.io/v1beta1', 'kind': 'Instance',
                   'namespace': 'tuppence', 'name': 'datastore-rds-noncompliant', 'uid': 'synthetic-subject'},
                   'results': [{'policy': 'require-rds-multi-az-5-0-0', 'result': result}]}
         files = {str(path.relative_to(ROOT)): path.read_text() for path in (ROOT / 'composed').rglob('*') if path.is_file()}
+        parent = json.loads(files['composed/CLOUD-PARENT.json'])
+        component_path = 'composed/cloud/v' + parent['version'] + '/component-definition.json'
+        if document_version is not UNCHANGED_DOCUMENT_VERSION or fault == 'missing-document-version':
+            component = json.loads(files[component_path])
+            metadata = component['component-definition']['metadata']
+            if fault == 'missing-document-version':
+                metadata.pop('version')
+            else:
+                metadata['version'] = document_version
+            files[component_path] = json.dumps(component)
         if fault == 'missing-component':
-            files.pop('composed/cloud/v1.0.0/component-definition.json')
+            files.pop(component_path)
         elif fault == 'conflicting-map':
-            comp = json.loads(files['composed/cloud/v1.0.0/component-definition.json'])
+            comp = json.loads(files[component_path])
             requirement = comp['component-definition']['components'][0]['control-implementations'][0]['implemented-requirements'][0]
             requirement['props'][0]['value'] = 'require-nonroot'
-            files['composed/cloud/v1.0.0/component-definition.json'] = json.dumps(comp)
+            files[component_path] = json.dumps(comp)
         elif fault == 'old-composed-tag':
             files.pop('composed/CLOUD-PARENT.json')
             header = yaml.safe_load(files['composed/HEADER.yaml'])
@@ -67,6 +78,22 @@ class CloudOscal(unittest.TestCase):
         self.assertTrue(any(f['target']['target-id'] == 'cp-10' and f['target']['status']['state'] == 'satisfied' for f in findings))
         self.assertEqual(row['missing_risk_observations'], [])
         self.assertEqual(row['risks'], [])
+
+    def test_mapping_document_content_revision_need_not_be_package_semver(self):
+        row = self.collect(document_version='mapping-revision-A')
+        self.assertEqual(row['status'], 'observed', row)
+        self.assertEqual(len(row['missing_risk_observations']), 1)
+        self.assertEqual(row['risks'], [])
+
+    def test_malformed_document_revisions_remain_unreadable(self):
+        for version in (None, False, 0, [], {}, '', ' \t\n'):
+            with self.subTest(version=version):
+                row = self.collect(document_version=version)
+                self.assertEqual(row['status'], 'could-not-look', row)
+                self.assertIn('nonblank document version', row['why'])
+        row = self.collect(fault='missing-document-version')
+        self.assertEqual(row['status'], 'could-not-look', row)
+        self.assertIn('nonblank document version', row['why'])
 
     def test_missing_or_conflicting_signed_mapping_cannot_silently_disappear(self):
         for fault in ('missing-component', 'conflicting-map'):

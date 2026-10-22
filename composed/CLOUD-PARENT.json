@@ -2,9 +2,9 @@
   "party": "platform",
   "kind": "implementations",
   "name": "cloud",
-  "version": "1.0.0",
-  "tag": "cloud/v1.0.0",
-  "sha": "d314b8df0b19c42ea816c0a6ada41913b7940fbe",
+  "version": "1.0.1",
+  "tag": "cloud/v1.0.1",
+  "sha": "995a281ae9778bafa3a2f1f8600254f8f3e7eabb",
   "path": "implementations/cloud",
   "provider_crds": [
     {

@@ -621,7 +621,7 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: 1e1627e5d1347c98a87af7b1c6fc8cd7999ffb041451d7ee99ecdbbe8bd4afce
+  after: 4b58af00fc75716ab275fb6567175f65d63f59bfe8dd1260d8a05d7ebc9bc101
   before:
     header:
       parents:
@@ -1379,9 +1379,9 @@ cloud-package:
   party: platform
   kind: implementations
   name: cloud
-  version: 1.0.0
-  tag: cloud/v1.0.0
-  sha: d314b8df0b19c42ea816c0a6ada41913b7940fbe
+  version: 1.0.1
+  tag: cloud/v1.0.1
+  sha: 995a281ae9778bafa3a2f1f8600254f8f3e7eabb
   path: implementations/cloud
   provider_crds:
   - name: instances.rds.aws.m.upbound.io
