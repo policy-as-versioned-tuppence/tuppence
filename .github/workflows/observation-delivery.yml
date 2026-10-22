@@ -42,8 +42,8 @@ jobs:
       DELIVERY_WORKFLOW: ${{ github.event.workflow_run.name || inputs.workflow }}
       DELIVERY_RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
       DELIVERY_ATTEMPT: ${{ github.event.workflow_run.run_attempt || inputs.attempt }}
-      DELIVERY_SOURCE: 'c68a03f84c739aa3eb1c04fba425c7edb2bac805'
-      DELIVERY_SHA256: 'd49436d138f3d6f05b3772564518e84bd233b1b4b6f24bb2862ebf9994c9d316'
+      DELIVERY_SOURCE: 'a675ee166678fd6b1b0d5d5ebcb35ad96be5b127'
+      DELIVERY_SHA256: 'afc5cac1af0f91593a8c4901603cf9dcbd534bc4923d62a5ac224614362c0b23'
       GITSIGN_VERSION: 0.17.1
       GITSIGN_SHA256: 69213a8a0813a151e5a47d0060862952ff833a845d57309dff76f7ba6600abae
     steps:
