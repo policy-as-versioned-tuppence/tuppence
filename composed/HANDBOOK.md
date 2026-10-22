@@ -32,11 +32,11 @@ Source: the object files under `composed/`, and `composed/evidence.json` → `me
 | `datastore-rds-compliant` | Instance | 5.0.0 | nothing this page can read | — | `composed/cloud-workload/claims.yaml` |
 | `datastore-rds-noncompliant` | Instance | 5.0.0 | nothing this page can read | — | `composed/cloud-workload/claims.yaml` |
 | `None` | Kustomization | — (not versioned) | nothing this page can read | — | `composed/cloud-workload/kustomization.yaml` |
-| `cloud-cage-rds-5-0-0` | MutatingPolicy | 5.0.0 | mutates (1) | platform@d314b8df0b19c42ea816c0a6ada41913b7940fbe | `implementations/cloud/policies/cloud-cage-rds.yaml` |
-| `cloud-cage-s3-5-0-0` | MutatingPolicy | 5.0.0 | mutates (2) | platform@d314b8df0b19c42ea816c0a6ada41913b7940fbe | `implementations/cloud/policies/cloud-cage-s3.yaml` |
-| `None` | Kustomization | — (not versioned) | nothing this page can read | — | `composed/cloud/v1.0.0/kustomization.yaml` |
-| `require-rds-multi-az-5-0-0` | ValidatingPolicy | 5.0.0 | refuses (1) | platform@d314b8df0b19c42ea816c0a6ada41913b7940fbe | `implementations/cloud/policies/require-rds-multi-az.yaml` |
-| `require-s3-bucket-encryption-5-0-0` | ValidatingPolicy | 5.0.0 | refuses (1) | platform@d314b8df0b19c42ea816c0a6ada41913b7940fbe | `implementations/cloud/policies/require-s3-bucket-encryption.yaml` |
+| `cloud-cage-rds-5-0-0` | MutatingPolicy | 5.0.0 | mutates (1) | platform@995a281ae9778bafa3a2f1f8600254f8f3e7eabb | `implementations/cloud/policies/cloud-cage-rds.yaml` |
+| `cloud-cage-s3-5-0-0` | MutatingPolicy | 5.0.0 | mutates (2) | platform@995a281ae9778bafa3a2f1f8600254f8f3e7eabb | `implementations/cloud/policies/cloud-cage-s3.yaml` |
+| `None` | Kustomization | — (not versioned) | nothing this page can read | — | `composed/cloud/v1.0.1/kustomization.yaml` |
+| `require-rds-multi-az-5-0-0` | ValidatingPolicy | 5.0.0 | refuses (1) | platform@995a281ae9778bafa3a2f1f8600254f8f3e7eabb | `implementations/cloud/policies/require-rds-multi-az.yaml` |
+| `require-s3-bucket-encryption-5-0-0` | ValidatingPolicy | 5.0.0 | refuses (1) | platform@995a281ae9778bafa3a2f1f8600254f8f3e7eabb | `implementations/cloud/policies/require-s3-bucket-encryption.yaml` |
 | `governed-namespace-requires-claim` | MutatingPolicy | — (not versioned) | mutates (4) | platform@5.0.0 | `distribution/versions.yaml (static, ADR-0014)` |
 | `governed-namespace-cage-holds` | MutatingPolicy | — (not versioned) | mutates (1) | platform@5.0.0 | `distribution/versions.yaml (static, ticket 89)` |
 | `governed-namespace-unclaimed-report` | ValidatingPolicy | — (not versioned) | refuses (1) | platform@5.0.0 | `distribution/versions.yaml (static, ticket 89)` |
@@ -185,7 +185,7 @@ One recorded limit is deliberately not stated above: `publisher-clone-absent` re
 - `spec of datastore-rds-compliant` (in `composed/cloud-workload/claims.yaml`) — this object declares no mutation, validation or generation this page can read
 - `spec of datastore-rds-noncompliant` (in `composed/cloud-workload/claims.yaml`) — this object declares no mutation, validation or generation this page can read
 - `spec of None` (in `composed/cloud-workload/kustomization.yaml`) — this object declares no mutation, validation or generation this page can read
-- `spec of None` (in `composed/cloud/v1.0.0/kustomization.yaml`) — this object declares no mutation, validation or generation this page can read
+- `spec of None` (in `composed/cloud/v1.0.1/kustomization.yaml`) — this object declares no mutation, validation or generation this page can read
 - `spec of cage-baseline-5-0-0` (in `composed/policies/v5.0.0/cage-baseline.yaml`) — this object declares no mutation, validation or generation this page can read
 - `spec of cage-isolated-5-0-0` (in `composed/policies/v5.0.0/cage-isolated.yaml`) — this object declares no mutation, validation or generation this page can read
 - `spec of cage-quarantine-5-0-0` (in `composed/policies/v5.0.0/cage-quarantine.yaml`) — this object declares no mutation, validation or generation this page can read
