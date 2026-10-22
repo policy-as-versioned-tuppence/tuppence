@@ -1,7 +1,7 @@
 {
   "images": [
     {
-      "database_date": "2026-10-21T13:15:34.794358024Z",
+      "database_date": "2026-10-22T13:15:26.425424764Z",
       "digest": "sha256:4c769ab891a1e1b19b4f5f6884cf9a6ac37ef1cbc0f4aaeae02fdd7c2004d4c5",
       "image": "ghcr.io/policy-as-versioned-tuppence/ledger:v1.0.1@sha256:4c769ab891a1e1b19b4f5f6884cf9a6ac37ef1cbc0f4aaeae02fdd7c2004d4c5",
       "scanner_version": "0.69.3",
@@ -47,6 +47,20 @@
           "installed_version": "2.8.5-r0",
           "package": "libexpat",
           "severity": "MEDIUM"
+        },
+        {
+          "fixed_version": "1.2.6-r3",
+          "id": "CVE-2026-107891",
+          "installed_version": "1.2.6-r2",
+          "package": "musl",
+          "severity": "UNKNOWN"
+        },
+        {
+          "fixed_version": "1.2.6-r3",
+          "id": "CVE-2026-107891",
+          "installed_version": "1.2.6-r2",
+          "package": "musl-utils",
+          "severity": "UNKNOWN"
         },
         {
           "fixed_version": "2.25.4",
