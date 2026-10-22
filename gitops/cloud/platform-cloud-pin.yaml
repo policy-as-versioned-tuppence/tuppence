@@ -7,5 +7,5 @@ metadata:
 spec:
   url: https://github.com/policy-as-versioned-platform/platform
   ref:
-    tag: cloud/v1.0.0
-    commit: d314b8df0b19c42ea816c0a6ada41913b7940fbe
+    tag: cloud/v1.0.1
+    commit: 995a281ae9778bafa3a2f1f8600254f8f3e7eabb
