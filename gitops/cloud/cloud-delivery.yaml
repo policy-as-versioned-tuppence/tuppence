@@ -1,6 +1,6 @@
-# Prepared routes; current tuppence v3.0.0 contains none of these paths.
-# Keep opt-in until trigger, cloud publication, composed tag and self-pin
-# land. The cloud truth check names the missing state as a declared wait.
+# Cloud routes select the genuine signed tuppence v4.1.2 composition.
+# Keep opt-in; the existing gates verify their common signed source.
+# The proof boundary remains admission, not reconciliation in AWS.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata: {name: crossplane-crds, namespace: flux-system}
@@ -23,7 +23,7 @@ spec:
   timeout: 3m
   dependsOn: [{name: crossplane-crds}, {name: composed-machinery}]
   sourceRef: {kind: GitRepository, name: tuppence-composed}
-  path: ./composed/cloud/v1.0.0
+  path: ./composed/cloud/v1.0.1
   prune: true
   wait: true
 ---
