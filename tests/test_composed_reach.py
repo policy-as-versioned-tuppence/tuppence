@@ -8,6 +8,7 @@ with an empty hooks directory and no signing.
 
 Run: python3 -m unittest discover -s tests -p test_composed_reach.py
 """
+import json
 import re
 import subprocess
 import sys
@@ -269,9 +270,14 @@ class ReadFromWhereItComes(unittest.TestCase):
 
 class ThisRepository(unittest.TestCase):
     def test_this_checkout_expands_pod_machinery_and_signed_cloud_routes(self):
+        # The selected publisher artefact owns the package version. Read it
+        # independently of the checkout's delivery route being checked.
+        parent = json.loads(subprocess.run(
+            ["git", "-C", str(ROOT), "show", f"{rc.pinned_tag()}:composed/CLOUD-PARENT.json"],
+            check=True, capture_output=True, text=True).stdout)
         paths, inline = rc.routes()
         self.assertEqual(paths, [f"composed/policies/v{v}" for v in rc.versions()] + [
-            "composed", "composed/cloud-crds", "composed/cloud/v1.0.0", "composed/cloud-workload",
+            "composed", "composed/cloud-crds", f"composed/cloud/v{parent['version']}", "composed/cloud-workload",
         ])
         self.assertEqual(inline, [])
 
