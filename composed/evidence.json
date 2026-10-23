@@ -346,7 +346,146 @@
   ],
   "refusals": [],
   "restatements": [],
-  "cages": [],
+  "cages": [
+    {
+      "party": "tuppence",
+      "rule": "graded-enforcement/cage-tier@7.0.0",
+      "band": 15000.0,
+      "residual": 25.775804140208628,
+      "tier": "isolated",
+      "action": "Cage",
+      "priced_from": "scenarios/workload-ledger-recovery.json",
+      "mode": "recovery_planning",
+      "why": "Owner adopted 2026-10-23: exact declared workload recovery planning assumptions, existing accepted ordinal reduction/cost model and explicit isolated minimum. Unvalidated planning inputs only; no empirical effectiveness, calibration, response evidence or grade promotion. Overlapping counterfactual contingencies are not summed into institutional loss.",
+      "decision": {
+        "version": "owner-adopted-recovery-planning-20261023",
+        "name": "UNVALIDATED PLANNING: Restore the served demo ledger workload and verify its declared application state; no real bank-settlement loss is asserted.",
+        "org": "tuppence",
+        "uncaged_residual": 1288.7902070104303,
+        "tolerance": 15000.0,
+        "tier": "isolated",
+        "floor": "isolated",
+        "action": "Cage",
+        "dials": {
+          "reduce": 0.98,
+          "cost": 15000,
+          "cpu": "100m",
+          "mem": "64Mi",
+          "priorityClass": "cage-isolated",
+          "dropAll": true,
+          "readOnlyRootFs": true,
+          "waf": "heavy",
+          "reach": "none",
+          "evictFirst": true
+        },
+        "tcor": {
+          "tier": "isolated",
+          "residual": 25.775804140208628,
+          "cost_of_controls": 15000.0,
+          "tcor": 15025.775804140208
+        },
+        "reason": "uncaged \u00a31,289; isolated cage -> residual \u00a326 + controls \u00a315,000 = TCoR \u00a315,026 (fits band \u00a315,000)"
+      },
+      "binding": {
+        "subject": "tuppence/ledger",
+        "policy": "cage-tier",
+        "control": "ac-6"
+      },
+      "oscal_risk": {
+        "uuid": "ca4252ca-a035-50dd-a437-4a31809a1803",
+        "title": "tuppence/ledger: cage-tier caged at isolated in tuppence",
+        "description": "uncaged \u00a31,289; isolated cage -> residual \u00a326 + controls \u00a315,000 = TCoR \u00a315,026 (fits band \u00a315,000)",
+        "statement": "Conditional control cage-tier is not satisfied for tuppence/ledger; a isolated cage implements the control on its behalf and the residual is retained, priced, not carved out.",
+        "props": [
+          {
+            "name": "policy",
+            "value": "cage-tier"
+          },
+          {
+            "name": "control",
+            "value": "ac-6"
+          },
+          {
+            "name": "cage-tier",
+            "value": "isolated"
+          }
+        ],
+        "status": "open",
+        "origins": [
+          {
+            "actors": [
+              {
+                "type": "party",
+                "actor-uuid": "52308d8d-4b81-543b-930e-e8f4fef25fb8"
+              }
+            ]
+          }
+        ],
+        "characterizations": [
+          {
+            "origin": {
+              "actors": [
+                {
+                  "type": "party",
+                  "actor-uuid": "52308d8d-4b81-543b-930e-e8f4fef25fb8"
+                }
+              ]
+            },
+            "facets": [
+              {
+                "name": "likelihood",
+                "system": "https://pavf.dev/ns/risk",
+                "value": "likely"
+              },
+              {
+                "name": "impact",
+                "system": "https://pavf.dev/ns/risk",
+                "value": "high"
+              },
+              {
+                "name": "annualised-loss-expectancy",
+                "system": "https://pavf.dev/ns/risk/gbp",
+                "value": "26",
+                "props": [
+                  {
+                    "name": "currency",
+                    "value": "GBP"
+                  },
+                  {
+                    "name": "basis",
+                    "value": "caged-residual"
+                  },
+                  {
+                    "name": "cost-of-controls",
+                    "value": "15000"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "remediations": [
+          {
+            "uuid": "8ecb0abd-4f83-572f-9578-c67c836900f7",
+            "lifecycle": "implemented",
+            "title": "isolated cage",
+            "description": "uncaged \u00a31,289; isolated cage -> residual \u00a326 + controls \u00a315,000 = TCoR \u00a315,026 (fits band \u00a315,000)",
+            "props": [
+              {
+                "name": "type",
+                "value": "mitigate"
+              }
+            ]
+          }
+        ],
+        "related-observations": [
+          {
+            "observation-uuid": "c71e4d36-6295-5466-8368-774631b485e8"
+          }
+        ]
+      }
+    }
+  ],
   "holes": [
     {
       "source": "nist",
@@ -3253,8 +3392,8 @@
           "one day is the schedule's whole interval, the upper bound on the wait for the next run; the mean wait is half of it"
         ]
       },
-      "proposed_tier": "baseline",
-      "old_tier": "baseline",
+      "proposed_tier": "isolated",
+      "old_tier": "isolated",
       "changed": false,
       "old_amount": 18.69514626590289,
       "residuals": {
@@ -3326,12 +3465,12 @@
       "register_version": "v4",
       "tail": "bounded-pert",
       "policy_version": "1.1.0",
-      "policy_basis": "loosest tier whose caged residual (18.70 GBP) is within the tolerance (15000.00 GBP)",
+      "policy_basis": "loosest tier whose caged residual (18.70 GBP) is within the tolerance (15000.00 GBP); clamped up to the party's declared floor 'isolated'",
       "tcor": {
-        "tier": "baseline",
-        "residual": 18.69514626590289,
+        "tier": "isolated",
+        "residual": 0.0,
         "cost_of_controls": 0.0,
-        "tcor": 18.69514626590289
+        "tcor": 0.0
       },
       "rests_on_grade": 3,
       "rests_on_grade_basis": "the register row is published (grade 3 at best: published work, not observed here) and the twin line rests on grade 3; the weaker of the two"
@@ -3523,17 +3662,94 @@
       ]
     }
   ],
-  "deltas": [],
+  "deltas": [
+    {
+      "kind": "floor-change",
+      "subject": "tuppence",
+      "detail": "floor-only counterfactual at current publisher, scenario, appetite and selection inputs",
+      "comparison": {
+        "schema": 1,
+        "before": {
+          "known": true,
+          "value": null
+        },
+        "after": {
+          "known": true,
+          "value": "isolated"
+        },
+        "changed": true,
+        "basis": "floor-only counterfactual at current publisher, scenario, appetite and selection inputs",
+        "residual_basis": "platform-cage-tiers@1.0.0",
+        "lines": [
+          {
+            "source": "ico",
+            "kind": "feed",
+            "name": "penalty-schema",
+            "perspective": "tuppence",
+            "currency": "GBP",
+            "uncaged_amount": 17907950.696925685,
+            "before_tier": "isolated",
+            "after_tier": "isolated",
+            "before_residual": 358159.013938514,
+            "after_residual": 358159.013938514,
+            "residual_delta": 0.0
+          },
+          {
+            "source": "feeds",
+            "kind": "feed",
+            "name": "threat-register",
+            "perspective": "tuppence",
+            "currency": "GBP",
+            "uncaged_amount": 326139.1251644838,
+            "before_tier": "isolated",
+            "after_tier": "isolated",
+            "before_residual": 6522.782503289682,
+            "after_residual": 6522.782503289682,
+            "residual_delta": 0.0
+          },
+          {
+            "source": "feeds",
+            "kind": "feed",
+            "name": "cve",
+            "perspective": "tuppence",
+            "currency": "GBP",
+            "uncaged_amount": 437107.3377948303,
+            "before_tier": "isolated",
+            "after_tier": "isolated",
+            "before_residual": 8742.146755896614,
+            "after_residual": 8742.146755896614,
+            "residual_delta": 0.0
+          },
+          {
+            "source": "twin",
+            "kind": "twin",
+            "name": "forward-intel",
+            "perspective": "tuppence",
+            "currency": "GBP",
+            "uncaged_amount": 84198283.0910635,
+            "before_tier": "isolated",
+            "after_tier": "isolated",
+            "before_residual": 1683965.6618212715,
+            "after_residual": 1683965.6618212715,
+            "residual_delta": 0.0
+          }
+        ],
+        "could_not_look": null,
+        "limit": "selection evidence, not an enacted Namespace tier; platform reductions are self-declared calibration, not measured effectiveness"
+      }
+    }
+  ],
   "floor_change": {
     "schema": 1,
     "before": {
-      "known": false
-    },
-    "after": {
       "known": true,
       "value": null
     },
-    "changed": null,
+    "after": {
+      "known": true,
+      "value": "isolated"
+    },
+    "changed": true,
     "basis": "floor-only counterfactual at current publisher, scenario, appetite and selection inputs",
     "residual_basis": "platform-cage-tiers@1.0.0",
     "lines": [
@@ -3544,11 +3760,11 @@
         "perspective": "tuppence",
         "currency": "GBP",
         "uncaged_amount": 17907950.696925685,
-        "before_tier": null,
+        "before_tier": "isolated",
         "after_tier": "isolated",
-        "before_residual": null,
+        "before_residual": 358159.013938514,
         "after_residual": 358159.013938514,
-        "residual_delta": null
+        "residual_delta": 0.0
       },
       {
         "source": "feeds",
@@ -3557,11 +3773,11 @@
         "perspective": "tuppence",
         "currency": "GBP",
         "uncaged_amount": 326139.1251644838,
-        "before_tier": null,
+        "before_tier": "isolated",
         "after_tier": "isolated",
-        "before_residual": null,
+        "before_residual": 6522.782503289682,
         "after_residual": 6522.782503289682,
-        "residual_delta": null
+        "residual_delta": 0.0
       },
       {
         "source": "feeds",
@@ -3570,11 +3786,11 @@
         "perspective": "tuppence",
         "currency": "GBP",
         "uncaged_amount": 437107.3377948303,
-        "before_tier": null,
+        "before_tier": "isolated",
         "after_tier": "isolated",
-        "before_residual": null,
+        "before_residual": 8742.146755896614,
         "after_residual": 8742.146755896614,
-        "residual_delta": null
+        "residual_delta": 0.0
       },
       {
         "source": "twin",
@@ -3583,14 +3799,14 @@
         "perspective": "tuppence",
         "currency": "GBP",
         "uncaged_amount": 84198283.0910635,
-        "before_tier": null,
+        "before_tier": "isolated",
         "after_tier": "isolated",
-        "before_residual": null,
+        "before_residual": 1683965.6618212715,
         "after_residual": 1683965.6618212715,
-        "residual_delta": null
+        "residual_delta": 0.0
       }
     ],
-    "could_not_look": "previous floor was not recorded; absence of history is not an absent floor",
+    "could_not_look": null,
     "limit": "selection evidence, not an enacted Namespace tier; platform reductions are self-declared calibration, not measured effectiveness"
   },
   "limits": [
