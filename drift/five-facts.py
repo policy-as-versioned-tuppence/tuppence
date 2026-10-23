@@ -992,11 +992,30 @@ def cage_facts(cluster: Cluster, image: str) -> tuple[dict, dict]:
     if applied_code != 0 and fallclosed:
         for one in (six, seven):
             one["apply_reported"] = (applied.strip().splitlines() or [""])[-1]
-    # The namespaces are the instrument's, never the estate's: deleted whatever happened, so a
-    # rehearsal on a real cluster leaves nothing behind and the next sample starts clean.
-    cluster.run("delete", "ns", CAGE_FALLCLOSED_NS, CAGE_REFERENCE_NS, "--wait=false",
-                "--ignore-not-found")
+    # The namespaces are the instrument's, never the estate's. Delete acknowledgement is not
+    # completion: wait only for these owned probes, then confirm their absence. Cleanup failure
+    # is separate evidence, never a reason to discard a measured FALSE or to suppress collection.
+    cleanup = _cage_cleanup(cluster)
+    for observed_fact in (six, seven):
+        observed_fact["cleanup"] = cleanup
     return six, seven
+
+
+def _cage_cleanup(cluster: Cluster) -> dict:
+    """Complete only this instrument's two Namespace deletions, retaining failures as evidence."""
+    owned = (CAGE_FALLCLOSED_NS, CAGE_REFERENCE_NS)
+    code, output = cluster.run("delete", "ns", *owned, "--wait=true", "--timeout=120s",
+                               "--request-timeout=130s", "--ignore-not-found")
+    absence_code, absence_output = cluster.run("get", "namespace", *owned, "--ignore-not-found",
+                                               "-o", "name", "--request-timeout=20s")
+    absent = absence_code == 0 and not absence_output.strip()
+    completed = code == 0 and absent
+    return {"owned_namespaces": list(owned), "completed": completed,
+            "absence_confirmed": absent, "delete_exit_code": code, "delete_output": output,
+            "absence_exit_code": absence_code, "absence_output": absence_output,
+            "why": ("both owned probe Namespaces are absent after bounded deletion" if completed
+                    else "owned probe cleanup incomplete; delete/absence diagnostics are retained, "
+                         "and the original measured cage facts are unchanged")}
 
 
 def _cage_reference_reads(cluster: Cluster, targets: tuple, tries: int) -> tuple[dict, dict]:
