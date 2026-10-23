@@ -1,13 +1,14 @@
 {
   "schema": 1,
   "before": {
-    "known": false
-  },
-  "after": {
     "known": true,
     "value": null
   },
-  "changed": null,
+  "after": {
+    "known": true,
+    "value": "isolated"
+  },
+  "changed": true,
   "basis": "floor-only counterfactual at current publisher, scenario, appetite and selection inputs",
   "residual_basis": "platform-cage-tiers@1.0.0",
   "lines": [
@@ -18,11 +19,11 @@
       "perspective": "tuppence",
       "currency": "GBP",
       "uncaged_amount": 17907950.696925685,
-      "before_tier": null,
+      "before_tier": "isolated",
       "after_tier": "isolated",
-      "before_residual": null,
+      "before_residual": 358159.013938514,
       "after_residual": 358159.013938514,
-      "residual_delta": null
+      "residual_delta": 0.0
     },
     {
       "source": "feeds",
@@ -31,11 +32,11 @@
       "perspective": "tuppence",
       "currency": "GBP",
       "uncaged_amount": 326139.1251644838,
-      "before_tier": null,
+      "before_tier": "isolated",
       "after_tier": "isolated",
-      "before_residual": null,
+      "before_residual": 6522.782503289682,
       "after_residual": 6522.782503289682,
-      "residual_delta": null
+      "residual_delta": 0.0
     },
     {
       "source": "feeds",
@@ -44,11 +45,11 @@
       "perspective": "tuppence",
       "currency": "GBP",
       "uncaged_amount": 437107.3377948303,
-      "before_tier": null,
+      "before_tier": "isolated",
       "after_tier": "isolated",
-      "before_residual": null,
+      "before_residual": 8742.146755896614,
       "after_residual": 8742.146755896614,
-      "residual_delta": null
+      "residual_delta": 0.0
     },
     {
       "source": "twin",
@@ -57,13 +58,13 @@
       "perspective": "tuppence",
       "currency": "GBP",
       "uncaged_amount": 84198283.0910635,
-      "before_tier": null,
+      "before_tier": "isolated",
       "after_tier": "isolated",
-      "before_residual": null,
+      "before_residual": 1683965.6618212715,
       "after_residual": 1683965.6618212715,
-      "residual_delta": null
+      "residual_delta": 0.0
     }
   ],
-  "could_not_look": "previous floor was not recorded; absence of history is not an absent floor",
+  "could_not_look": null,
   "limit": "selection evidence, not an enacted Namespace tier; platform reductions are self-declared calibration, not measured effectiveness"
 }

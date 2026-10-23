@@ -1,0 +1,30 @@
+{
+  "version": "owner-adopted-recovery-planning-20261023",
+  "name": "UNVALIDATED PLANNING: Restore the served demo ledger workload and verify its declared application state; no real bank-settlement loss is asserted.",
+  "currency": "GBP",
+  "status": "Owner-adopted unvalidated planning assumptions",
+  "note": "Owner adopted these exact recovery planning inputs on 2026-10-23 with the existing accepted ordinal reduction/cost arithmetic and isolated as an explicit minimum cage. All assumptions remain unvalidated; no empirical mitigation, calibration, response evidence or grade promotion follows. Not an incident, prospective pilot registration, accepted observed risk or explanation of any PolicyReport failure. Overlapping contingencies are never summed into institutional total loss.",
+  "planning_assumptions": {
+    "charge_out_GBP_per_engineer_hour": 100,
+    "engineers": 2,
+    "engineer_effort_hours_PERT_min_mode_max": [
+      2,
+      8,
+      24
+    ],
+    "evidence_class": "Unvalidated planning assumptions; neither incident counts nor empirical loss/mitigation evidence. No evidence grade is promoted.",
+    "accounting": "A counterfactual workload recovery scenario, not an allocation of institutional total. Never sum these overlapping contingencies into prices[] or count one shared incident more than once."
+  },
+  "recovery_planning": {
+    "lef": [
+      0.1,
+      0.5,
+      2
+    ],
+    "lm": [
+      400,
+      1600,
+      4800
+    ]
+  }
+}

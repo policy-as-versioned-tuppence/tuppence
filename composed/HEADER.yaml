@@ -35,10 +35,11 @@ declared-engine:
 floor-comparison:
   schema: 1
   before:
-    known: false
-  after:
     known: true
     value: null
+  after:
+    known: true
+    value: isolated
 governed-namespaces:
 - tuppence
 holes:
@@ -621,7 +622,7 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: 79a94785ae35e7f62e2490a7d9afee20f5a715be9d1697f0581504d9281643c2
+  after: 83e1118e2b9abcfe6c84951e4e7db4ad6608367b94f97966b19a5259fee26ea8
   before:
     header:
       parents:

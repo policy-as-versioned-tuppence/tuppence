@@ -24,6 +24,12 @@ size:
   headcount: 3902
   as_of: '2026-03-31'
 appetite:
+  # Owner-adopted 2026-10-23 assurance policy; normative GBP/year cutoffs, not calibration evidence.
+  assurance_bands:
+    currency: GBP
+    step_up_at: 1500.0
+    attest_at: 15000
+    no_cage_at: 150000
   pricing_threshold: 3
   tolerance: { amount: 15000, currency: GBP }
 # MODERATE: 287 controls, holds ac-6, cm-6 and ac-6.10. LOW excludes ac-6,
@@ -48,6 +54,17 @@ inherits:
 overlay:
   add: []
   restate: []
+  # Owner-adopted 2026-10-23: explicit supported minimum; existing Namespace isolation stays intact.
+  floor: isolated
+  workload_cages:
+  - publisher: platform
+    family: graded-enforcement
+    name: cage-tier
+    version: 7.0.0
+    subject: tuppence/ledger
+    scenario: scenarios/workload-ledger-recovery.json
+    mode: recovery_planning
+    why: 'Owner adopted 2026-10-23: exact declared workload recovery planning assumptions, existing accepted ordinal reduction/cost model and explicit isolated minimum. Unvalidated planning inputs only; no empirical effectiveness, calibration, response evidence or grade promotion. Overlapping counterfactual contingencies are not summed into institutional loss.'
 publishes:
   # The exposure section this repository's own composition renders into
   # composed/HEADER.yaml and signs under this repository's own tag. It is a
