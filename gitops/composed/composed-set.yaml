@@ -24,7 +24,7 @@
 #     install platform's tree; it installs the artefact its own composition rendered from
 #     platform's and nist's signed parents (composed/HEADER.yaml records those parent SHAs, and
 #     fact 3 of the sample checks the live platform and nist pins against them).
-#   * composed delivery selects the genuine signed v4.1.2 composition with cloud 1.0.1. The Pod
+#   * composed delivery selects genuine signed v4.2.0 with the compatible FE 4.1 interface and cloud 1.0.1. The Pod
 #     window remains 5.0.0, 6.0.0 and 7.0.0; apps and native inventory retain their existing
 #     Source A v4.0.0 bindings. All three cloud signature gates remain active together.
 #     Renovate tracks publisher parents, not self-pins.
@@ -73,9 +73,9 @@ spec:
   interval: 1m
   url: https://github.com/policy-as-versioned-tuppence/tuppence
   ref:
-    tag: v4.1.2
-    commit: 988095af0ef2de7832f915e4a524c62498795af3
-    # The resolved SHA of the genuine signed v4.1.2 composition release (2026-10-22).
+    tag: v4.2.0
+    commit: c7eb0973c32d687feb8ef5e8891a2e261fe44acc
+    # The resolved source SHA of genuine signed v4.2.0 (2026-10-23).
     # Belt-and-braces immutability, ADR-0001.
 ---
 apiVersion: fluxcd.controlplane.io/v1
@@ -96,7 +96,7 @@ spec:
         - { version: "5.0.0" }
         - { version: "6.0.0" }
         - { version: "7.0.0" }
-        # The signed v4.1.2 tree carries all three versions, and its machinery admits exactly
+        # The signed v4.2.0 tree carries all three versions, and its machinery admits exactly
         # this complete window. Current workload declarations claim 7.0.0; the deliberately
         # stale claim in reset/workloads.yaml remains subject to the orphan cage.
   resourcesTemplate: |
