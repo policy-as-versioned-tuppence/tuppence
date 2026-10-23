@@ -26,7 +26,7 @@
       "kind": "feed",
       "name": "threat-register",
       "version": "v4",
-      "sha": "37dfe4a2de50f1a1fd7aeb6348d819373188e0e6"
+      "sha": "8c578e39c584f7eae81eabcfcf4bb341309a8045"
     },
     {
       "party": "feeds",
@@ -3011,7 +3011,7 @@
       "publisher_observation_scope": "Publisher tags were observed when this artefact was composed; the recorded observation is replayed offline and during verification. It does not establish the publisher's current newest major. A fresh composition with the publisher present refreshes it.",
       "superseded": {
         "state": "behind",
-        "detail": "tag v4.0.0, signed 2026-09-10, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, so the line is priced from the signed tags alone"
+        "detail": "tag v4.0.1, signed 2026-10-23, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, v4.0.1, so the line is priced from the signed tags alone"
       }
     },
     {
@@ -3028,8 +3028,8 @@
       "version": "v3",
       "newer": {
         "version": "v4",
-        "tag": "v4.0.0",
-        "tagged": "2026-09-10",
+        "tag": "v4.0.1",
+        "tagged": "2026-10-23",
         "published_at": null,
         "readable": false,
         "since_tag": "v4.0.0",
@@ -3043,9 +3043,9 @@
       "changed": false,
       "basis": "the pinned line's own amount x (eol_ramp(since, as_of) - 1): the surcharge the feeds module's EOL ramp puts on a version its publisher has superseded, +1x per year behind and capped at +4x, where `since` is the day the newer major's signing tag was cut; zero on that day, printed with both dates, and never summed into the exposure the line itself is already in",
       "limits": [
-        "the pinned checkout carries no directory for v4.0.0, so the newer major's content is unread here: this line is priced from the signed tags alone, and no retirement to v4 is proposed until the ico pin reaches a commit that carries it"
+        "the pinned checkout carries no directory for v4.0.1, so the newer major's content is unread here: this line is priced from the signed tags alone, and no retirement to v4 is proposed until the ico pin reaches a commit that carries it"
       ],
-      "detail": "tag v4.0.0, signed 2026-09-10, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, so the line is priced from the signed tags alone"
+      "detail": "tag v4.0.1, signed 2026-10-23, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, v4.0.1, so the line is priced from the signed tags alone"
     },
     {
       "source": "feeds",
@@ -3076,8 +3076,8 @@
       "total": null,
       "pin_signature": {
         "state": "signed",
-        "tag": "threat-register/v4.0.0",
-        "detail": "tag threat-register/v4.0.0 on the feeds checkout carries a signature block"
+        "tag": "threat-register/v4.1.0",
+        "detail": "tag threat-register/v4.1.0 on the feeds checkout carries a signature block"
       },
       "hole": null,
       "publisher_observation_scope": "Publisher tags were observed when this artefact was composed; the recorded observation is replayed offline and during verification. It does not establish the publisher's current newest major. A fresh composition with the publisher present refreshes it.",
@@ -3654,8 +3654,8 @@
         },
         "newer": {
           "version": "v4",
-          "tag": "v4.0.0",
-          "tagged": "2026-09-10",
+          "tag": "v4.0.1",
+          "tagged": "2026-10-23",
           "published_at": null,
           "readable": false,
           "since_tag": "v4.0.0",
@@ -3663,7 +3663,7 @@
         },
         "superseded": {
           "state": "behind",
-          "detail": "tag v4.0.0, signed 2026-09-10, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, so the line is priced from the signed tags alone"
+          "detail": "tag v4.0.1, signed 2026-10-23, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, v4.0.1, so the line is priced from the signed tags alone"
         }
       },
       "path": "composed/feeds/ico/penalty-schema/v3"
@@ -3673,7 +3673,7 @@
       "kind": "feed",
       "name": "threat-register",
       "version": "v4",
-      "sha": "37dfe4a2de50f1a1fd7aeb6348d819373188e0e6",
+      "sha": "8c578e39c584f7eae81eabcfcf4bb341309a8045",
       "feed_path": "threat-register/v4/feed.json",
       "party_artefact": "party.yaml",
       "converter": "threat-register/to_fair_scenario.py",
@@ -3687,19 +3687,19 @@
       "published_at": "2026-09-26",
       "files": {
         "party.yaml": "6d5211a16fe5bfbe6bd28fc0f4c876f9de8fca8a2a43d2750a4f855610ee0823",
-        "threat-register/to_fair_scenario.py": "5b58162dd42404c0afc0ad3d063aeb4cd71a7076baca7ed7f7875e781d509d41",
-        "threat-register/v4/feed.json": "e88332226c882103e469b43770bd177ff10384500825236f2fcdaf11dda168fd"
+        "threat-register/to_fair_scenario.py": "b33bc82346af03d5d80964c81991602f5507575980ea7eb049630f73d8a928ee",
+        "threat-register/v4/feed.json": "175546c39018e9387c342c45d3c0382551f8a7ef2691bbd2ddc6ef65328f9e3c"
       },
       "publisher_observation": {
         "schema": 1,
         "party": "feeds",
         "name": "threat-register",
         "version": "v4",
-        "sha": "37dfe4a2de50f1a1fd7aeb6348d819373188e0e6",
+        "sha": "8c578e39c584f7eae81eabcfcf4bb341309a8045",
         "pin_signature": {
           "state": "signed",
-          "tag": "threat-register/v4.0.0",
-          "detail": "tag threat-register/v4.0.0 on the feeds checkout carries a signature block"
+          "tag": "threat-register/v4.1.0",
+          "detail": "tag threat-register/v4.1.0 on the feeds checkout carries a signature block"
         },
         "newer": null,
         "superseded": {

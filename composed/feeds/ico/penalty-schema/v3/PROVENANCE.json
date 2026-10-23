@@ -27,8 +27,8 @@
       "readable": false,
       "since": "2026-09-10",
       "since_tag": "v4.0.0",
-      "tag": "v4.0.0",
-      "tagged": "2026-09-10",
+      "tag": "v4.0.1",
+      "tagged": "2026-10-23",
       "version": "v4"
     },
     "party": "ico",
@@ -40,7 +40,7 @@
     "schema": 1,
     "sha": "e1fb8eb5663e50088b13d872a4e44112476f516e",
     "superseded": {
-      "detail": "tag v4.0.0, signed 2026-09-10, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, so the line is priced from the signed tags alone",
+      "detail": "tag v4.0.1, signed 2026-10-23, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, v4.0.1, so the line is priced from the signed tags alone",
       "state": "behind"
     },
     "version": "v3"
