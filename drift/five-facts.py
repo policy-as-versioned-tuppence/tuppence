@@ -471,7 +471,13 @@ def inventory_id(obj: dict) -> str:
     """Flux's inventory id: `namespace_name_group_Kind`, namespace and group empty when absent."""
     meta = obj.get("metadata") or {}
     group = obj.get("apiVersion", "").rsplit("/", 1)[0] if "/" in obj.get("apiVersion", "") else ""
-    return f"{meta.get('namespace', '')}_{meta.get('name', '')}_{group}_{obj.get('kind')}"
+    name = meta.get("name", "")
+    # Flux cli-utils ObjMetadata.String transcodes RBAC names for inventory storage.
+    # https://github.com/fluxcd/cli-utils/blob/v1.2.2/pkg/object/objmetadata.go
+    if group == "rbac.authorization.k8s.io" and obj.get("kind") in (
+            "Role", "ClusterRole", "RoleBinding", "ClusterRoleBinding"):
+        name = name.replace(":", "__")
+    return f"{meta.get('namespace', '')}_{name}_{group}_{obj.get('kind')}"
 
 
 def gitsign_verifies(tag: str, identity: dict, repository: str = REPO) -> tuple[bool | None, str]:
