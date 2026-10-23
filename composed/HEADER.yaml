@@ -627,10 +627,15 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: 800d2cacfe355228dae3db7c6705292e54a19bd74fc22e01a6c3fe7aa0d6213e
+  after: d263b2ea602b60e4eff63d1d3197f9e831d98347f631260ce28df3a987df80a7
   before:
     header:
       parents:
+      - party: feeds
+        kind: feed
+        name: recovery-expense
+        version: v1
+        sha: 1d54097c6746646a87c70677f29243a506666eee
       - party: platform
         kind: implementations
         version: 5.0.0
