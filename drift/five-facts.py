@@ -55,6 +55,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import os
 import re
@@ -286,6 +287,114 @@ def ci_identity(party: str = ORG) -> dict:
 
 
 # --- looking at the cluster ---------------------------------------------------
+class InventoryEvidence:
+    """Optional same-read parser inputs, outside the signed observation lane.
+
+    A failed diagnostic write must never change the measurement. No stderr,
+    environment or credentials travel here; only the two fixed inventory reads.
+    """
+
+    def __init__(self, directory: str):
+        self.directory = directory
+        self.document = {"kind": "flux.inventory-parser-input/v1", "complete": False,
+                         "reads": [], "sample": {}}
+        self.failed = False
+
+    def _write(self, name: str, content: bytes) -> None:
+        os.makedirs(self.directory, exist_ok=True)
+        path = os.path.join(self.directory, name)
+        with open(path + ".tmp", "wb") as fh:
+            fh.write(content)
+        os.replace(path + ".tmp", path)
+
+    def _manifest(self) -> None:
+        self._write("manifest.json", (json.dumps(self.document, sort_keys=True) + "\n").encode())
+
+    def _lost(self) -> None:
+        self.failed = True
+        self.document["complete"] = False
+        self.document["capture_error"] = "diagnostic-write-failed"
+        try:
+            print("[inventory-evidence] diagnostic write failed; capture incomplete", file=sys.stderr)
+        except OSError:
+            pass
+        try:
+            self._manifest()
+        except (OSError, TypeError, ValueError):
+            pass
+
+    def bind(self, **metadata) -> None:
+        if self.failed:
+            return
+        self.document["sample"].update(metadata)
+        try:
+            self._manifest()
+        except (OSError, TypeError, ValueError):
+            self._lost()
+
+    def retain(self, argv: list[str], started: str, stdout, returncode: int | None,
+               exception: str | None = None) -> None:
+        if self.failed:
+            return
+        try:
+            self._retain(argv, started, stdout, returncode, exception)
+        except (OSError, TypeError, ValueError):
+            self._lost()
+
+    def _retain(self, argv: list[str], started: str, stdout, returncode: int | None,
+                exception: str | None) -> None:
+        # A caller cannot turn this sink into a generic object/Secret dumper.
+        resources = {"kustomizations.kustomize.toolkit.fluxcd.io": "kustomizations",
+                     "resourcesets.fluxcd.controlplane.io": "resourcesets"}
+        if (len(argv) != 10 or argv[0:2] != ["kubectl", "--context"]
+                or argv[3:7] != ["--request-timeout=20s", "-n", "flux-system", "get"]
+                or argv[7] not in resources or argv[8:] != ["-o", "json"]):
+            self._lost()
+            return
+        ordinal = len(self.document["reads"]) + 1
+        row = {"ordinal": ordinal, "argv": argv, "namespace": "flux-system",
+               "context": argv[2], "resource": argv[7], "started_at": started,
+               "finished_at": now(), "returncode": returncode, "exception": exception,
+               "parse_available": False, "stdout_present": stdout is not None, "retained": False}
+        if stdout is not None:
+            partial = isinstance(stdout, bytes)
+            content = stdout if partial else stdout.encode("utf-8")
+            suffix = "timeout-partial.bin" if partial else "parser-input.txt"
+            name = f"{ordinal:02d}-{resources[argv[7]]}.{suffix}"
+            row.update(file=name, bytes=len(content), sha256=hashlib.sha256(content).hexdigest(),
+                       representation="timeout-partial-bytes" if partial else "subprocess-text-stdout-utf8")
+            if not exception and returncode == 0:
+                try:
+                    json.loads(stdout)
+                    row["parse_available"] = True
+                except json.JSONDecodeError:
+                    pass
+        self.document["reads"].append(row)
+        try:
+            if stdout is not None:
+                self._write(name, content)
+                row["retained"] = True
+            self._manifest()
+        except (OSError, TypeError, ValueError):
+            self._lost()
+
+    def finish(self, records: list[dict], text: str) -> None:
+        if self.failed:
+            return
+        self.document["sample"].update(
+            sources=[{"source": r["source"], "party": r["party"], "pin": r["pin"]}
+                     for r in records],
+            normalized_rows=len(records), normalized_jsonl_sha256=hashlib.sha256(text.encode()).hexdigest())
+        self.document["complete"] = (len(self.document["reads"]) == 2
+                                     and all(r["stdout_present"] and not r["exception"]
+                                             and r["retained"]
+                                             for r in self.document["reads"]))
+        try:
+            self._manifest()
+        except (OSError, TypeError, ValueError):
+            self._lost()
+
+
 class Cluster:
     """Every read of the API server, and the record of whether it answered at all."""
 
@@ -294,13 +403,18 @@ class Cluster:
         self.reachable = None
         self.reason = ""
 
-    def get(self, *args: str) -> dict | None:
+    def get(self, *args: str, inventory_evidence: InventoryEvidence | None = None) -> dict | None:
         cmd = ["kubectl", "--context", self.context, "--request-timeout=20s", *args, "-o", "json"]
+        started = now() if inventory_evidence is not None else ""
         try:
             done = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         except (OSError, subprocess.SubprocessError) as e:
+            if inventory_evidence is not None:
+                inventory_evidence.retain(cmd, started, getattr(e, "stdout", None), None, type(e).__name__)
             self.reachable, self.reason = False, f"kubectl could not run: {e}"
             return None
+        if inventory_evidence is not None:
+            inventory_evidence.retain(cmd, started, done.stdout, done.returncode)
         if done.returncode != 0:
             err = (done.stderr or "").strip().splitlines()[-1:] or [""]
             if "not found" not in err[0] and "NotFound" not in err[0]:
@@ -337,13 +451,15 @@ def condition(obj: dict, kind: str) -> dict:
     return {}
 
 
-def inventory_ids(cluster: Cluster) -> dict[str, str]:
+def inventory_ids(cluster: Cluster, evidence: InventoryEvidence | None = None) -> dict[str, str]:
     """{inventory id: the Flux object that claims it}. This is the fact-5 evidence and the reason
     fact 5 is a fact of its own: five hand-applied ValidatingPolicies with the right names already
     sit on kind-tuppence, and no inventory anywhere lists them."""
     found: dict[str, str] = {}
     for resource in ("kustomizations.kustomize.toolkit.fluxcd.io", "resourcesets.fluxcd.controlplane.io"):
-        listing = cluster.get("-n", "flux-system", "get", resource)
+        args = ("-n", "flux-system", "get", resource)
+        listing = (cluster.get(*args, inventory_evidence=evidence) if evidence is not None
+                   else cluster.get(*args))
         for item in (listing or {}).get("items", []):
             owner = f"{item['kind']}/{item['metadata']['name']}"
             for entry in ((item.get("status") or {}).get("inventory") or {}).get("entries", []) or []:
@@ -378,12 +494,13 @@ def gitsign_verifies(tag: str, identity: dict, repository: str = REPO) -> tuple[
 
 
 # --- the composed set (facts 4 and 5) -----------------------------------------
-def composed_set_facts(cluster: Cluster, ref: str | None) -> tuple[dict, dict, list[str]]:
+def composed_set_facts(cluster: Cluster, ref: str | None,
+                       inventory_evidence: InventoryEvidence | None = None) -> tuple[dict, dict, list[str]]:
     declared = rc.render(ref)
     if not declared:
         why = "the offline render of composed/ produced no objects"
         return fact(None, why), fact(None, why), []
-    inventory = inventory_ids(cluster)
+    inventory = inventory_ids(cluster, inventory_evidence)
     unequal, absent, uninventoried, checked = [], [], [], []
     omitted: dict[str, list[str]] = {}
     for k, obj in sorted(declared.items()):
@@ -1142,7 +1259,7 @@ def wait_source_verdicts(context: str, timeout: float) -> int:
 
 # --- the sample ---------------------------------------------------------------
 def take_sample(context: str, cluster_name: str, ref: str | None,
-                cage_probe_image: str = "") -> list[dict]:
+                cage_probe_image: str = "", inventory_evidence: InventoryEvidence | None = None) -> list[dict]:
     cluster = Cluster(context)
     stamp = now()
     run = os.environ.get("GITHUB_RUN_ID", "")
@@ -1151,13 +1268,24 @@ def take_sample(context: str, cluster_name: str, ref: str | None,
     top = cluster.get("-n", "flux-system", "get", "kustomization", ORG)
     if top:
         revision = str((top.get("status") or {}).get("lastAppliedRevision", ""))
+    if inventory_evidence is not None:
+        checkout = _git_output("rev-parse", "--verify", "HEAD^{commit}")
+        rendered = _git_output("rev-parse", "--verify", f"{ref or 'HEAD'}^{{commit}}")
+        inventory_evidence.bind(
+            repository=os.environ.get("GITHUB_REPOSITORY", ""), run=run,
+            attempt=os.environ.get("GITHUB_RUN_ATTEMPT", ""),
+            event=os.environ.get("GITHUB_EVENT_NAME", ""),
+            workflow_sha=os.environ.get("GITHUB_SHA", ""),
+            checkout_sha=checkout.strip() if checkout else None,
+            ts=stamp, cluster=cluster_name, context=context, revision=revision,
+            render_ref=ref, render_commit=rendered.strip() if rendered else None)
     if cluster.reachable is None:
         # Nothing above may have touched the API server (a missing Kustomization reads as
         # NotFound, which is an answer, not a failure to reach). Ask something that always
         # exists, so `reachable` is an observation and not an assumption.
         cluster.get("get", "ns", "kube-system")
 
-    f4, f5, unhealed = composed_set_facts(cluster, ref) if cluster.reachable else (
+    f4, f5, unhealed = composed_set_facts(cluster, ref, inventory_evidence) if cluster.reachable else (
         fact(None, "the cluster did not answer"), fact(None, "the cluster did not answer"), [])
 
     # Facts 6 and 7 (ticket 86), taken ONCE like facts 4 and 5: the cage is one thing where the
@@ -2345,6 +2473,9 @@ def main() -> int:
                            "one, both cage facts are could-not-look rather than a pod that "
                            "cannot pull")
     take.add_argument("--out", default=SAMPLES, help="'-' for stdout (a rehearsal, never cited)")
+    take.add_argument("--inventory-evidence-dir", default="",
+                      help="optional supplemental same-read inventory parser inputs; use a directory "
+                           "outside the worktree, never a signed observation stream")
     scored = sub.add_parser("grade")
     scored.add_argument("--samples", default=SAMPLES)
     scored.add_argument("--max-age-hours", type=float, default=48.0)
@@ -2360,13 +2491,16 @@ def main() -> int:
         return wait_source_verdicts(args.context, args.timeout)
     if args.cmd == "sample":
         cluster = args.cluster or args.context
-        records = take_sample(args.context, cluster, args.ref, args.cage_probe_image)
+        evidence = InventoryEvidence(args.inventory_evidence_dir) if args.inventory_evidence_dir else None
+        records = take_sample(args.context, cluster, args.ref, args.cage_probe_image, evidence)
         text = "".join(json.dumps(r, sort_keys=True) + "\n" for r in records)
         if args.out == "-":
             sys.stdout.write(text)
         else:
             with open(args.out, "a") as fh:
                 fh.write(text)
+        if evidence is not None:
+            evidence.finish(records, text)
         return 0
     code, lines = grade(args.samples, args.max_age_hours)
     print("\n".join(lines))

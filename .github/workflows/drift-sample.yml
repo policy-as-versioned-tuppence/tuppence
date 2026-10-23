@@ -375,11 +375,24 @@ jobs:
           python3 scripts/render_composed.py reach --ref "${COMPOSED_REF}" || true
           python3 drift/five-facts.py sample \
             --context "${CTX}" --cluster "${CLUSTER}" --ref "${COMPOSED_REF}" \
-            --cage-probe-image "${{ steps.cageprobe.outputs.image }}"
+            --cage-probe-image "${{ steps.cageprobe.outputs.image }}" \
+            --inventory-evidence-dir "${RUNNER_TEMP}/five-facts-inventory/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           tail -3 drift/samples.jsonl
           # Report the grade in the log for a reader of the run, and never fail on it: the grade
           # belongs to verify-reconcile.sh under the gate, and a red measurement is a measurement.
           python3 drift/five-facts.py grade || true
+
+      # Supplemental parser inputs, never another observation stream. Upload even
+      # if collection failed after an inventory read; loss must not change a fact.
+      - name: retain same-read inventory parser inputs
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: five-facts-inventory-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/five-facts-inventory/${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: sample every served workload and collect its OSCAL observations
         env:
