@@ -5,7 +5,7 @@
   "files": {
     "cve/to_fair_scenario.py": "b83f29a6778a53dec94c752f6101a80adeb788a4f1f1d20ac2584a5d6ff34b7b",
     "cve/v3/feed.json": "bb56231c17a3ba513be0ec15de07b2bcfa438c9047b06edb3a402dac051d28f5",
-    "party.yaml": "6d5211a16fe5bfbe6bd28fc0f4c876f9de8fca8a2a43d2750a4f855610ee0823"
+    "party.yaml": "d4d1ab70a3e0575f44f2c86d693eb5ba7e889d521aed34312921f16bfdf61116"
   },
   "invocation": [
     "cve",

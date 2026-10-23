@@ -74,6 +74,17 @@ signals:
         the existing standing question. The original subscription remains dated2026-09-08;
         this row records the authentic release adoption on2026-10-04.
 
+  - pin: { party: feeds, kind: feed, name: recovery-expense, version: v1 }
+    signal:
+      id: feeds-recovery-expense-v1-is-the-shadow-model
+      at: '2026-10-23'
+      scenario: publisher-withdraws-2026
+      what: >-
+        The sole publisher supplies this prospective shadow recovery-expense instrument.
+        Its withdrawal removes that instrument's availability for the existing standing
+        publisher-withdrawal question. This owner-delegated subscription binding supplies
+        no empirical probability, monetary amount, mitigation or production credit.
+
 # Scenarios no subscribed feed version binds. Declared, so that "six scenarios, five rows and two
 # unbound" is an observation rather than a hole somebody has to notice.
 unbound_scenarios:

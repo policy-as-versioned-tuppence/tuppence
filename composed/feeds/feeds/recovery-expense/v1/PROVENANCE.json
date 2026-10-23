@@ -1,0 +1,37 @@
+{
+  "converter": "recovery-expense/to_fair_scenario.py",
+  "converter_from": "feeds",
+  "feed_path": "recovery-expense/v1/feed.json",
+  "files": {
+    "party.yaml": "d4d1ab70a3e0575f44f2c86d693eb5ba7e889d521aed34312921f16bfdf61116",
+    "recovery-expense/to_fair_scenario.py": "e1ad7d4951ad35b7de2bad9722f0c7e645bf4d420166c16658e05206981799ea",
+    "recovery-expense/v1/feed.json": "e7bd9873578ad5b18fd90356785432f65aba1afe7f3dc461707fed84254dd030"
+  },
+  "invocation": null,
+  "kind": "feed",
+  "name": "recovery-expense",
+  "party": "feeds",
+  "party_artefact": "party.yaml",
+  "payload_version_key": "feed_version",
+  "published_at": "2026-10-23",
+  "publisher_observation": {
+    "name": "recovery-expense",
+    "newer": null,
+    "party": "feeds",
+    "pin_signature": {
+      "detail": "tag recovery-expense/v1.0.0 on the feeds checkout carries a signature block",
+      "state": "signed",
+      "tag": "recovery-expense/v1.0.0"
+    },
+    "schema": 1,
+    "sha": "1d54097c6746646a87c70677f29243a506666eee",
+    "superseded": {
+      "detail": "no signed tag of the form recovery-expense/vN.x.y with N > 1 on the feeds checkout, so the pinned v1 is the newest published major",
+      "state": "current"
+    },
+    "version": "v1"
+  },
+  "scenario_sha256": null,
+  "sha": "1d54097c6746646a87c70677f29243a506666eee",
+  "version": "v1"
+}

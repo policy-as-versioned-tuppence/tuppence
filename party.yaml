@@ -38,6 +38,8 @@ appetite:
 # in gitops/apps/nist-pin-configmap.yaml's data.baselineName.
 baseline: MODERATE
 inherits:
+  # Prospective 2027 shadow collection; excluded from ordinary headline pricing.
+  - { party: feeds, kind: feed, name: recovery-expense, version: "v1" }
   - { party: platform, kind: implementations, version: "5.0.0", since: '2026-08-28' }
   - { party: nist,     kind: controls,        version: "1.1.0", since: '2026-08-28' }
   - { party: ico,      kind: feed, name: penalty-schema,    version: "v3", since: '2026-08-28' }
