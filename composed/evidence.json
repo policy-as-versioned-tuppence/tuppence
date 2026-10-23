@@ -3868,8 +3868,8 @@
         "sha": "1d54097c6746646a87c70677f29243a506666eee",
         "pin_signature": {
           "state": "signed",
-          "tag": "recovery-expense/v1.0.0",
-          "detail": "tag recovery-expense/v1.0.0 on the feeds checkout carries a signature block"
+          "tag": "recovery-expense/v1.0.2",
+          "detail": "tag recovery-expense/v1.0.2 on the feeds checkout carries a signature block"
         },
         "newer": null,
         "superseded": {
