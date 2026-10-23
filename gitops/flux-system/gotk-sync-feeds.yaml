@@ -33,8 +33,8 @@ spec:
   interval: 5m
   url: https://github.com/policy-as-versioned-feeds/feeds
   ref:
-    tag: recovery-expense/v1.0.0
-    commit: 9e7958e919a4a42c68f9005776bb2d922ea57d65
+    tag: recovery-expense/v1.0.2
+    commit: 838abe583f14f07c82ef1eccfcf9ca3acfdf80fa
     # Source carrier from the genuine recovery-expense/v1.0.0 release (2026-10-23).
     # This is not a change to ordinary threat-register/CVE/FX subscriptions.
     # Renovate maintains this signed tag and full commit together, never a branch.
