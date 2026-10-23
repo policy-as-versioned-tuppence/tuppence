@@ -621,7 +621,7 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: ee46b19ffc733eaac46f9c06b21b3f7e8d1f1de6f289bdbaed46ff36b6210d5c
+  after: 79a94785ae35e7f62e2490a7d9afee20f5a715be9d1697f0581504d9281643c2
   before:
     header:
       parents:
@@ -642,7 +642,7 @@ comparison-inputs:
         kind: feed
         name: threat-register
         version: v4
-        sha: 37dfe4a2de50f1a1fd7aeb6348d819373188e0e6
+        sha: 8c578e39c584f7eae81eabcfcf4bb341309a8045
       - party: feeds
         kind: feed
         name: cve
