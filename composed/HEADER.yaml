@@ -622,7 +622,7 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: 83e1118e2b9abcfe6c84951e4e7db4ad6608367b94f97966b19a5259fee26ea8
+  after: b4d186aab682e612e41c81471824b737bdf134053e03981aa0a67e122af449d6
   before:
     header:
       parents:
@@ -1257,7 +1257,7 @@ comparison-inputs:
     - kind: agent-cage
       source: platform
       name: twin-agent
-      proposed_tier: baseline
+      proposed_tier: isolated
       hole: null
     - kind: switching
       source: ico
@@ -1274,7 +1274,10 @@ comparison-inputs:
       name: cve
       proposed_tier: null
       hole: null
-    cages: []
+    cages:
+    - party: tuppence
+      rule: graded-enforcement/cage-tier@7.0.0
+      tier: isolated
 vendored-feeds:
 - party: ico
   name: penalty-schema
