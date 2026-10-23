@@ -10,8 +10,8 @@ name: twin-sweep
 # this repository's write token. Now:
 #
 #   twin   holds `contents: read` and nothing else. It checks tuppence out, reads
-#          the hub commit twin/PIN.yaml names, checks the hub out at exactly that
-#          commit, runs the emitter through .github/scripts/twin-sweep.py, and
+#          the release tag twin/PIN.yaml names, checks its commit against the
+#          full hub_commit anchor, runs the emitter through .github/scripts/twin-sweep.py, and
 #          hands ONE artifact to the writer: the observation line. It pushes
 #          nothing and cannot.
 #   write  holds the write token. It has no hub checkout and runs no program from
@@ -23,11 +23,12 @@ name: twin-sweep
 #          and then re-raises the recorded result: a could-not-look or a render
 #          that could not be made leaves the run non-green, exactly as before.
 #
-# THE PIN. twin/PIN.yaml names the hub commit whose twin code renders this
-# overlay. tuppence moves it by a reviewed pull request, never by a clock. When
-# the signed `twin/v0.1.0` tag exists, the tag replaces the commit in the pin and
-# in the checkout below. The emitter's own check that `twin_version` is the hub's
-# twin/VERSION stays as it was.
+# THE PIN. twin/PIN.yaml names signed twin/v0.1.0 and the full hub_commit
+# integrity anchor. tuppence moves them through a reviewed pull request, never
+# through a clock. The published tag was authenticated against the canonical
+# main cut-release.yml identity and GitHub OIDC issuer; the reader/verifier below
+# retain the exact version, annotated-tag, commit, HEAD and offline checks.
+# The emitter still checks twin/VERSION and the independent vendored world_ref.
 #
 # EVERY DOWNLOAD IS PINNED BY HASH (ADR-0031 point 4): each `uses:` names a full
 # commit, with its version beside it; pip installs from a hash-pinned
@@ -88,29 +89,34 @@ jobs:
           echo "rung=${rung}" >> "$GITHUB_OUTPUT"
           echo "twin-agent rung: ${rung}; a missing or malformed priced declaration permits no writer"
 
-      - name: read the hub commit twin/PIN.yaml names
+      - name: read the authenticated twin release and its full hub commit
         id: pin
         working-directory: adopter
         run: |
           set -euo pipefail
-          if [ "$(grep -c '^hub_commit:' twin/PIN.yaml)" != 1 ]; then
-            echo "::error::twin/PIN.yaml must carry exactly one hub_commit line"
-            exit 1
-          fi
+          for key in hub_commit twin_version twin_tag tag_cut; do
+            if [ "$(grep -c "^${key}:" twin/PIN.yaml)" != 1 ]; then
+              echo "::error::twin/PIN.yaml must carry exactly one ${key} line"
+              exit 1
+            fi
+          done
           commit="$(sed -n 's/^hub_commit:[[:space:]]*\([0-9a-f]\{40\}\)[[:space:]]*$/\1/p' twin/PIN.yaml)"
           if ! [[ "${commit}" =~ ^[0-9a-f]{40}$ ]]; then
             echo "::error::twin/PIN.yaml hub_commit is not a full 40-hex commit"
             exit 1
           fi
+          grep -Eq '^twin_version:[[:space:]]*0\.1\.0[[:space:]]*$' twin/PIN.yaml || { echo "::error::the initial twin release must be version 0.1.0"; exit 1; }
+          grep -Eq '^twin_tag:[[:space:]]*twin/v0\.1\.0[[:space:]]*$' twin/PIN.yaml || { echo "::error::the initial twin tag must be twin/v0.1.0"; exit 1; }
+          grep -Eq '^tag_cut:[[:space:]]*true[[:space:]]*$' twin/PIN.yaml || { echo "::error::the twin tag has not been authenticated for adoption"; exit 1; }
           echo "hub_commit=${commit}" >> "$GITHUB_OUTPUT"
-          echo "ok  twin/PIN.yaml pins the twin code at policy-as-versioned-flux@${commit}"
+          echo "ok  the declared twin release retains full hub commit ${commit}"
 
-      - name: checkout the hub at that commit, and at nothing else
+      - name: checkout the declared twin release tag
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: policy-as-versioned-flux/policy-as-versioned-flux
           path: hub
-          ref: ${{ steps.pin.outputs.hub_commit }}
+          ref: twin/v0.1.0
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
@@ -130,28 +136,44 @@ jobs:
           fi
           echo "ok  twin code is policy-as-versioned-flux@${head}, the commit twin/PIN.yaml names"
 
-      - name: verify the signed twin tag when the pin declares it cut
+      - name: install the hash-pinned read-only signature verifier
+        timeout-minutes: 3
         env:
           GITSIGN_VERSION: 0.17.1
           GITSIGN_SHA256: 69213a8a0813a151e5a47d0060862952ff833a845d57309dff76f7ba6600abae
         run: |
           set -euo pipefail
-          if ! grep -Eq '^tag_cut:[[:space:]]*true[[:space:]]*$' twin/PIN.yaml; then
-            echo "LIMIT: twin tag is not cut; the full reviewed hub commit remains the code pin"
-            exit 0
-          fi
-          tag="$(sed -n 's/^twin_tag:[[:space:]]*\(twin\/v[0-9][^[:space:]]*\)[[:space:]]*$/\1/p' twin/PIN.yaml)"
-          test -n "${tag}" || { echo "::error::tag_cut requires twin_tag"; exit 1; }
           archive="${RUNNER_TEMP}/gitsign-twin"
           curl --fail --location --retry 3 "https://github.com/sigstore/gitsign/releases/download/v${GITSIGN_VERSION}/gitsign_${GITSIGN_VERSION}_linux_amd64" -o "${archive}"
           echo "${GITSIGN_SHA256}  ${archive}" | sha256sum --check --strict
-          chmod +x "${archive}"
+          mkdir -p "${RUNNER_TEMP}/twin-verifier-bin"
+          install -m 755 "${archive}" "${RUNNER_TEMP}/twin-verifier-bin/gitsign"
+          rm "${archive}"
+          echo "${RUNNER_TEMP}/twin-verifier-bin" >> "$GITHUB_PATH"
+
+      - name: verify the authenticated twin release before running its code
+        timeout-minutes: 3
+        env:
+          GITSIGN_REKOR_MODE: offline
+        run: |
+          set -euo pipefail
+          grep -Eq '^tag_cut:[[:space:]]*true[[:space:]]*$' twin/PIN.yaml || { echo "::error::the twin tag has not been authenticated for adoption"; exit 1; }
+          tag="$(sed -n 's|^twin_tag:[[:space:]]*\(twin/v0\.1\.0\)[[:space:]]*$|\1|p' twin/PIN.yaml)"
+          test "${tag}" = twin/v0.1.0 || { echo "::error::the initial twin tag must be twin/v0.1.0"; exit 1; }
+          test "${GITSIGN_REKOR_MODE:-}" = offline || { echo "::error::twin verification requires offline Rekor mode"; exit 1; }
           hub="${GITHUB_WORKSPACE}/hub"
           pinned="$(sed -n 's/^hub_commit:[[:space:]]*//p' twin/PIN.yaml)"
-          test "$(git -C "${hub}" rev-parse "${tag}^{commit}")" = "${pinned}" || { echo "::error::signed twin tag and hub commit disagree"; exit 1; }
-          (cd "${hub}" && "${archive}" verify-tag "${tag}" \
-            --certificate-identity-regexp='^https://github\.com/policy-as-versioned-flux/policy-as-versioned-flux/\.github/workflows/cut-release\.yml@refs/heads/(main|release/[0-9]+\.[0-9]+\.x)$' \
+          ref="refs/tags/${tag}"
+          # actions/checkout can flatten an annotated tag; restore its original object.
+          git -C "${hub}" fetch --no-tags origin "+${ref}:${ref}"
+          test "$(git -C "${hub}" cat-file -t "${ref}")" = tag || { echo "::error::twin release is not an annotated tag"; exit 1; }
+          test "$(git -C "${hub}" rev-parse "${ref}^{commit}")" = "${pinned}" || { echo "::error::signed twin tag and hub commit disagree"; exit 1; }
+          test "$(git -C "${hub}" rev-parse HEAD)" = "${pinned}" || { echo "::error::twin checkout and hub commit disagree"; exit 1; }
+          (cd "${hub}" && gitsign verify-tag "${ref}" \
+            --certificate-identity-regexp='^https://github\.com/policy-as-versioned-flux/policy-as-versioned-flux/\.github/workflows/cut-release\.yml@refs/heads/main$' \
             --certificate-oidc-issuer='https://token.actions.githubusercontent.com')
+          version="$(sed -n 's/^twin_version:[[:space:]]*//p' twin/PIN.yaml)"
+          test "$(git -C "${hub}" show "${ref}:twin/VERSION")" = "${version}" || { echo "::error::the authenticated twin VERSION disagrees with PIN.yaml"; exit 1; }
 
       - name: install the twin job's one package, hash-pinned
         run: |

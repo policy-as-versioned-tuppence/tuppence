@@ -16,7 +16,7 @@ imported.
 |---|---|
 | Source repository | `policy-as-versioned-flux` (the hub) |
 | Source release | `twin` **0.1.0** (`twin/VERSION`), pinned machine-readably in `PIN.yaml` |
-| Tag the owner must cut | `twin/v0.1.0` -- **not cut yet**, see below |
+| Signed source tag | `twin/v0.1.0`, published 2026-10-23; exact source and verification below |
 | Source path | `twin/fixtures.py`, the `LIBRARY_WORLD_FILES` mapping |
 | Files | 30: `world/meta.yaml`, 15 components, 13 propositions, 1 world model |
 | Copied | byte-for-byte, verbatim, no edits |
@@ -31,11 +31,18 @@ Two pins, and they check each other. `PIN.yaml`'s `twin_version` must equal the 
 silently move underneath them. `world_ref` must equal the commit the vendored bytes stage to in
 the emitter's deterministic mirror, or it refuses again.
 
-**The tag.** `twin/v0.1.0` is prefixed because the hub repository is not only the twin. It does
-not exist yet: a signed tag is cut by a release workflow with gitsign, never on a laptop, so until
-the owner dispatches that workflow, `PIN.yaml` carries `tag_cut: false`. Its full
-`hub_commit` pins genuinely published producer code, while `world_ref` pins the vendored
-world bytes independently.
+**The tag.** `twin/v0.1.0` is prefixed because the hub repository also carries
+other packages. The owner's hosted cut workflow signed annotated object
+`b0d6140154d3619d6eff9ef499d837f8a8444300`, resolving to source commit
+`0e353029f7f5b497a2fe19ef2874846119376d6e`.
+The [published source release](https://github.com/policy-as-versioned-flux/policy-as-versioned-flux/releases/tag/twin/v0.1.0)
+was published on 2026-10-23 at 15:56:21 UTC (release 422033887;
+cut run 39982451070, publication run 39982502887). Production verification
+accepted the canonical main `cut-release.yml` identity and GitHub OIDC issuer
+and rejected a different identity. `PIN.yaml` therefore carries `tag_cut: true`.
+Its full `hub_commit` remains an independent integrity anchor; `world_ref` pins
+the unchanged vendored world bytes. Later code updates require a reviewed pin
+and the same release checks. See `twin/RELEASE.md` in the hub.
 
 Re-vendoring is a two-line job:
 
@@ -93,3 +100,17 @@ a delivered tier. The ladder records the platform release that published the run
 (`graded/cage.py`, `ORDER`, TABLE_VERSION 1.0.0, at platform v2.0.1) and is checked against that
 release's own module when a platform checkout is present.
 
+
+## First tagged code adoption
+
+The signed `twin/v0.1.0` source package is published and its canonical cut-workflow
+identity and issuer have been authenticated. The workflow requires `tag_cut: true`,
+the literal initial tag and version, an annotated tag object, the exact full
+`hub_commit` and checkout HEAD, and matching `twin/VERSION`. It verifies the tag
+offline with the consumer-owned canonical main identity before executing hub code.
+The emitter still checks the independent vendored `world_ref`.
+
+This release publishes versioned source only. It establishes no actor attestation,
+measured forecast, calibration, financial credit or production outcome. Historical
+hub coverage remains unmeasured and its CI invariant remains red. No world,
+overlay, financial or forward-intel bytes are replaced by this code pin.

@@ -7,8 +7,10 @@
 # renamed it, `ecosystem/thin-slice`, which stopped existing and killed the clock at
 # fetch. A branch is not a pinned, signed dependency (NORTH-STAR section 2), and there
 # was nowhere in this repository that said which version of feeds this party consumes.
-# party.yaml declares the pin as feed/threat-register at "v4"; this file is the {tag, commit}
-# pair that declaration resolves to, and .github/workflows/*.yml read `ref:` out of it.
+# This shared source carrier includes the declared recovery-expense@v1 shadow feed.
+# Its signed recovery-expense tag supplies the publisher declaration as well as the
+# existing threat-register, CVE and dated FX payloads. The per-feed subscriptions in
+# party.yaml remain independent; workflows read this exact source tag/commit pair.
 #
 # It is a VERIFIED SOURCE ONLY and gates nothing -- the same standing gotk-sync-nist.yaml
 # has. Nothing in gitops/apps references it, so applying it installs no policy; it is here
@@ -31,8 +33,8 @@ spec:
   interval: 5m
   url: https://github.com/policy-as-versioned-feeds/feeds
   ref:
-    tag: threat-register/v4.1.0
-    commit: 0a1f27277a6d8f2db5fdd7983df0357b6834a858
-    # The commit this tag resolved to for this proposal (2026-10-23),
-    # read off the publisher's real remote. Bumped as a PAIR by the Renovate
-    # customManager in renovate.json -- never by hand, never a moving branch.
+    tag: recovery-expense/v1.0.0
+    commit: 9e7958e919a4a42c68f9005776bb2d922ea57d65
+    # Source carrier from the genuine recovery-expense/v1.0.0 release (2026-10-23).
+    # This is not a change to ordinary threat-register/CVE/FX subscriptions.
+    # Renovate maintains this signed tag and full commit together, never a branch.

@@ -184,9 +184,9 @@ class TwinClock(unittest.TestCase):
             self.assertEqual(result.stdout, lines)
 
     # --- the pin ----------------------------------------------------------------------------------
-    def test_pin_names_a_full_hub_commit_and_the_twin_job_checks_the_hub_out_at_it(self):
+    def test_pin_names_a_full_hub_commit_and_the_twin_job_checks_its_tag(self):
         self.assertRegex(str(self.pin['hub_commit']), SHA)
-        self.assertEqual(self.pin['tag_cut'], False)
+        self.assertIs(self.pin['tag_cut'], True)
         self.assertNotIn('ref: main', self.text, 'the hub is never checked out at a branch')
         self.assertEqual(sorted(self.doc['jobs']), ['twin', 'write'])
         self.assertEqual(self.doc['permissions'], {'contents': 'read'})
@@ -195,7 +195,7 @@ class TwinClock(unittest.TestCase):
         hub = [s for s in checkouts if s.get('with', {}).get('repository') == HUB]
         own = [s for s in checkouts if 'repository' not in s.get('with', {})]
         self.assertEqual((len(hub), len(own), len(checkouts)), (1, 1, 2))
-        self.assertEqual(hub[0]['with']['ref'], '${{ steps.pin.outputs.hub_commit }}')
+        self.assertEqual(hub[0]['with']['ref'], self.pin['twin_tag'])
         self.assertEqual(hub[0]['with']['fetch-depth'], 0)
         self.assertTrue(hub[0]['with']['fetch-tags'])
         self.assertEqual(hub[0]['with']['path'], 'hub')
