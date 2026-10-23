@@ -113,3 +113,27 @@ new post-registration samples. A genuine subsequent scheduled sample must score
 those facts; a could-not-look is still not done. Facts 1–5 and the workload
 registrations are unchanged, and any real observed FALSE still fails. This dated
 explanation is outside the registered section.
+
+## Supplemental fact5 parser inputs
+
+`five-facts.py sample --inventory-evidence-dir PATH` optionally retains the two
+Flux inventory reads used by fact5, without querying again. The hosted lane writes
+outside its worktree and uploads `five-facts-inventory-RUN-ATTEMPT` for seven days,
+including when collection fails after a read. These are supplemental diagnostics,
+not a signed observation stream or a fresh grade. The three normalized source rows
+and all fact/scoring rules are unchanged.
+
+Each parser-input file preserves the exact stdout text passed through the existing
+`subprocess.run(text=True)` boundary, UTF-8 encoded for storage, without JSON
+reserialization. It is not the pre-decoding pipe bytes or HTTP wire response.
+Partial timeout bytes are named and labelled separately. The manifest records the
+fixed query, namespace/context, order/times, exit/parse availability, hashes, source
+and render identities, and the exact emitted JSONL hash when sampling completes.
+No later query can substitute for an input missing from that manifest.
+
+Capture writes and upload failures warn without changing a fact or the collector's
+exit. An incomplete manifest or absent artifact means evidence was lost, never a
+pass. Only the two fixed Flux list responses are retained: no stderr, environment,
+kubeconfig, credentials, private keys or Secret bodies. If literal sensitive data
+is discovered in a response, withhold its public upload and report that input as
+missing; a redacted derivative cannot be described as the exact parser input.
