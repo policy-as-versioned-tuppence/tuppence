@@ -1040,7 +1040,7 @@
       "status": "recorded",
       "perspective": "tuppence",
       "currency": "GBP",
-      "amount": 3581590.1393851372,
+      "amount": 3528758.2779694954,
       "priced_by": "ico penalty-schema@v3 uk-gdpr/lower-tier weight 0.2"
     },
     {
@@ -1859,7 +1859,7 @@
       "status": "recorded",
       "perspective": "tuppence",
       "currency": "GBP",
-      "amount": 3581590.1393851372,
+      "amount": 3528758.2779694954,
       "priced_by": "ico penalty-schema@v3 uk-gdpr/lower-tier weight 0.2"
     },
     {
@@ -2201,7 +2201,7 @@
       "status": "recorded",
       "perspective": "tuppence",
       "currency": "GBP",
-      "amount": 5372385.209077706,
+      "amount": 5293137.416954243,
       "priced_by": "ico penalty-schema@v3 uk-gdpr/lower-tier weight 0.3"
     },
     {
@@ -2336,7 +2336,7 @@
       "status": "recorded",
       "perspective": "tuppence",
       "currency": "GBP",
-      "amount": 5372385.209077706,
+      "amount": 5293137.416954243,
       "priced_by": "ico penalty-schema@v3 uk-gdpr/lower-tier weight 0.3"
     },
     {
@@ -3058,11 +3058,11 @@
       "price": {
         "perspective": "tuppence",
         "currency": "GBP",
-        "amount": 26351496.995790914,
+        "amount": 26283828.789731156,
         "share": 0.25,
         "workloads": 1,
         "workloads_total": 4,
-        "base": 102869480.25094849,
+        "base": 102605320.94387029,
         "ramp": 1.0246575342465754,
         "since": "2026-09-24",
         "since_by": "v2.0.0 names openbao",
@@ -3077,11 +3077,11 @@
       "price": {
         "perspective": "tuppence",
         "currency": "GBP",
-        "amount": 85395760.31791066,
+        "amount": 85176471.9068293,
         "share": 0.75,
         "workloads": 3,
         "workloads_total": 4,
-        "base": 102869480.25094849,
+        "base": 102605320.94387029,
         "ramp": 1.106849315068493,
         "since": "2026-08-25",
         "since_by": "v1.1.0 names tuppence-reset",
@@ -3097,16 +3097,16 @@
       "kind": "feed",
       "perspective": "tuppence",
       "currency": "GBP",
-      "amount": 17907950.696925685,
+      "amount": 17643791.389847476,
       "per_customer": {
-        "amount": 3.6546838156991193,
+        "amount": 3.600773753030097,
         "currency": "GBP"
       },
       "name": "penalty-schema",
       "old_version": "v3",
       "new_version": "v3",
-      "old_price": 17907950.696925685,
-      "new_price": 17907950.696925685,
+      "old_price": 17643791.389847476,
+      "new_price": 17643791.389847476,
       "old_tier": "isolated",
       "proposed_tier": "isolated",
       "changed": false,
@@ -3115,39 +3115,39 @@
         2,
         4
       ],
-      "lef_basis": "lm sourced from ICO (Information Commissioner's Office) real public fines (UK GDPR / Data Protection Act 2018 s157). warn/deny lef are editorial (schema doesn't carry frequency). Scaled to a subscriber turnover of 861,741,000.00 GBP.",
+      "lef_basis": "lm sourced from ICO (Information Commissioner's Office) real public fines (UK GDPR / Data Protection Act 2018 s157). Scaled to a subscriber turnover of 861,741,000.00 GBP, clamped at the statutory maximum max(cap, rate x turnover). FINALITY UNCHECKED: no example in payload version v3 carries a `status`, so whether any of the 2 figure(s) below is the FINAL collected penalty or a notice figure since reduced, set aside or never collected could not be looked at. From major 4 every example carries `status`, `final_as_of` and `litigation` (eco-system ticket 79 item 1). A named could-not-look. FREQUENCY UNSOURCED: this line annualises at (1, 2, 4) events/yr, which is this converter's editorial default and not a counted rate. Payload version v3 predates the publisher's `frequency` field, so no basis and no denominator could be read for it; from major 4 the basis belongs on regimes.uk-gdpr.violation_types.lower-tier.frequency.basis. A named could-not-look (eco-system ticket 79 item 3), never a bare number.",
       "proposed_as": "label",
       "holes": [
         {
           "source": "nist",
           "id": "pl-2",
           "weight": 0.3,
-          "amount": 5372385.209077706,
+          "amount": 5293137.416954243,
           "status": "recorded"
         },
         {
           "source": "nist",
           "id": "ra-3",
           "weight": 0.3,
-          "amount": 5372385.209077706,
+          "amount": 5293137.416954243,
           "status": "recorded"
         },
         {
           "source": "nist",
           "id": "ca-2",
           "weight": 0.2,
-          "amount": 3581590.1393851372,
+          "amount": 3528758.2779694954,
           "status": "recorded"
         },
         {
           "source": "nist",
           "id": "ir-8",
           "weight": 0.2,
-          "amount": 3581590.1393851372,
+          "amount": 3528758.2779694954,
           "status": "recorded"
         }
       ],
-      "total": 17907950.696925685,
+      "total": 17643791.389847476,
       "pin_signature": {
         "state": "signed",
         "tag": "v3.0.0",
@@ -3157,7 +3157,7 @@
       "publisher_observation_scope": "Publisher tags were observed when this artefact was composed; the recorded observation is replayed offline and during verification. It does not establish the publisher's current newest major. A fresh composition with the publisher present refreshes it.",
       "superseded": {
         "state": "behind",
-        "detail": "tag v4.0.1, signed 2026-10-23, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, v4.0.1, so the line is priced from the signed tags alone"
+        "detail": "tag v4.0.1, signed 2026-10-23, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut"
       }
     },
     {
@@ -3165,9 +3165,9 @@
       "kind": "supersede",
       "perspective": "tuppence",
       "currency": "GBP",
-      "amount": 1128446.208299428,
+      "amount": 1111800.553332856,
       "per_customer": {
-        "amount": 0.23029514455090366,
+        "amount": 0.2268980721087461,
         "currency": "GBP"
       },
       "name": "penalty-schema",
@@ -3176,22 +3176,19 @@
         "version": "v4",
         "tag": "v4.0.1",
         "tagged": "2026-10-23",
-        "published_at": null,
-        "readable": false,
+        "published_at": "2026-09-09",
         "since_tag": "v4.0.0",
         "since": "2026-09-10"
       },
       "since": "2026-09-10",
       "as_of": "2026-10-03",
       "ramp": 1.063013698630137,
-      "base": 17907950.696925685,
+      "base": 17643791.389847476,
       "proposed_tier": null,
       "changed": false,
       "basis": "the pinned line's own amount x (eol_ramp(since, as_of) - 1): the surcharge the feeds module's EOL ramp puts on a version its publisher has superseded, +1x per year behind and capped at +4x, where `since` is the day the newer major's signing tag was cut; zero on that day, printed with both dates, and never summed into the exposure the line itself is already in",
-      "limits": [
-        "the pinned checkout carries no directory for v4.0.1, so the newer major's content is unread here: this line is priced from the signed tags alone, and no retirement to v4 is proposed until the ico pin reaches a commit that carries it"
-      ],
-      "detail": "tag v4.0.1, signed 2026-10-23, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, v4.0.1, so the line is priced from the signed tags alone"
+      "limits": [],
+      "detail": "tag v4.0.1, signed 2026-10-23, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut"
     },
     {
       "source": "feeds",
@@ -3487,9 +3484,9 @@
       "kind": "switching",
       "perspective": "tuppence",
       "currency": "GBP",
-      "amount": 17907950.69692567,
+      "amount": 17643791.389847472,
       "per_customer": {
-        "amount": 3.654683815699116,
+        "amount": 3.6007737530300963,
         "currency": "GBP"
       },
       "name": "penalty-schema",
@@ -3497,7 +3494,7 @@
       "since": "2026-08-28",
       "as_of": "2026-10-03",
       "pin_life_months": 2,
-      "over_pin_life": 2984658.4494876117,
+      "over_pin_life": 2940631.898307912,
       "could_not_look": null,
       "alternates": [],
       "unpriceable": [
@@ -3507,7 +3504,7 @@
           "name": "penalty-schema",
           "perspective": "tuppence",
           "currency": "GBP",
-          "amount": 17907950.696925685
+          "amount": 17643791.389847476
         },
         {
           "kind": "supersede",
@@ -3515,7 +3512,7 @@
           "name": "penalty-schema",
           "perspective": "tuppence",
           "currency": "GBP",
-          "amount": 1128446.208299428
+          "amount": 1111800.553332856
         }
       ],
       "sized": true,
@@ -3546,7 +3543,7 @@
           "name": "penalty-schema",
           "perspective": "tuppence",
           "currency": "GBP",
-          "amount": 17907950.696925685
+          "amount": 17643791.389847476
         },
         {
           "kind": "supersede",
@@ -3554,7 +3551,7 @@
           "name": "penalty-schema",
           "perspective": "tuppence",
           "currency": "GBP",
-          "amount": 1128446.208299428
+          "amount": 1111800.553332856
         },
         {
           "kind": "feed",
@@ -3619,7 +3616,7 @@
           "name": "penalty-schema",
           "perspective": "tuppence",
           "currency": "GBP",
-          "amount": 17907950.696925685
+          "amount": 17643791.389847476
         },
         {
           "kind": "supersede",
@@ -3627,7 +3624,7 @@
           "name": "penalty-schema",
           "perspective": "tuppence",
           "currency": "GBP",
-          "amount": 1128446.208299428
+          "amount": 1111800.553332856
         },
         {
           "kind": "feed",
@@ -3696,11 +3693,11 @@
             "name": "penalty-schema",
             "perspective": "tuppence",
             "currency": "GBP",
-            "uncaged_amount": 17907950.696925685,
+            "uncaged_amount": 17643791.389847476,
             "before_tier": "isolated",
             "after_tier": "isolated",
-            "before_residual": 358159.013938514,
-            "after_residual": 358159.013938514,
+            "before_residual": 352875.82779694983,
+            "after_residual": 352875.82779694983,
             "residual_delta": 0.0
           },
           {
@@ -3768,11 +3765,11 @@
         "name": "penalty-schema",
         "perspective": "tuppence",
         "currency": "GBP",
-        "uncaged_amount": 17907950.696925685,
+        "uncaged_amount": 17643791.389847476,
         "before_tier": "isolated",
         "after_tier": "isolated",
-        "before_residual": 358159.013938514,
-        "after_residual": 358159.013938514,
+        "before_residual": 352875.82779694983,
+        "after_residual": 352875.82779694983,
         "residual_delta": 0.0
       },
       {
@@ -3896,12 +3893,12 @@
         "--turnover",
         "861741000.00"
       ],
-      "scenario_sha256": "9e70f53652573217262ae953b18d1834d70e6db8760e7de781f8a1ce7d246cf0",
+      "scenario_sha256": "e41bb9136292d5fdb92f9e0ec2df3032dec03211d5dcc969a33b4c396d80a018",
       "payload_version_key": "schema_version",
       "published_at": "2026-08-28",
       "files": {
-        "party.yaml": "6f7e82a9616ee49ba2bbe1f2824b43458f8f72fd859216e2d5ba32577364ac72",
-        "penalty-schema/to_fair_scenario.py": "560a38c04397e8e98d56a279ca5b88cb2b2707a8a22a5c8d71a9be74946bb982",
+        "party.yaml": "5c07030a7a02883fdaf217e43fb5aefb423153f8e10817097c7a74094e3fff56",
+        "penalty-schema/to_fair_scenario.py": "bb751e70cdb29e9d60d5c9049780ef057dd71a33bb92d84fa619eac8f3f80ea5",
         "penalty-schema/v3/feed.json": "e23318cb9b580b5e9bde3621720197af08aaceb7510e27b3c20d10b6fe783cda"
       },
       "publisher_observation": {
@@ -3919,14 +3916,13 @@
           "version": "v4",
           "tag": "v4.0.1",
           "tagged": "2026-10-23",
-          "published_at": null,
-          "readable": false,
+          "published_at": "2026-09-09",
           "since_tag": "v4.0.0",
           "since": "2026-09-10"
         },
         "superseded": {
           "state": "behind",
-          "detail": "tag v4.0.1, signed 2026-10-23, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, v4.0.1, so the line is priced from the signed tags alone"
+          "detail": "tag v4.0.1, signed 2026-10-23, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut"
         }
       },
       "path": "composed/feeds/ico/penalty-schema/v3"
