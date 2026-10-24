@@ -169,7 +169,8 @@ jobs:
           test "$(git -C "${hub}" cat-file -t "${ref}")" = tag || { echo "::error::twin release is not an annotated tag"; exit 1; }
           test "$(git -C "${hub}" rev-parse "${ref}^{commit}")" = "${pinned}" || { echo "::error::signed twin tag and hub commit disagree"; exit 1; }
           test "$(git -C "${hub}" rev-parse HEAD)" = "${pinned}" || { echo "::error::twin checkout and hub commit disagree"; exit 1; }
-          (cd "${hub}" && gitsign verify-tag "${ref}" \
+          # gitsign prefixes refs/tags/ itself; native Git guards above use the full ref.
+          (cd "${hub}" && gitsign verify-tag "${tag}" \
             --certificate-identity-regexp='^https://github\.com/policy-as-versioned-flux/policy-as-versioned-flux/\.github/workflows/cut-release\.yml@refs/heads/main$' \
             --certificate-oidc-issuer='https://token.actions.githubusercontent.com')
           version="$(sed -n 's/^twin_version:[[:space:]]*//p' twin/PIN.yaml)"
