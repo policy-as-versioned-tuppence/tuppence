@@ -91,12 +91,20 @@ class TwinReleaseWorkflow(unittest.TestCase):
                     git('-C', str(hub), 'commit', '--allow-empty', '-m', 'different HEAD')
                 (adopter / 'twin/PIN.yaml').write_text(self.pin('b' * 40 if mode == 'wrong-pin' else commit))
                 bindir = root / 'bin'; bindir.mkdir(); verifier = bindir / 'gitsign'
-                expected = ['verify-tag', 'refs/tags/' + TAG,
+                expected = ['verify-tag', TAG,
                             '--certificate-identity-regexp=' + IDENTITY,
                             '--certificate-oidc-issuer=' + ISSUER]
-                verifier.write_text('#!/usr/bin/env python3\nimport json,os,sys\n'
+                # Pinned gitsign 0.17.1 prefixes refs/tags/ itself. Resolve the
+                # same reference against real fixture Git data before allowing
+                # the substituted signature verdict; accepting a qualified ref
+                # here hid the scheduled workflow's reference-not-found error.
+                verifier.write_text('#!/usr/bin/env python3\nimport json,os,subprocess,sys\n'
                                     'args=sys.argv[1:]\n'
                                     'open(os.environ["FIXTURE_CALL"],"w").write(json.dumps(args))\n'
+                                    'resolved=subprocess.run(["git","show-ref","--verify",'
+                                    '"refs/tags/"+args[1]],capture_output=True)\n'
+                                    'if resolved.returncode: print("Error: error resolving tag reference: '
+                                    'reference not found",file=sys.stderr); sys.exit(1)\n'
                                     'sys.exit(0 if args == ' + repr(expected) +
                                     ' and os.environ.get("GITSIGN_REKOR_MODE")=="offline"'
                                     ' and os.environ.get("FIXTURE_FAIL")!="1" else 1)\n')
