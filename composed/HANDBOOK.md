@@ -89,19 +89,19 @@ Source: `composed/evidence.json` → `prices[]`, and `composed/HEADER.yaml` → 
 
 | priced by | kind | name | perspective | currency | amount | moved | proposed tier |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| ico | feed | penalty-schema | tuppence | GBP | GBP 17,907,950.70 | no | isolated |
-| ico | supersede | penalty-schema | tuppence | GBP | GBP 1,128,446.21 | no | — |
+| ico | feed | penalty-schema | tuppence | GBP | GBP 17,643,791.39 | no | isolated |
+| ico | supersede | penalty-schema | tuppence | GBP | GBP 1,111,800.55 | no | — |
 | feeds | feed | threat-register | tuppence | GBP | GBP 326,139.13 | no | isolated |
 | feeds | feed | cve | tuppence | GBP | GBP 437,107.34 | no | isolated |
 | twin | twin | forward-intel | tuppence | GBP | GBP 84,198,283.09 | no | isolated |
 | platform | agent-cage | twin-agent | tuppence | GBP | GBP 18.70 | no | isolated |
-| ico | switching | penalty-schema | tuppence | GBP | GBP 17,907,950.70 | no | — |
+| ico | switching | penalty-schema | tuppence | GBP | GBP 17,643,791.39 | no | — |
 | feeds | switching | threat-register | tuppence | GBP | could not look (section 6) | no | — |
 | feeds | switching | cve | tuppence | GBP | could not look (section 6) | no | — |
 
 - **ico/penalty-schema** — Publisher tags were observed when this artefact was composed; the recorded observation is replayed offline and during verification. It does not establish the publisher's current newest major. A fresh composition with the publisher present refreshes it.
-- **ico/penalty-schema** — basis: lm sourced from ICO (Information Commissioner's Office) real public fines (UK GDPR / Data Protection Act 2018 s157). warn/deny lef are editorial (schema doesn't carry frequency). Scaled to a subscriber turnover of 861,741,000.00 GBP.
-- **ico/penalty-schema supersede** — clock starts 2026-09-10; priced as of 2026-10-03. the pinned checkout carries no directory for v4.0.1, so the newer major's content is unread here: this line is priced from the signed tags alone, and no retirement to v4 is proposed until the ico pin reaches a commit that carries it
+- **ico/penalty-schema** — basis: lm sourced from ICO (Information Commissioner's Office) real public fines (UK GDPR / Data Protection Act 2018 s157). Scaled to a subscriber turnover of 861,741,000.00 GBP, clamped at the statutory maximum max(cap, rate x turnover). FINALITY UNCHECKED: no example in payload version v3 carries a `status`, so whether any of the 2 figure(s) below is the FINAL collected penalty or a notice figure since reduced, set aside or never collected could not be looked at. From major 4 every example carries `status`, `final_as_of` and `litigation` (eco-system ticket 79 item 1). A named could-not-look. FREQUENCY UNSOURCED: this line annualises at (1, 2, 4) events/yr, which is this converter's editorial default and not a counted rate. Payload version v3 predates the publisher's `frequency` field, so no basis and no denominator could be read for it; from major 4 the basis belongs on regimes.uk-gdpr.violation_types.lower-tier.frequency.basis. A named could-not-look (eco-system ticket 79 item 3), never a bare number.
+- **ico/penalty-schema supersede** — clock starts 2026-09-10; priced as of 2026-10-03. 
 - **ico/penalty-schema** (supersede) — basis: the pinned line's own amount x (eol_ramp(since, as_of) - 1): the surcharge the feeds module's EOL ramp puts on a version its publisher has superseded, +1x per year behind and capped at +4x, where `since` is the day the newer major's signing tag was cut; zero on that day, printed with both dates, and never summed into the exposure the line itself is already in
 - **feeds/threat-register** — Publisher tags were observed when this artefact was composed; the recorded observation is replayed offline and during verification. It does not establish the publisher's current newest major. A fresh composition with the publisher present refreshes it.
 - **feeds/threat-register** — basis: payment-fraud / account-takeover via API abuse (fintech, FCA/PCI, availability+fraud flavour). Frequency basis (editorial, read 2026-09-09): Annual loss-event frequency for this institution's headline threat. DBIR financial-sector base rate + 2026 UK fintech ATO-uptick roundup, editorial midpoint COULD NOT LOOK: the DBIR publishes sector breach-frequency ranges, not a rate for one named institution, and no run of this estate has counted events for these three. Editorial midpoints, labelled as such. Magnitude basis (editorial, read 2026-09-09): Impact per payment-fraud / account-takeover event for a UK fintech: direct fraud loss plus reimbursement, higher per event than retail PII and far below a health record. COULD NOT LOOK: no run of this estate has counted per-event losses for any institution in this register, and none of the three publishes one. These are the publisher's editorial bands, moved here from platform/feeds/to_fair_scenario.py's THREAT_LM_GBP unchanged so that the move itself moves no price. What would close it: a per-sector per-event loss figure with a published source and a date, or an institution's own signed incident cost.
@@ -115,21 +115,21 @@ Source: `composed/evidence.json` → `prices[]`, and `composed/HEADER.yaml` → 
 - **feeds/threat-register** (switching) — basis: re-composed with this publisher's feed edges dropped
 - **feeds/cve** (switching) — basis: re-composed with this publisher's feed edges dropped
 
-- **ico/penalty-schema** carries 4 priced hole(s) inside that amount: `nist/pl-2` GBP 5,372,385.21, `nist/ra-3` GBP 5,372,385.21, `nist/ca-2` GBP 3,581,590.14, `nist/ir-8` GBP 3,581,590.14
+- **ico/penalty-schema** carries 4 priced hole(s) inside that amount: `nist/pl-2` GBP 5,293,137.42, `nist/ra-3` GBP 5,293,137.42, `nist/ca-2` GBP 3,528,758.28, `nist/ir-8` GBP 3,528,758.28
 
 **Exposure** — booked under perspective `tuppence` in `GBP`.
 
-- Total: GBP 102,869,480.25
+- Total: GBP 102,605,320.94
   - What this number is: an ordinal, auditable comparison under one perspective; not an expected annual loss.
   - Every figure under this section is derived from published feeds through published converters, and is reproducible from the signed inputs named beside it -- that is what AUDITABLE means here. What it is NOT: the loss-event frequencies and several loss magnitudes it rests on are editorial bands carrying a named could-not-look rather than counted rates (ico penalty-schema major 4, feeds threat-register major 3), so the total is usable for COMPARING one version, one pin or one control set against another under this one perspective, and not as a number to reserve against. Totals under two different perspectives are two balance sheets and are never added (ADR-0021). Ticket 75 Q4 (a), eco-system ticket 79 item 10.
-- Aggregate of the selected-tier residuals: GBP 2,057,389.61 against a tolerance of GBP 15,000.00 -- BREACHES the declared aggregate.
-  - `penalty-schema` at tier `isolated`: GBP 358,159.01
+- Aggregate of the selected-tier residuals: GBP 2,052,106.42 against a tolerance of GBP 15,000.00 -- BREACHES the declared aggregate.
+  - `penalty-schema` at tier `isolated`: GBP 352,875.83
   - `threat-register` at tier `isolated`: GBP 6,522.78
   - `cve` at tier `isolated`: GBP 8,742.15
   - `forward-intel` at tier `isolated`: GBP 1,683,965.66
 - Attachment: GBP 15,000.00
 - Regimes (4):
-  - `uk-gdpr` from ico feed `penalty-schema` v3: GBP 17,907,950.70, 4 control(s) named
+  - `uk-gdpr` from ico feed `penalty-schema` v3: GBP 17,643,791.39, 4 control(s) named
   - `threat-register` from feeds feed `threat-register` v4: GBP 326,139.13, 0 control(s) named
   - `cve` from feeds feed `cve` v3: GBP 437,107.34, 0 control(s) named
   - `forward-intel` from twin feed `forward-intel` 1.0.0: GBP 84,198,283.09, 0 control(s) named
@@ -140,7 +140,7 @@ Source: `composed/floor-change.json`; recorded floor inputs in `composed/HEADER.
 
 Floor: **absent → isolated**. floor-only counterfactual at current publisher, scenario, appetite and selection inputs.
 
-- ico/penalty-schema: isolated → isolated; retained residual GBP 358,159.01 → GBP 358,159.01; delta GBP 0.00.
+- ico/penalty-schema: isolated → isolated; retained residual GBP 352,875.83 → GBP 352,875.83; delta GBP 0.00.
 - feeds/threat-register: isolated → isolated; retained residual GBP 6,522.78 → GBP 6,522.78; delta GBP 0.00.
 - feeds/cve: isolated → isolated; retained residual GBP 8,742.15 → GBP 8,742.15; delta GBP 0.00.
 - twin/forward-intel: isolated → isolated; retained residual GBP 1,683,965.66 → GBP 1,683,965.66; delta GBP 0.00.
