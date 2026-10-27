@@ -1,7 +1,7 @@
 {
   "images": [
     {
-      "database_date": "2026-10-22T13:15:26.425424764Z",
+      "database_date": "2026-10-27T13:12:49.474279883Z",
       "digest": "sha256:4c769ab891a1e1b19b4f5f6884cf9a6ac37ef1cbc0f4aaeae02fdd7c2004d4c5",
       "image": "ghcr.io/policy-as-versioned-tuppence/ledger:v1.0.1@sha256:4c769ab891a1e1b19b4f5f6884cf9a6ac37ef1cbc0f4aaeae02fdd7c2004d4c5",
       "scanner_version": "0.69.3",
@@ -63,8 +63,22 @@
           "severity": "UNKNOWN"
         },
         {
+          "fixed_version": "1.2.1-r0",
+          "id": "CVE-2026-111497",
+          "installed_version": "1.2.0-r1",
+          "package": "brotli-libs",
+          "severity": "HIGH"
+        },
+        {
           "fixed_version": "2.25.4",
           "id": "CVE-2026-34477",
+          "installed_version": "2.14.1",
+          "package": "org.apache.logging.log4j:log4j-core",
+          "severity": "MEDIUM"
+        },
+        {
+          "fixed_version": "2.25.4",
+          "id": "CVE-2026-34479",
           "installed_version": "2.14.1",
           "package": "org.apache.logging.log4j:log4j-core",
           "severity": "MEDIUM"
