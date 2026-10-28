@@ -627,7 +627,7 @@ ungoverned-namespaces:
 withdrawn-selectable: false
 comparison-inputs:
   schema: 1
-  after: 5783a335da713067e145b5666317d594e62372cc81ca76634f14d8ee43efbe66
+  after: f4fb4fdeab2cfcf3e525756b13cb9bab8c4ae06d50f1d6d468e6b22cd8846eb1
   before:
     header:
       parents:
@@ -1304,8 +1304,8 @@ vendored-feeds:
   path: composed/feeds/ico/penalty-schema/v3
   sha: e1fb8eb5663e50088b13d872a4e44112476f516e
   files:
-    party.yaml: 6f7e82a9616ee49ba2bbe1f2824b43458f8f72fd859216e2d5ba32577364ac72
-    penalty-schema/to_fair_scenario.py: 560a38c04397e8e98d56a279ca5b88cb2b2707a8a22a5c8d71a9be74946bb982
+    party.yaml: 5c07030a7a02883fdaf217e43fb5aefb423153f8e10817097c7a74094e3fff56
+    penalty-schema/to_fair_scenario.py: bb751e70cdb29e9d60d5c9049780ef057dd71a33bb92d84fa619eac8f3f80ea5
     penalty-schema/v3/feed.json: e23318cb9b580b5e9bde3621720197af08aaceb7510e27b3c20d10b6fe783cda
 - party: feeds
   name: threat-register
@@ -1332,15 +1332,15 @@ exposure:
   attachment:
     amount: 15000.0
     currency: GBP
-  total: 102869480.25094849
-  priced_subtotal: 102869480.25094849
+  total: 102605320.94387029
+  priced_subtotal: 102605320.94387029
   unpriced_lines: []
   ordinal: an ordinal, auditable comparison under one perspective; not an expected annual loss
   ordinal_basis: 'Every figure under this section is derived from published feeds through published converters, and is reproducible from the signed inputs named beside it -- that is what AUDITABLE means here. What it is NOT: the loss-event frequencies and several loss magnitudes it rests on are editorial bands carrying a named could-not-look rather than counted rates (ico penalty-schema major 4, feeds threat-register major 3), so the total is usable for COMPARING one version, one pin or one control set against another under this one perspective, and not as a number to reserve against. Totals under two different perspectives are two balance sheets and are never added (ADR-0021). Ticket 75 Q4 (a), eco-system ticket 79 item 10.'
   aggregate:
     perspective: tuppence
     currency: GBP
-    selected_tier_residual_total: 2057389.605018972
+    selected_tier_residual_total: 2052106.4188774077
     tolerance: 15000.0
     tolerance_currency: GBP
     tolerance_in_reporting_currency: null
@@ -1349,7 +1349,7 @@ exposure:
     lines:
     - name: penalty-schema
       tier: isolated
-      residual: 358159.013938514
+      residual: 352875.82779694983
     - name: threat-register
       tier: isolated
       residual: 6522.782503289682
@@ -1366,20 +1366,20 @@ exposure:
     source: ico
     feed: penalty-schema
     version: v3
-    amount: 17907950.696925685
+    amount: 17643791.389847476
     controls:
     - source: nist
       id: pl-2
-      amount: 5372385.209077706
+      amount: 5293137.416954243
     - source: nist
       id: ra-3
-      amount: 5372385.209077706
+      amount: 5293137.416954243
     - source: nist
       id: ca-2
-      amount: 3581590.1393851372
+      amount: 3528758.2779694954
     - source: nist
       id: ir-8
-      amount: 3581590.1393851372
+      amount: 3528758.2779694954
   - name: threat-register
     source: feeds
     feed: threat-register

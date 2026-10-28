@@ -3,8 +3,8 @@
   "converter_from": "ico",
   "feed_path": "penalty-schema/v3/feed.json",
   "files": {
-    "party.yaml": "6f7e82a9616ee49ba2bbe1f2824b43458f8f72fd859216e2d5ba32577364ac72",
-    "penalty-schema/to_fair_scenario.py": "560a38c04397e8e98d56a279ca5b88cb2b2707a8a22a5c8d71a9be74946bb982",
+    "party.yaml": "5c07030a7a02883fdaf217e43fb5aefb423153f8e10817097c7a74094e3fff56",
+    "penalty-schema/to_fair_scenario.py": "bb751e70cdb29e9d60d5c9049780ef057dd71a33bb92d84fa619eac8f3f80ea5",
     "penalty-schema/v3/feed.json": "e23318cb9b580b5e9bde3621720197af08aaceb7510e27b3c20d10b6fe783cda"
   },
   "invocation": [
@@ -23,8 +23,7 @@
   "publisher_observation": {
     "name": "penalty-schema",
     "newer": {
-      "published_at": null,
-      "readable": false,
+      "published_at": "2026-09-09",
       "since": "2026-09-10",
       "since_tag": "v4.0.0",
       "tag": "v4.0.1",
@@ -40,12 +39,12 @@
     "schema": 1,
     "sha": "e1fb8eb5663e50088b13d872a4e44112476f516e",
     "superseded": {
-      "detail": "tag v4.0.1, signed 2026-10-23, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut; this checkout carries no directory for v4.0.0, v4.0.1, so the line is priced from the signed tags alone",
+      "detail": "tag v4.0.1, signed 2026-10-23, publishes penalty-schema v4 ahead of the pinned v3; behind since 2026-09-10, the day v4.0.0 was cut",
       "state": "behind"
     },
     "version": "v3"
   },
-  "scenario_sha256": "9e70f53652573217262ae953b18d1834d70e6db8760e7de781f8a1ce7d246cf0",
+  "scenario_sha256": "e41bb9136292d5fdb92f9e0ec2df3032dec03211d5dcc969a33b4c396d80a018",
   "sha": "e1fb8eb5663e50088b13d872a4e44112476f516e",
   "version": "v3"
 }
