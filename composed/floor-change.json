@@ -18,11 +18,11 @@
       "name": "penalty-schema",
       "perspective": "tuppence",
       "currency": "GBP",
-      "uncaged_amount": 17907950.696925685,
+      "uncaged_amount": 17643791.389847476,
       "before_tier": "isolated",
       "after_tier": "isolated",
-      "before_residual": 358159.013938514,
-      "after_residual": 358159.013938514,
+      "before_residual": 352875.82779694983,
+      "after_residual": 352875.82779694983,
       "residual_delta": 0.0
     },
     {
