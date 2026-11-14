@@ -1,0 +1,73 @@
+{
+  "kind": "feed",
+  "name": "forward-intel",
+  "version": "1.0.0",
+  "published_by": "tuppence",
+  "published_at": "2026-09-04T00:00:00Z",
+  "payload_schema": "twin/forward-intel/payload.schema.json",
+  "payload": {
+    "perspective": "tuppence",
+    "valuation": {
+      "amount": 113974999.99999999,
+      "currency": "GBP",
+      "native_amount": 113974999.99999999,
+      "native_currency": "GBP",
+      "party_fact": "size.turnover",
+      "fx": null
+    },
+    "rests_on_grade": 3,
+    "shock": "An exfiltration of the account and transaction record store suppresses fee income for a quarter.\nTHE TRIPLE IS AN ANCHOR, NOT A MEASUREMENT, and it is graded 3 for exactly that reason. This institution has no incident of its own to measure, so the three numbers are arithmetic on a comparable UK challenger bank's own published regulatory record, nested from the narrowest reading to the widest:\n\n  min  0.0640 = 28,959,426 / 452,800,000\n  mode 0.0698 = 28,959,426 / 414,814,000\n  max  0.0987 = 40,959,426 / 414,814,000\n\n28,959,426 GBP is the financial penalty in the FCA's Final Notice against Starling Bank Limited of 2024-09-27 (reference 730166), and 40,959,426 GBP is the same notice's figure before the 30% stage-one settlement discount. 452,800,000 GBP is the revenue the same notice states at 2.1 for 2023; 414,814,000 GBP is Total Income for the year ended 2023-03-31 in that bank's own audited Annual Report 2023, a different metric on a different reporting convention. Sources and the discrepancy are recorded in the hub's .scratch/ecosystem/research/94-studied-firms.md.\nWhat it is NOT: a conduct penalty is not a suppression of fee income, and that firm is not this one. Grade 3 on the published ladder is \"an established mechanism from published work, not observed here\", which is precisely the claim being made. Grade 3 is OUTSIDE the ladder's path_admission_threshold of 2, so no impact enters this perspective's pound through this edge and emit-forward-intel.py refuses to emit a priced payload while it is the only causal edge here. A grade-1 or grade-2 replacement is this institution's own dated incident record, and a regrade event has to record who moved it and why (twin/evidence.py).",
+    "horizon": 1,
+    "lef": null,
+    "lm": [
+      7294400.0,
+      7955455.0,
+      11249332.5
+    ],
+    "currency": "GBP",
+    "curve": [
+      {
+        "account": "baseline",
+        "net_cost_of_risk": 7955955.0
+      },
+      {
+        "account": "restricted",
+        "net_cost_of_risk": 7957455.0
+      },
+      {
+        "account": "quarantine",
+        "net_cost_of_risk": 7961455.0
+      },
+      {
+        "account": "isolated",
+        "net_cost_of_risk": 7970455.0
+      }
+    ],
+    "register": [],
+    "claim_scope": {
+      "included": [
+        "uk-gdpr",
+        "fca-principle-3"
+      ],
+      "excluded": [
+        "pci-dss"
+      ],
+      "note": "The shock is an exfiltration of the account and transaction record store, scoped to the two regimes this party is supervised under that a subscribed publisher prices or publishes a schema for. Card-scheme penalties are carved out: no publisher in this party's inherits[] prices pci-dss, so a number here would have no instrument behind it."
+    },
+    "derived_from": [
+      {
+        "party": "feeds",
+        "kind": "feed",
+        "name": "threat-register",
+        "version": "1"
+      },
+      {
+        "party": "tuppence",
+        "kind": "feed",
+        "name": "forward-intel",
+        "version": "1.0.0",
+        "ref": "65543b43e7fbf69902ae5f07b7b4881c0e0494c0"
+      }
+    ]
+  }
+}

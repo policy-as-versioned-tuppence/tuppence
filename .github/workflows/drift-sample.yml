@@ -23,7 +23,7 @@ name: drift-sample
 #   mode `drift/probe.sh` was written to avoid.
 #
 # THE LANE (ADR-0023, D1): a sample is an OBSERVATION and a clock may append one. This job appends
-# `drift/samples.jsonl` and nothing else. The `observation cage` step below is the same shape
+# the three declared drift observation logs and nothing else. The `observation cage` step below is the same shape
 # twin-sweep.yml carries -- stage only OBSERVATION_LANE, fail the run on anything else in the
 # index or the tree -- and verify/schedules/verify-schedules.sh in the hub parses that env list.
 # It cuts no tag, creates no release, merges no pull request.
@@ -40,7 +40,7 @@ permissions:
 env:
   # ADR-0023, D1. The ONLY path any scheduled job in this repository may commit. Declared here as
   # data so the cage step below and the hub's verify-schedules.sh read the same list.
-  OBSERVATION_LANE: "drift/samples.jsonl"
+  OBSERVATION_LANE: "drift/samples.jsonl drift/workload-samples.jsonl drift/oscal-samples.jsonl"
   # Every binary is a pinned version with a checked digest, the same rule release.yml and
   # twin-sweep.yml already follow. A `curl | bash` installer would put an unreviewed script inside
   # the identity that signs this repository's observation commits.
@@ -95,6 +95,25 @@ jobs:
           repository: policy-as-versioned-platform/platform
           ref: ${{ steps.platform.outputs.tag }}
           path: .platform-src
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: read the nist tag used by the source-boundary falsifier
+        id: nist
+        run: |
+          set -euo pipefail
+          tag="$(sed -n 's/^ *tag: *//p' gitops/flux-system/gotk-sync-nist.yaml | sed 1q)"
+          [ -n "${tag}" ] || { echo "::error::nist source declares no tag"; exit 1; }
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+      - name: check out the nist publisher at its declared tag for its own CI identity
+        uses: actions/checkout@v4
+        with:
+          repository: policy-as-versioned-nist/nist
+          ref: ${{ steps.nist.outputs.tag }}
+          path: .nist-src
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: read the engine this repository declares (gitops/engine/kyverno.yaml, ticket 147)
         id: engine
@@ -312,6 +331,16 @@ jobs:
           done
           kubectl --context "${CTX}" -n flux-system get gitrepositories,kustomizations,resourcesets -o wide || true
 
+      - name: wait for a source-boundary verdict, including a false or unknown verdict
+        env:
+          CTX: ${{ steps.cluster.outputs.context }}
+        run: |
+          set -uo pipefail
+          # Flux Ready is a fetch verdict. The independent gitsign controller reads sources
+          # every 60s; wait for any verdict, so a false signature is sampled, never waited away.
+          python3 drift/five-facts.py wait-sources --context "${CTX}" --timeout 180 || true
+          kubectl --context "${CTX}" -n flux-system logs deployment/gitsign-verifier --tail=30 || true
+
       - name: take the five-fact sample and append it to the observation log
         env:
           CTX: ${{ steps.cluster.outputs.context }}
@@ -337,6 +366,17 @@ jobs:
           # Report the grade in the log for a reader of the run, and never fail on it: the grade
           # belongs to verify-reconcile.sh under the gate, and a red measurement is a measurement.
           python3 drift/five-facts.py grade || true
+
+      - name: sample every served workload and collect its OSCAL observations
+        env:
+          CTX: ${{ steps.cluster.outputs.context }}
+        run: |
+          set -euo pipefail
+          python3 drift/served_apps.py sample --context "${CTX}"
+          python3 drift/served_apps.py grade || true
+          # The converter and mapping are the platform's own, at the lane's declared pin.
+          python3 drift/oscal_lane.py collect --context "${CTX}" --platform .platform-src
+          python3 drift/oscal_lane.py grade || true
 
       # --- the cage (ADR-0023, D1) ---------------------------------------------
       # The same shape twin-sweep.yml carries, and deliberately not a second one. Everything this

@@ -1,0 +1,5 @@
+# The bump declared for this feed's next release (ADR-0019). The twin sweep rewrites this line in
+# the PR it opens; a human reviews it against what the rule computed. "none" means nothing is
+# queued. The release PR bumps VERSION and PUBLISHED_AT in ../emit-forward-intel.py in the same
+# commit, and cut-release.yml signs the tag.
+bump: minor

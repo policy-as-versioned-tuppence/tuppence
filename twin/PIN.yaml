@@ -13,3 +13,12 @@
 twin_version: 0.1.0
 twin_tag: twin/v0.1.0
 tag_cut: false
+
+# The hub commit whose `twin` package renders this overlay (eco-system ticket 143; ADR-0031
+# point 4). twin-sweep.yml's read-only twin job checks the hub out at exactly this commit and
+# refuses to run if the checkout it got is any other. Until 2026-09-26 the sweep checked the hub
+# out at `main`, so whatever landed on another party's default branch ran here with this
+# repository's write token. This repository moves the commit by a reviewed pull request, never by
+# a clock. When the signed `twin/v0.1.0` tag is cut, the tag replaces the commit here and in the
+# checkout, and `tag_cut` above flips.
+hub_commit: 9c3b1f22dcdafebc0333557f76655014e4be216b

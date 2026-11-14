@@ -16,7 +16,15 @@ party: tuppence
 roles: [risk-bearer, adopter, publisher]
 reporting_currency: GBP
 # Copied from platform/risk/appetite.json orgs.tuppence.tolerance.
+# Ticket 144: comparable filing fixed before any price is computed; accounts/members
+# are customer proxies; data_subjects was not disclosed and is omitted.
+size:
+  turnover: { amount: 861741000, currency: GBP }
+  customers: 4900000
+  headcount: 3902
+  as_of: '2026-03-31'
 appetite:
+  pricing_threshold: 3
   tolerance: { amount: 15000, currency: GBP }
 # MODERATE: 287 controls, holds ac-6, cm-6 and ac-6.10. LOW excludes ac-6,
 # one of the two controls this estate implements (ADR-0013). May add
@@ -36,7 +44,7 @@ inherits:
   # at one major share a vendored directory (ticket 45 refuses that), and v2 is what a
   # subscriber joining today would pin. Renovate bumps this line when a newer major is tagged;
   # a supersede line (ticket 84) prices staying behind and the proposer opens the retirement.
-  - { party: feeds,    kind: feed, name: cve,               version: "v2", since: '2026-09-08' }
+  - { party: feeds,    kind: feed, name: cve,               version: "v3", since: '2026-09-08' }
 overlay:
   add: []
   restate: []
@@ -52,4 +60,11 @@ publishes:
     name: exposure
     path: composed
     payload_schema: null
+    revoked: []
+
+  # Ticket 144: the twin publishes its own forward scenario; tag pending owner cut.
+  - kind: feed
+    name: forward-intel
+    path: twin/forward-intel
+    payload_schema: twin/forward-intel/payload.schema.json
     revoked: []

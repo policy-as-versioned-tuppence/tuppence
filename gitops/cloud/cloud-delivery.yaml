@@ -1,0 +1,43 @@
+# Prepared routes; current tuppence v3.0.0 contains none of these paths.
+# Keep opt-in until trigger, cloud publication, composed tag and self-pin
+# land. The cloud truth check names the missing state as a declared wait.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata: {name: crossplane-crds, namespace: flux-system}
+spec:
+  interval: 5m
+  sourceRef: {kind: GitRepository, name: tuppence-composed}
+  path: ./composed/cloud-crds
+  prune: false
+  wait: true
+  healthChecks:
+    - {apiVersion: apiextensions.k8s.io/v1, kind: CustomResourceDefinition, name: instances.rds.aws.m.upbound.io}
+    - {apiVersion: apiextensions.k8s.io/v1, kind: CustomResourceDefinition, name: bucketserversideencryptionconfigurations.s3.aws.m.upbound.io}
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata: {name: cloud-policies, namespace: flux-system}
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 3m
+  dependsOn: [{name: crossplane-crds}, {name: composed-machinery}]
+  sourceRef: {kind: GitRepository, name: tuppence-composed}
+  path: ./composed/cloud/v1.0.0
+  prune: true
+  wait: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata: {name: cloud-claims, namespace: flux-system}
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 3m
+  dependsOn: [{name: cloud-policies}]
+  sourceRef: {kind: GitRepository, name: tuppence-composed}
+  path: ./composed/cloud-workload
+  prune: true
+  # CRs deliberately cannot become Synced with no credentials. Admission
+  # acceptance, rather than existence in AWS, is this proof's boundary.
+  wait: false

@@ -1,0 +1,31 @@
+# Prepared cloud workload beside ledger. No provider, ProviderConfig or auth.
+# Locally available fleet/policy seeds establish this field intent. Exact
+# incumbent datastore bytes were unavailable offline: this is a prepared
+# implementation, not a claim of a byte-for-byte lift.
+apiVersion: rds.aws.m.upbound.io/v1beta1
+kind: Instance
+metadata:
+  name: ledger-datastore
+  namespace: tuppence
+  labels: {app.kubernetes.io/name: ledger, policy-as-versioned.dev/policy-version: "5.0.0"}
+spec:
+  forProvider:
+    region: eu-west-1
+    engine: postgres
+    instanceClass: db.t3.micro
+    allocatedStorage: 20
+    username: ledger
+    multiAz: true
+---
+apiVersion: s3.aws.m.upbound.io/v1beta1
+kind: BucketServerSideEncryptionConfiguration
+metadata:
+  name: ledger-datastore-encryption
+  namespace: tuppence
+  labels: {app.kubernetes.io/name: ledger, policy-as-versioned.dev/policy-version: "5.0.0"}
+spec:
+  forProvider:
+    region: eu-west-1
+    bucketRef: {name: ledger-datastore}
+    rule:
+      - applyServerSideEncryptionByDefault: {sseAlgorithm: AES256}
