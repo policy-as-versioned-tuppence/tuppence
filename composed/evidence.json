@@ -41,87 +41,6 @@
       "family": "graded-enforcement",
       "name": "cage-baseline",
       "kind": "PriorityClass",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-isolated",
-      "kind": "PriorityClass",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-netpol",
-      "kind": "GeneratingPolicy",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-quarantine",
-      "kind": "PriorityClass",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-restricted",
-      "kind": "PriorityClass",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": null
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-tier",
-      "kind": "MutatingPolicy",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": null
-    },
-    {
-      "family": "posture",
-      "name": "posture-trust-boundary",
-      "kind": "ValidatingPolicy",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": "Deny"
-    },
-    {
-      "family": "posture",
-      "name": "stamp-posture",
-      "kind": "MutatingPolicy",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": null
-    },
-    {
-      "family": "require-nonroot",
-      "name": "require-nonroot",
-      "kind": "ValidatingPolicy",
-      "version": "4.0.0",
-      "source_party": "platform",
-      "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
-      "action": "Audit"
-    },
-    {
-      "family": "graded-enforcement",
-      "name": "cage-baseline",
-      "kind": "PriorityClass",
       "version": "5.0.0",
       "source_party": "platform",
       "source_sha": "38089a68769453db9ea3faf0ee637ae93f309980",
@@ -3295,7 +3214,7 @@
       "name": "pinned-parent-lacks-rendered-versions",
       "detail": "the composed set renders policy versions the pinned parent commit does not contain; the header names a parent release that holds none of these trees. every rendered version is present at the pinned commit",
       "count": 0,
-      "checked": 2,
+      "checked": 1,
       "status": "closed"
     },
     {
